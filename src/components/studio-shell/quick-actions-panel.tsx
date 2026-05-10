@@ -1,5 +1,6 @@
 import type { ReactElement } from 'react';
 
+import ContentCopyRoundedIcon from '@mui/icons-material/ContentCopyRounded';
 import DownloadRoundedIcon from '@mui/icons-material/DownloadRounded';
 import PlayArrowRoundedIcon from '@mui/icons-material/PlayArrowRounded';
 import { Button, Paper, Stack, Typography } from '@mui/material';
@@ -7,12 +8,16 @@ import { Button, Paper, Stack, Typography } from '@mui/material';
 type QuickActionsPanelProps = {
   onRunPipeline?: () => void;
   onExportMarkdown?: () => void;
+  onCopyFinalText?: () => void;
+  onCopyQaSummary?: () => void;
   isRunning?: boolean;
 };
 
 export function QuickActionsPanel({
   onRunPipeline,
   onExportMarkdown,
+  onCopyFinalText,
+  onCopyQaSummary,
   isRunning = false,
 }: QuickActionsPanelProps): ReactElement {
   return (
@@ -29,6 +34,22 @@ export function QuickActionsPanel({
           disabled={isRunning}
         >
           Run pipeline
+        </Button>
+        <Button
+          variant="outlined"
+          fullWidth
+          startIcon={<ContentCopyRoundedIcon />}
+          onClick={onCopyFinalText}
+        >
+          Copy Final Text
+        </Button>
+        <Button
+          variant="outlined"
+          fullWidth
+          startIcon={<ContentCopyRoundedIcon />}
+          onClick={onCopyQaSummary}
+        >
+          Copy QA Summary
         </Button>
         <Button
           variant="outlined"

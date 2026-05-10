@@ -43,9 +43,34 @@ type TranslationWorkspaceViewProps = {
   onImportText: (value: string, fileName: string) => void;
   onRunPipeline: () => void;
   onExportMarkdown: () => void;
+  onCopyFinalText: () => void;
+  onCopyQaSummary: () => void;
   onSegmentFinalTextChange: (segmentId: string, value: string) => void;
   onSegmentFinalTextLockChange: (segmentId: string, locked: boolean) => void;
 };
+
+function buildFinalTranslationText(project: StudioShellProject): string {
+  return project.segments
+    .map((segment) => segment.finalText?.trim())
+    .filter((text): text is string => Boolean(text))
+    .join('\n\n');
+}
+
+function buildQaSummaryText(project: StudioShellProject): string {
+  const findings = project.qaFindings.filter((finding) => !finding.resolved);
+
+  if (findings.length === 0) {
+    return 'No unresolved QA findings.';
+  }
+
+  return findings
+    .map((finding) => {
+      const suggestion = finding.suggestion ? ` Suggestion: ${finding.suggestion}` : '';
+
+      return `- [${finding.severity}] ${finding.category}: ${finding.issue}${suggestion}`;
+    })
+    .join('\n');
+}
 
 function stageStatus(hasValues: boolean, hasIssues: boolean): DocumentSegment['status'] {
   if (!hasValues) {
@@ -202,6 +227,8 @@ function TranslationWorkspaceView({
   onImportText,
   onRunPipeline,
   onExportMarkdown,
+  onCopyFinalText,
+  onCopyQaSummary,
   onSegmentFinalTextChange,
   onSegmentFinalTextLockChange,
 }: TranslationWorkspaceViewProps): ReactElement {
@@ -224,6 +251,8 @@ function TranslationWorkspaceView({
         isRunning={isRunning}
         onRunPipeline={onRunPipeline}
         onExportMarkdown={onExportMarkdown}
+        onCopyFinalText={onCopyFinalText}
+        onCopyQaSummary={onCopyQaSummary}
         onSegmentFinalTextChange={onSegmentFinalTextChange}
         onSegmentFinalTextLockChange={onSegmentFinalTextLockChange}
       />
@@ -330,6 +359,51 @@ export function TranslationWorkspace({
     downloadMarkdown(project);
   };
 
+  const copyToClipboard = async (text: string, onSuccessMessage: string): Promise<void> => {
+    if (!text.trim()) {
+      setStatusNotice({
+        message: 'Nothing to copy yet. Run the pipeline first.',
+        severity: 'warning',
+      });
+
+      return;
+    }
+
+    if (!navigator.clipboard) {
+      setStatusNotice({
+        message: 'Clipboard API is unavailable in this browser context.',
+        severity: 'warning',
+      });
+
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(text);
+      setStatusNotice({
+        message: onSuccessMessage,
+        severity: 'success',
+      });
+    } catch {
+      setStatusNotice({
+        message: 'Failed to copy to clipboard.',
+        severity: 'warning',
+      });
+    }
+  };
+
+  const handleCopyFinalText = (): void => {
+    const finalText = buildFinalTranslationText(project);
+
+    void copyToClipboard(finalText, 'Final translation copied to clipboard.');
+  };
+
+  const handleCopyQaSummary = (): void => {
+    const qaSummary = buildQaSummaryText(project);
+
+    void copyToClipboard(qaSummary, 'QA summary copied to clipboard.');
+  };
+
   const handleSegmentFinalTextChange = (segmentId: string, value: string): void => {
     setProject((currentProject) => {
       const segments = currentProject.segments.map((segment) =>
@@ -365,6 +439,8 @@ export function TranslationWorkspace({
       onImportText={handleImportText}
       onRunPipeline={triggerRunPipeline}
       onExportMarkdown={handleExportMarkdown}
+      onCopyFinalText={handleCopyFinalText}
+      onCopyQaSummary={handleCopyQaSummary}
       onSegmentFinalTextChange={handleSegmentFinalTextChange}
       onSegmentFinalTextLockChange={handleSegmentFinalTextLockChange}
     />

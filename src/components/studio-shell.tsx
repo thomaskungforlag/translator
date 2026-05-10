@@ -19,6 +19,8 @@ export function StudioShell({
   project,
   onRunPipeline,
   onExportMarkdown,
+  onCopyFinalText,
+  onCopyQaSummary,
   onSegmentFinalTextChange,
   onSegmentFinalTextLockChange,
   isRunning = false,
@@ -83,6 +85,8 @@ export function StudioShell({
               <QuickActionsPanel
                 onRunPipeline={onRunPipeline}
                 onExportMarkdown={onExportMarkdown}
+                onCopyFinalText={onCopyFinalText}
+                onCopyQaSummary={onCopyQaSummary}
                 isRunning={isRunning}
               />
             </Stack>

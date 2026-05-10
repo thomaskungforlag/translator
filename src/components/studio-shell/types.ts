@@ -5,6 +5,8 @@ export type StudioShellProps = {
   project: StudioShellProject;
   onRunPipeline?: () => void;
   onExportMarkdown?: () => void;
+  onCopyFinalText?: () => void;
+  onCopyQaSummary?: () => void;
   onSegmentFinalTextChange?: (segmentId: string, value: string) => void;
   onSegmentFinalTextLockChange?: (segmentId: string, locked: boolean) => void;
   isRunning?: boolean;
