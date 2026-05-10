@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type ReactElement } from 'react';
+import { useEffect, useState, type ReactElement } from 'react';
 
 import type { AlertColor } from '@mui/material';
 import { Stack } from '@mui/material';
@@ -39,6 +39,7 @@ type TranslationWorkspaceViewProps = {
   sourceText: string;
   project: StudioShellProject;
   isRunning: boolean;
+  runElapsedSeconds: number;
   statusMessage?: string;
   statusSeverity?: AlertColor;
   onSourceTextChange: (value: string) => void;
@@ -231,6 +232,7 @@ function TranslationWorkspaceView({
   sourceText,
   project,
   isRunning,
+  runElapsedSeconds,
   statusMessage,
   statusSeverity,
   onSourceTextChange,
@@ -250,6 +252,7 @@ function TranslationWorkspaceView({
         contentType={project.contentType}
         targetLanguage={project.targetLanguage}
         isRunning={isRunning}
+        runElapsedSeconds={runElapsedSeconds}
         statusMessage={statusMessage}
         statusSeverity={statusSeverity}
         onSourceTextChange={onSourceTextChange}
@@ -283,9 +286,27 @@ export function TranslationWorkspace({
     buildStudioShellProject(initialSeed),
   );
   const [isRunning, setIsRunning] = useState(false);
+  const [runElapsedSeconds, setRunElapsedSeconds] = useState(0);
   const [statusNotice, setStatusNotice] = useState<StatusNotice | undefined>(
     buildInitialStatus(apiKeyConfigured),
   );
+
+  useEffect(() => {
+    if (!isRunning) {
+      setRunElapsedSeconds(0);
+
+      return;
+    }
+
+    const startedAt = Date.now();
+    const intervalId = window.setInterval(() => {
+      setRunElapsedSeconds(Math.floor((Date.now() - startedAt) / 1000));
+    }, 250);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [isRunning]);
 
   const handleRunPipeline = async (): Promise<void> => {
     setIsRunning(true);
@@ -451,11 +472,14 @@ export function TranslationWorkspace({
         const qaFindings = segment.qaFindings.map((finding) =>
           finding.id === findingId ? { ...finding, resolved } : finding,
         );
+        const nextStatus: DocumentSegment['status'] = hasUnresolvedQaFindings(qaFindings)
+          ? 'reviewed'
+          : 'approved';
 
         return {
           ...segment,
           qaFindings,
-          status: hasUnresolvedQaFindings(qaFindings) ? 'reviewed' : 'approved',
+          status: nextStatus,
         };
       });
 
@@ -470,6 +494,7 @@ export function TranslationWorkspace({
       sourceText={sourceText}
       project={project}
       isRunning={isRunning}
+      runElapsedSeconds={runElapsedSeconds}
       statusMessage={statusNotice?.message}
       statusSeverity={statusNotice?.severity}
       onSourceTextChange={setSourceText}

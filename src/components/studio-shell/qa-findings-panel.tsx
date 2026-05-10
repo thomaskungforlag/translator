@@ -63,7 +63,11 @@ export function QAFindingsPanel({
                     <Switch
                       checked={finding.resolved}
                       onChange={(_, checked) => onResolvedChange?.(finding.id, checked)}
-                      inputProps={{ 'aria-label': `Mark finding as resolved: ${finding.issue}` }}
+                      slotProps={{
+                        input: {
+                          'aria-label': `Mark finding as resolved: ${finding.issue}`,
+                        },
+                      }}
                     />
                   }
                   label={finding.resolved ? 'Resolved' : 'Open'}

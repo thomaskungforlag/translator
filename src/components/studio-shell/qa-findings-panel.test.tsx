@@ -20,7 +20,7 @@ describe('QAFindingsPanel', () => {
 
     render(<QAFindingsPanel findings={[finding]} onResolvedChange={onResolvedChange} />);
 
-    await user.click(screen.getByRole('checkbox', { name: /mark finding as resolved/i }));
+    await user.click(screen.getByRole('switch', { name: /mark finding as resolved/i }));
 
     expect(onResolvedChange).toHaveBeenCalledWith('finding-1', true);
   });
