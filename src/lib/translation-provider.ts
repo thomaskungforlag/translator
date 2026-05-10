@@ -72,7 +72,11 @@ async function runChunkedStage(args: {
       ensureStageCoverage(args.stageName, chunk.segments, stageSegments);
 
       if (args.ensureTranslated) {
-        ensureStageLooksTranslated(args.stageName, chunk.segments, stageSegments);
+        ensureStageLooksTranslated(
+          args.stageName as Exclude<typeof args.stageName, 'source_analysis'>,
+          chunk.segments,
+          stageSegments,
+        );
       }
 
       return stageSegments.map((segment) => ({

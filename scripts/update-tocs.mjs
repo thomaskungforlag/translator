@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-/* eslint-disable no-console */
 import { promises as fs } from 'fs';
 import { join, resolve, extname } from 'path';
 

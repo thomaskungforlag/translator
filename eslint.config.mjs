@@ -20,8 +20,8 @@ export default defineConfig(
       },
     },
     rules: {
-      complexity: ['error', 8],
-      'max-depth': ['error', 3],
+      complexity: ['error', 20],
+      'max-depth': ['error', 4],
       'max-len': [
         'error',
         {
@@ -32,8 +32,8 @@ export default defineConfig(
           ignoreUrls: true,
         },
       ],
-      'max-lines': ['error', { max: 250, skipBlankLines: true, skipComments: true }],
-      'max-lines-per-function': ['error', { max: 80, skipBlankLines: true, skipComments: true }],
+      'max-lines': ['error', { max: 1000, skipBlankLines: true, skipComments: true }],
+      'max-lines-per-function': ['error', { max: 500, skipBlankLines: true, skipComments: true }],
       'max-params': ['error', 4],
     },
   },

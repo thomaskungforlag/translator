@@ -525,64 +525,57 @@ export function TranslationWorkspace({
   activeRuntimeModelLabel,
   initialSeed,
 }: TranslationWorkspaceProps): ReactElement {
-  const defaultSegmentationStrategy = initialSeed.segmentationStrategy ?? 'paragraph';
-  const [sourceText, setSourceText] = useState(initialSeed.sourceText);
+  const persistedWorkspace = loadPersistedWorkspaceState();
+  const defaultSegmentationStrategy =
+    persistedWorkspace?.segmentationStrategy ?? initialSeed.segmentationStrategy ?? 'paragraph';
+  const [sourceText, setSourceText] = useState(
+    persistedWorkspace?.sourceText ?? initialSeed.sourceText,
+  );
   const [segmentationStrategy, setSegmentationStrategy] = useState<SegmentationStrategy>(
     defaultSegmentationStrategy,
   );
-  const [project, setProject] = useState<StudioShellProject>(() =>
-    buildStudioShellProject({ ...initialSeed, segmentationStrategy: defaultSegmentationStrategy }),
+  const [project, setProject] = useState<StudioShellProject>(
+    persistedWorkspace?.project ??
+      buildStudioShellProject({
+        ...initialSeed,
+        segmentationStrategy: defaultSegmentationStrategy,
+      }),
   );
   const [isRunning, setIsRunning] = useState(false);
-  const [runElapsedSeconds, setRunElapsedSeconds] = useState(0);
+  const [runStartedAt, setRunStartedAt] = useState<number | null>(null);
+  const [now, setNow] = useState(() => Date.now());
   const [statusNotice, setStatusNotice] = useState<StatusNotice | undefined>(
-    buildInitialStatus(apiKeyConfigured),
+    persistedWorkspace
+      ? {
+          message: 'Restored the previous workspace session.',
+          severity: 'info',
+        }
+      : buildInitialStatus(apiKeyConfigured),
   );
-  const [storageHydrated, setStorageHydrated] = useState(false);
 
   useEffect(() => {
-    const persisted = loadPersistedWorkspaceState();
-
-    if (persisted) {
-      setSourceText(persisted.sourceText);
-      setSegmentationStrategy(persisted.segmentationStrategy);
-      setProject(persisted.project);
-      setStatusNotice({
-        message: 'Restored the previous workspace session.',
-        severity: 'info',
-      });
-    }
-
-    setStorageHydrated(true);
-  }, []);
-
-  useEffect(() => {
-    if (!storageHydrated) {
-      return;
-    }
-
     persistWorkspaceState({ sourceText, segmentationStrategy, project });
-  }, [project, segmentationStrategy, sourceText, storageHydrated]);
+  }, [project, segmentationStrategy, sourceText]);
 
   useEffect(() => {
-    if (!isRunning) {
-      setRunElapsedSeconds(0);
-
-      return;
+    if (runStartedAt === null) {
+      return undefined;
     }
 
-    const startedAt = Date.now();
     const intervalId = window.setInterval(() => {
-      setRunElapsedSeconds(Math.floor((Date.now() - startedAt) / 1000));
+      setNow(Date.now());
     }, 250);
 
     return () => {
       window.clearInterval(intervalId);
     };
-  }, [isRunning]);
+  }, [runStartedAt]);
+
+  const runElapsedSeconds = runStartedAt === null ? 0 : Math.floor((now - runStartedAt) / 1000);
 
   const handleRunPipeline = async (): Promise<void> => {
     setIsRunning(true);
+    setRunStartedAt(Date.now());
     setStatusNotice(undefined);
 
     try {
@@ -653,6 +646,7 @@ export function TranslationWorkspace({
       );
     } finally {
       setIsRunning(false);
+      setRunStartedAt(null);
     }
   };
 

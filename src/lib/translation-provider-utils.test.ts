@@ -50,8 +50,8 @@ describe('translation-provider-utils (provider adapters)', () => {
 
     fetchMock.mockResolvedValueOnce({
       ok: true,
-      json: async () => mockPoeResponse('{"segments":[{"index":0,"text":"Draft"}]}'),
-    } as Response);
+      json: () => mockPoeResponse('{"segments":[{"index":0,"text":"Draft"}]}'),
+    } as unknown as Response);
 
     const utils = await loadUtilsModule();
     const segments = await utils.parseStageResponse('source_analysis', 'prompt');
@@ -69,12 +69,12 @@ describe('translation-provider-utils (provider adapters)', () => {
     fetchMock
       .mockResolvedValueOnce({
         ok: true,
-        json: async () => mockPoeResponse('not-json'),
-      } as Response)
+        json: () => mockPoeResponse('not-json'),
+      } as unknown as Response)
       .mockResolvedValueOnce({
         ok: true,
-        json: async () => mockPoeResponse('{"segments":[{"index":0,"text":"Repaired"}]}'),
-      } as Response);
+        json: () => mockPoeResponse('{"segments":[{"index":0,"text":"Repaired"}]}'),
+      } as unknown as Response);
 
     const utils = await loadUtilsModule();
     const segments = await utils.parseStageResponse('voice_adaptation', 'prompt');
@@ -91,8 +91,8 @@ describe('translation-provider-utils (provider adapters)', () => {
 
     fetchMock.mockResolvedValueOnce({
       ok: true,
-      json: async () => mockPoeResponse('[{"index":0,"text":"Array payload"}]'),
-    } as Response);
+      json: () => mockPoeResponse('[{"index":0,"text":"Array payload"}]'),
+    } as unknown as Response);
 
     const utils = await loadUtilsModule();
     const segments = await utils.parseStageResponse('faithful_translation', 'prompt');
@@ -109,14 +109,14 @@ describe('translation-provider-utils (provider adapters)', () => {
 
     fetchMock.mockResolvedValueOnce({
       ok: true,
-      json: async () =>
+      json: () =>
         mockPoeResponse(
           JSON.stringify([
             { index: 0, polished: 'Polished 1' },
             { index: 1, polished: 'Polished 2' },
           ]),
         ),
-    } as Response);
+    } as unknown as Response);
 
     const utils = await loadUtilsModule();
     const segments = await utils.parseStageResponse('polish_pass', 'prompt');
@@ -136,7 +136,7 @@ describe('translation-provider-utils (provider adapters)', () => {
 
     fetchMock.mockResolvedValueOnce({
       ok: true,
-      json: async () =>
+      json: () =>
         mockPoeResponse(
           JSON.stringify({
             stageName: 'source_analysis',
@@ -146,7 +146,7 @@ describe('translation-provider-utils (provider adapters)', () => {
             ],
           }),
         ),
-    } as Response);
+    } as unknown as Response);
 
     const utils = await loadUtilsModule();
     const segments = await utils.parseStageResponse('source_analysis', 'prompt');
@@ -166,7 +166,7 @@ describe('translation-provider-utils (provider adapters)', () => {
 
     fetchMock.mockResolvedValueOnce({
       ok: true,
-      json: async () =>
+      json: () =>
         mockPoeResponse(
           JSON.stringify({
             stageResult: {
@@ -178,7 +178,7 @@ describe('translation-provider-utils (provider adapters)', () => {
             },
           }),
         ),
-    } as Response);
+    } as unknown as Response);
 
     const utils = await loadUtilsModule();
     const segments = await utils.parseStageResponse('source_analysis', 'prompt');
@@ -198,7 +198,7 @@ describe('translation-provider-utils (provider adapters)', () => {
 
     fetchMock.mockResolvedValueOnce({
       ok: true,
-      json: async () =>
+      json: () =>
         mockPoeResponse(
           JSON.stringify({
             voiceAdaptedSegments: [
@@ -207,7 +207,7 @@ describe('translation-provider-utils (provider adapters)', () => {
             ],
           }),
         ),
-    } as Response);
+    } as unknown as Response);
 
     const utils = await loadUtilsModule();
     const segments = await utils.parseStageResponse('voice_adaptation', 'prompt');
@@ -227,9 +227,9 @@ describe('translation-provider-utils (provider adapters)', () => {
 
     fetchMock.mockResolvedValueOnce({
       ok: true,
-      json: async () =>
+      json: () =>
         mockPoeResponse('"{\\"segments\\":[{\\"index\\":0,\\"text\\":\\"Nested payload\\"}]}"'),
-    } as Response);
+    } as unknown as Response);
 
     const utils = await loadUtilsModule();
     const segments = await utils.parseStageResponse('polish_pass', 'prompt');
@@ -247,12 +247,12 @@ describe('translation-provider-utils (provider adapters)', () => {
     fetchMock
       .mockResolvedValueOnce({
         ok: true,
-        json: async () => mockPoeResponse('{"findings":"wrong-shape"}'),
-      } as Response)
+        json: () => mockPoeResponse('{"findings":"wrong-shape"}'),
+      } as unknown as Response)
       .mockResolvedValueOnce({
         ok: true,
-        json: async () => mockPoeResponse('still-wrong-json'),
-      } as Response);
+        json: () => mockPoeResponse('still-wrong-json'),
+      } as unknown as Response);
 
     const utils = await loadUtilsModule();
 
@@ -271,17 +271,17 @@ describe('translation-provider-utils (provider adapters)', () => {
     fetchMock
       .mockResolvedValueOnce({
         ok: true,
-        json: async () =>
+        json: () =>
           mockPoeResponse(
             JSON.stringify([
               { index: 0, polished: 'Polished 1' },
               { index: 1, polished: 'Polished 2' },
             ]),
           ),
-      } as Response)
+      } as unknown as Response)
       .mockResolvedValueOnce({
         ok: true,
-        json: async () =>
+        json: () =>
           mockPoeResponse(
             JSON.stringify({
               stage_response: [
@@ -290,7 +290,7 @@ describe('translation-provider-utils (provider adapters)', () => {
               ],
             }),
           ),
-      } as Response);
+      } as unknown as Response);
 
     const utils = await loadUtilsModule();
     const segments = await utils.parseStageResponse('polish_pass', 'prompt');
@@ -310,7 +310,7 @@ describe('translation-provider-utils (provider adapters)', () => {
 
     fetchMock.mockResolvedValueOnce({
       ok: true,
-      json: async () =>
+      json: () =>
         mockPoeResponse(
           JSON.stringify({
             qaFindings: [
@@ -325,7 +325,7 @@ describe('translation-provider-utils (provider adapters)', () => {
             ],
           }),
         ),
-    } as Response);
+    } as unknown as Response);
 
     const utils = await loadUtilsModule();
     const findings = await utils.parseQaResponse('qa prompt');
@@ -351,7 +351,7 @@ describe('translation-provider-utils (provider adapters)', () => {
 
     fetchMock.mockResolvedValueOnce({
       ok: true,
-      json: async () =>
+      json: () =>
         mockPoeResponse(
           JSON.stringify({
             qaFindings: [
@@ -370,7 +370,7 @@ describe('translation-provider-utils (provider adapters)', () => {
             ],
           }),
         ),
-    } as Response);
+    } as unknown as Response);
 
     const utils = await loadUtilsModule();
     const findings = await utils.parseQaResponse('qa prompt');
@@ -394,7 +394,7 @@ describe('translation-provider-utils (provider adapters)', () => {
 
     fetchMock.mockResolvedValueOnce({
       ok: true,
-      json: async () =>
+      json: () =>
         mockPoeResponse(
           JSON.stringify({
             findings: [
@@ -410,7 +410,7 @@ describe('translation-provider-utils (provider adapters)', () => {
             ],
           }),
         ),
-    } as Response);
+    } as unknown as Response);
 
     const utils = await loadUtilsModule();
     const findings = await utils.parseQaResponse('qa prompt');
@@ -437,7 +437,7 @@ describe('translation-provider-utils (provider adapters)', () => {
 
     fetchMock.mockResolvedValueOnce({
       ok: true,
-      json: async () =>
+      json: () =>
         mockPoeResponse(
           JSON.stringify({
             findings: [
@@ -450,7 +450,7 @@ describe('translation-provider-utils (provider adapters)', () => {
             ],
           }),
         ),
-    } as Response);
+    } as unknown as Response);
 
     const utils = await loadUtilsModule();
     const findings = await utils.parseQaResponse('qa prompt');
@@ -474,7 +474,7 @@ describe('translation-provider-utils (provider adapters)', () => {
 
     fetchMock.mockResolvedValueOnce({
       ok: true,
-      json: async () =>
+      json: () =>
         mockPoeResponse(
           JSON.stringify({
             findings: [
@@ -505,7 +505,7 @@ describe('translation-provider-utils (provider adapters)', () => {
             ],
           }),
         ),
-    } as Response);
+    } as unknown as Response);
 
     const utils = await loadUtilsModule();
     const findings = await utils.parseQaResponse('qa prompt');

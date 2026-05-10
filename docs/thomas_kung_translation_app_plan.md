@@ -86,7 +86,6 @@
 - [Important Design Notes](#important-design-notes)
 - [Future North Star](#future-north-star)
 
-
 ## Purpose
 
 Build a production-quality, multi-pass translation tool tailored to Thomas Kung’s author voice. The first target language is English, but the system must be designed so additional target languages can be added later without redesigning the core workflow.
