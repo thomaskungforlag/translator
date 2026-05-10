@@ -3,6 +3,7 @@ import type {
   DocumentSegment,
   GlossaryEntry,
   LanguageConfig,
+  LanguageCode,
   QAFinding,
   SegmentStatus,
 } from '@/lib/domain';
@@ -27,7 +28,7 @@ export type TranslationWorkspaceSeed = {
   projectId: string;
   title: string;
   contentType: ContentType;
-  sourceLanguageCode: string;
+  sourceLanguageCode: LanguageCode;
   targetLanguage: LanguageConfig;
   sourceText: string;
   glossary: GlossaryEntry[];

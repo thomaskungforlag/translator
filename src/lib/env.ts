@@ -10,8 +10,10 @@ const blankToUndefined = (value: string | undefined): string | undefined => {
 
 const envSchema = z.object({
   OPENAI_API_KEY: z.string().min(1).optional(),
+  OPENAI_MODEL: z.string().min(1).optional(),
 });
 
 export const env = envSchema.parse({
   OPENAI_API_KEY: blankToUndefined(process.env.OPENAI_API_KEY),
+  OPENAI_MODEL: blankToUndefined(process.env.OPENAI_MODEL),
 });

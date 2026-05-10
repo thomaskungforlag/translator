@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
 
-import { Button, MenuItem, Paper, Stack, TextField, Typography } from '@mui/material';
+import { Alert, Button, MenuItem, Paper, Stack, TextField, Typography } from '@mui/material';
 
 import type { ContentType, LanguageConfig } from '@/lib/domain';
 
@@ -9,6 +9,7 @@ type WorkspaceControlsProps = {
   contentType: ContentType;
   targetLanguage: LanguageConfig;
   isRunning: boolean;
+  statusMessage?: string;
   onSourceTextChange: (value: string) => void;
   onRunPipeline: () => void;
 };
@@ -18,6 +19,7 @@ export function WorkspaceControls({
   contentType,
   targetLanguage,
   isRunning,
+  statusMessage,
   onSourceTextChange,
   onRunPipeline,
 }: WorkspaceControlsProps): ReactElement {
@@ -48,6 +50,7 @@ export function WorkspaceControls({
         <Button variant="contained" onClick={onRunPipeline} disabled={isRunning}>
           {isRunning ? 'Running pipeline…' : 'Run pipeline'}
         </Button>
+        {statusMessage ? <Alert severity="info">{statusMessage}</Alert> : null}
       </Stack>
     </Paper>
   );

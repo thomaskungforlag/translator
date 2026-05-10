@@ -31,52 +31,73 @@ const DEMO_TRANSLATIONS = [
   },
 ] as const;
 
-function splitSourceText(sourceText: string): string[] {
+export type SegmentDraft = {
+  sourceText: string;
+  translationDraft: string;
+  voiceAdaptedDraft: string;
+  polishedDraft: string;
+  finalText: string;
+};
+
+export function splitSourceText(sourceText: string): string[] {
   return sourceText
     .split(/\n\s*\n/g)
     .map((segment) => segment.trim())
     .filter(Boolean);
 }
 
-function getDemoDrafts(sourceText: string): {
-  faithful: string;
-  voice: string;
-  polish: string;
-} {
+function getDemoDrafts(sourceText: string): Omit<SegmentDraft, 'sourceText'> {
   const demoDraft = DEMO_TRANSLATIONS.find((draft) => draft.source === sourceText);
 
   if (demoDraft) {
-    return demoDraft;
+    return {
+      translationDraft: demoDraft.faithful,
+      voiceAdaptedDraft: demoDraft.voice,
+      polishedDraft: demoDraft.polish,
+      finalText: demoDraft.polish,
+    };
   }
 
-  const normalized = sourceText.replace(/\s+/g, ' ').replace(/^\s+|\s+$/g, '');
+  const normalized = sourceText.replace(/\s+/g, ' ').trim();
 
   return {
-    faithful: normalized,
-    voice: normalized,
-    polish: normalized,
+    translationDraft: normalized,
+    voiceAdaptedDraft: normalized,
+    polishedDraft: normalized,
+    finalText: normalized,
   };
 }
 
-function buildSegment(index: number, projectId: string, sourceText: string): DocumentSegment {
-  const drafts = getDemoDrafts(sourceText);
-  const finalText = drafts.polish;
+export function createDemoSegmentDrafts(sourceText: string): SegmentDraft[] {
+  return splitSourceText(sourceText).map((segmentText) => ({
+    sourceText: segmentText,
+    ...getDemoDrafts(segmentText),
+  }));
+}
+
+function createSegmentFromDraft(
+  seed: TranslationWorkspaceSeed,
+  draft: SegmentDraft,
+  index: number,
+  glossary: GlossaryEntry[],
+): DocumentSegment {
+  const segmentQaFindings = getSegmentQaFindings(draft, glossary);
 
   return {
     id: `seg_${index + 1}`,
-    projectId,
+    projectId: seed.projectId,
     index,
-    sourceText,
-    translationDraft: drafts.faithful,
-    voiceAdaptedDraft: drafts.voice,
-    polishedDraft: drafts.polish,
-    finalText,
-    qaFindings: [],
-    status: 'approved',
+    sourceText: draft.sourceText,
+    translationDraft: draft.translationDraft,
+    voiceAdaptedDraft: draft.voiceAdaptedDraft,
+    polishedDraft: draft.polishedDraft,
+    finalText: draft.finalText,
+    qaFindings: segmentQaFindings,
+    status: segmentQaFindings.length === 0 ? 'approved' : 'reviewed',
   };
 }
 
-function buildQaFindings(segments: DocumentSegment[], glossary: GlossaryEntry[]): QAFinding[] {
+function getSegmentQaFindings(draft: SegmentDraft, glossary: GlossaryEntry[]): QAFinding[] {
   const findings: QAFinding[] = [];
 
   for (const entry of glossary) {
@@ -84,8 +105,8 @@ function buildQaFindings(segments: DocumentSegment[], glossary: GlossaryEntry[])
       continue;
     }
 
-    const sourceHit = segments.some((segment) => segment.sourceText.includes(entry.sourceTerm));
-    const targetHit = segments.some((segment) => segment.finalText?.includes(entry.targetTerm));
+    const sourceHit = draft.sourceText.includes(entry.sourceTerm);
+    const targetHit = draft.finalText.includes(entry.targetTerm);
 
     if (sourceHit && !targetHit) {
       findings.push({
@@ -93,24 +114,17 @@ function buildQaFindings(segments: DocumentSegment[], glossary: GlossaryEntry[])
         severity: 'critical',
         category: 'terminology',
         issue: `Locked glossary term ${entry.sourceTerm} must remain capitalized as ${entry.targetTerm}.`,
-        suggestion: `Lock the term in the glossary and re-check final output.`,
+        suggestion: 'Lock the term in the glossary and re-check final output.',
         resolved: false,
       });
     }
   }
 
-  if (segments.some((segment) => segment.translationDraft === segment.sourceText)) {
-    findings.push({
-      id: 'qa-fallback-translation',
-      severity: 'warning',
-      category: 'style_drift',
-      issue: 'One or more segments still match the source text after the faithful pass.',
-      suggestion: 'Replace the fallback translation with a language-specific draft.',
-      resolved: false,
-    });
-  }
-
   return findings;
+}
+
+function buildProjectQaFindings(segments: DocumentSegment[]): QAFinding[] {
+  return segments.flatMap((segment) => segment.qaFindings);
 }
 
 function buildPipelineStages(qaFindings: QAFinding[]): PipelineStage[] {
@@ -122,27 +136,28 @@ function buildPipelineStages(qaFindings: QAFinding[]): PipelineStage[] {
   }));
 }
 
-export function buildStudioShellProject(seed: TranslationWorkspaceSeed): StudioShellProject {
-  const sourceSegments = splitSourceText(seed.sourceText);
-  const segments = sourceSegments.map((segmentText, index) =>
-    buildSegment(index, seed.projectId, segmentText),
+function buildProjectProgress(qaFindings: QAFinding[]): number {
+  return qaFindings.length === 0 ? 100 : 80;
+}
+
+export function buildStudioShellProject(
+  seed: TranslationWorkspaceSeed,
+  drafts: SegmentDraft[] = createDemoSegmentDrafts(seed.sourceText),
+): StudioShellProject {
+  const segments = drafts.map((draft, index) =>
+    createSegmentFromDraft(seed, draft, index, seed.glossary),
   );
-  const qaFindings = buildQaFindings(segments, seed.glossary);
-  const pipelineStages = buildPipelineStages(qaFindings);
-  const progress = qaFindings.length === 0 ? 100 : 80;
+  const qaFindings = buildProjectQaFindings(segments);
 
   return {
     title: seed.title,
     contentType: seed.contentType,
     targetLanguage: seed.targetLanguage,
-    progress,
-    segments: segments.map((segment) => ({
-      ...segment,
-      qaFindings: qaFindings.filter((finding) => finding.category === 'terminology'),
-    })),
+    progress: buildProjectProgress(qaFindings),
+    segments,
     glossary: seed.glossary,
     qaFindings,
-    pipelineStages,
+    pipelineStages: buildPipelineStages(qaFindings),
   };
 }
 
