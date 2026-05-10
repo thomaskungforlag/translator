@@ -1,4 +1,4 @@
-import type { GlossaryEntry } from '@/lib/domain';
+import type { GlossaryEntry, StyleProfile } from '@/lib/domain';
 import type { StudioShellProject } from '@/lib/workspace';
 
 export type StudioShellProps = {
@@ -11,6 +11,7 @@ export type StudioShellProps = {
   onExportProjectJson?: () => void;
   onCopyFinalText?: () => void;
   onCopyQaSummary?: () => void;
+  onStyleProfileUpdate?: (patch: Partial<StyleProfile>) => void;
   onQaFindingResolvedChange?: (findingId: string, resolved: boolean) => void;
   onSegmentFinalTextChange?: (segmentId: string, value: string) => void;
   onSegmentFinalTextLockChange?: (segmentId: string, locked: boolean) => void;

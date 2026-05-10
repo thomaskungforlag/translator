@@ -22,6 +22,7 @@ describe('POST /api/translate', () => {
         title: demoWorkspaceSeed.title,
         contentType: demoWorkspaceSeed.contentType,
         targetLanguage: demoWorkspaceSeed.targetLanguage,
+        styleProfile: demoWorkspaceSeed.styleProfile,
         progress: 100,
         segments: [],
         glossary: demoWorkspaceSeed.glossary,

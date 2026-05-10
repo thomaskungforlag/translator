@@ -6,6 +6,7 @@ import type {
   LanguageCode,
   QAFinding,
   SegmentStatus,
+  StyleProfile,
 } from '@/lib/domain';
 
 export type PipelineStage = {
@@ -20,6 +21,7 @@ export type StudioShellProject = {
   title: string;
   contentType: ContentType;
   targetLanguage: LanguageConfig;
+  styleProfile: StyleProfile;
   progress: number;
   segments: DocumentSegment[];
   glossary: GlossaryEntry[];
@@ -33,6 +35,7 @@ export type TranslationWorkspaceSeed = {
   contentType: ContentType;
   sourceLanguageCode: LanguageCode;
   targetLanguage: LanguageConfig;
+  styleProfile: StyleProfile;
   sourceText: string;
   glossary: GlossaryEntry[];
   segmentationStrategy?: SegmentationStrategy;

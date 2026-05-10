@@ -1,5 +1,6 @@
 import type { ContentType, GlossaryEntry, LanguageConfig } from '@/lib/domain';
 
+import { buildDefaultStyleProfile } from './reference-material';
 import type { TranslationWorkspaceSeed } from './workspace';
 
 export const demoTargetLanguage: LanguageConfig = {
@@ -56,6 +57,7 @@ export const demoWorkspaceSeed: TranslationWorkspaceSeed = {
   sourceLanguageCode: 'sv',
   segmentationStrategy: 'paragraph',
   targetLanguage: demoTargetLanguage,
+  styleProfile: buildDefaultStyleProfile(),
   sourceText: demoSourceText,
   glossary: demoGlossary,
 };

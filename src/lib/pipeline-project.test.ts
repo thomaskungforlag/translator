@@ -33,7 +33,8 @@ describe('pipeline project exports', () => {
           finalText: string;
         }>;
         styleProfile: {
-          title: string;
+          name: string;
+          voicePrinciples: string[];
         };
       };
     };
@@ -46,6 +47,9 @@ describe('pipeline project exports', () => {
     expect(parsed.project.segments[0]?.finalText).toBe(
       'Snow had begun to fall when she saw the light again.',
     );
-    expect(parsed.project.styleProfile.title).toBe('Röd Tvilling');
+    expect(parsed.project.styleProfile.name).toBe('Röd Tvilling');
+    expect(parsed.project.styleProfile.voicePrinciples).toContain(
+      'Keep the prose grounded, concrete, and emotionally direct.',
+    );
   });
 });

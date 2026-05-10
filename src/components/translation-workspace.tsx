@@ -8,13 +8,14 @@ import { Stack } from '@mui/material';
 import { StudioShell } from '@/components/studio-shell';
 import {
   buildSegmentQaFindings,
+  buildDefaultStyleProfile,
   buildStudioShellProject,
   exportProjectJson,
   exportProjectMarkdown,
   exportProjectQaReportMarkdown,
   splitSourceText,
 } from '@/lib/pipeline';
-import type { DocumentSegment, GlossaryEntry } from '@/lib/domain';
+import type { DocumentSegment, GlossaryEntry, StyleProfile } from '@/lib/domain';
 import type {
   SegmentationStrategy,
   StudioShellProject,
@@ -73,6 +74,7 @@ type TranslationWorkspaceViewProps = {
   onExportProjectJson: () => void;
   onCopyFinalText: () => void;
   onCopyQaSummary: () => void;
+  onStyleProfileUpdate: (patch: Partial<StyleProfile>) => void;
   onQaFindingResolvedChange: (findingId: string, resolved: boolean) => void;
   onSegmentFinalTextChange: (segmentId: string, value: string) => void;
   onSegmentFinalTextLockChange: (segmentId: string, locked: boolean) => void;
@@ -331,17 +333,22 @@ function buildFallbackStatus(message?: string): StatusNotice {
   };
 }
 
-function buildImportedSeed(
-  initialSeed: TranslationWorkspaceSeed,
-  importedText: string,
-  fileName: string,
-  segmentationStrategy: SegmentationStrategy,
-): TranslationWorkspaceSeed {
+function buildImportedSeed(args: {
+  initialSeed: TranslationWorkspaceSeed;
+  currentProject: StudioShellProject;
+  importedText: string;
+  fileName: string;
+  segmentationStrategy: SegmentationStrategy;
+}): TranslationWorkspaceSeed {
+  const { initialSeed, currentProject, importedText, fileName, segmentationStrategy } = args;
+
   return {
     ...initialSeed,
     title: deriveImportedTitle(fileName, initialSeed.title),
     sourceText: importedText,
     segmentationStrategy,
+    glossary: currentProject.glossary,
+    styleProfile: currentProject.styleProfile,
   };
 }
 
@@ -410,10 +417,15 @@ function loadPersistedWorkspaceState(): PersistedWorkspaceState | null {
       return null;
     }
 
+    const project = record.project as Partial<StudioShellProject>;
+
     return {
       sourceText: record.sourceText,
       segmentationStrategy: resolveSegmentationStrategy(record.segmentationStrategy),
-      project: record.project as StudioShellProject,
+      project: {
+        ...project,
+        styleProfile: project.styleProfile ?? buildDefaultStyleProfile(),
+      } as StudioShellProject,
     };
   } catch {
     return null;
@@ -472,6 +484,7 @@ function TranslationWorkspaceView({
   onExportProjectJson,
   onCopyFinalText,
   onCopyQaSummary,
+  onStyleProfileUpdate,
   onQaFindingResolvedChange,
   onSegmentFinalTextChange,
   onSegmentFinalTextLockChange,
@@ -512,6 +525,7 @@ function TranslationWorkspaceView({
         onExportProjectJson={onExportProjectJson}
         onCopyFinalText={onCopyFinalText}
         onCopyQaSummary={onCopyQaSummary}
+        onStyleProfileUpdate={onStyleProfileUpdate}
         onQaFindingResolvedChange={onQaFindingResolvedChange}
         onSegmentFinalTextChange={onSegmentFinalTextChange}
         onSegmentFinalTextLockChange={onSegmentFinalTextLockChange}
@@ -598,6 +612,10 @@ export function TranslationWorkspace({
         body: JSON.stringify({
           ...initialSeed,
           title: project.title,
+          contentType: project.contentType,
+          targetLanguage: project.targetLanguage,
+          glossary: project.glossary,
+          styleProfile: project.styleProfile,
           sourceText,
           segmentationStrategy,
         }),
@@ -646,6 +664,10 @@ export function TranslationWorkspace({
         buildStudioShellProject({
           ...initialSeed,
           title: project.title,
+          contentType: project.contentType,
+          targetLanguage: project.targetLanguage,
+          glossary: project.glossary,
+          styleProfile: project.styleProfile,
           sourceText,
           segmentationStrategy,
         }),
@@ -662,7 +684,13 @@ export function TranslationWorkspace({
   };
 
   const handleImportText = (importedText: string, fileName: string): void => {
-    const nextSeed = buildImportedSeed(initialSeed, importedText, fileName, segmentationStrategy);
+    const nextSeed = buildImportedSeed({
+      initialSeed,
+      currentProject: project,
+      importedText,
+      fileName,
+      segmentationStrategy,
+    });
 
     setSourceText(importedText);
     setProject(buildStudioShellProject(nextSeed));
@@ -778,6 +806,16 @@ export function TranslationWorkspace({
     void copyToClipboard(qaSummary, 'QA summary copied to clipboard.');
   };
 
+  const handleStyleProfileUpdate = (patch: Partial<StyleProfile>): void => {
+    setProject((currentProject) => ({
+      ...currentProject,
+      styleProfile: {
+        ...currentProject.styleProfile,
+        ...patch,
+      },
+    }));
+  };
+
   const handleSegmentFinalTextChange = (segmentId: string, value: string): void => {
     setProject((currentProject) => {
       const segments = currentProject.segments.map((segment) =>
@@ -884,6 +922,7 @@ export function TranslationWorkspace({
       onExportProjectJson={handleExportProjectJson}
       onCopyFinalText={handleCopyFinalText}
       onCopyQaSummary={handleCopyQaSummary}
+      onStyleProfileUpdate={handleStyleProfileUpdate}
       onQaFindingResolvedChange={handleQaFindingResolvedChange}
       onSegmentFinalTextChange={handleSegmentFinalTextChange}
       onSegmentFinalTextLockChange={handleSegmentFinalTextLockChange}

@@ -12,6 +12,7 @@ import { ProjectOverview } from './studio-shell/project-overview';
 import { QAFindingsPanel } from './studio-shell/qa-findings-panel';
 import { QuickActionsPanel } from './studio-shell/quick-actions-panel';
 import { SegmentReviewPanel } from './studio-shell/segment-review-panel';
+import { StyleProfilePanel } from './studio-shell/style-profile-panel';
 import { StudioHero } from './studio-shell/studio-hero';
 
 export function StudioShell({
@@ -24,6 +25,7 @@ export function StudioShell({
   onExportProjectJson,
   onCopyFinalText,
   onCopyQaSummary,
+  onStyleProfileUpdate,
   onQaFindingResolvedChange,
   onSegmentFinalTextChange,
   onSegmentFinalTextLockChange,
@@ -76,6 +78,10 @@ export function StudioShell({
           <Box sx={{ minWidth: 0 }}>
             <Stack spacing={3}>
               <ProjectOverview project={project} />
+              <StyleProfilePanel
+                profile={project.styleProfile}
+                onUpdateProfile={onStyleProfileUpdate}
+              />
               <PipelineStagesPanel stages={project.pipelineStages} />
               <GlossaryPanel
                 entries={project.glossary}

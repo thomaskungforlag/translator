@@ -1,4 +1,4 @@
-import type { GlossaryEntry } from '@/lib/domain';
+import type { GlossaryEntry, StyleProfile } from '@/lib/domain';
 
 export type ReferenceExampleStatus = 'reviewed' | 'needs_qa';
 
@@ -63,7 +63,38 @@ export const redTwinReference: ReferenceMaterial = {
   ],
 };
 
-export function buildReferencePromptContext(): string {
+export function buildDefaultStyleProfile(): StyleProfile {
+  return {
+    id: 'style-red-twin-default',
+    name: 'Röd Tvilling',
+    description:
+      'Default Thomas Kung author voice profile for grounded, emotionally direct speculative fiction.',
+    voicePrinciples: [
+      'Keep the prose grounded, concrete, and emotionally direct.',
+      'Preserve the tension between domestic realism and speculative imagery.',
+      'Maintain terse dialogue and avoid smoothing away friction or class conflict.',
+      'Use terminology consistently, especially named entities and recurring sci-fi motifs.',
+    ],
+    preferredTone: ['Grounded', 'Direct', 'Taut', 'Emotionally restrained'],
+    avoidPatterns: [
+      'Genericized voice',
+      'Over-explained subtext',
+      'Softened tension',
+      'Flat literal syntax transfer',
+    ],
+    sentenceRhythmNotes: [
+      'Keep sentences compact when the Swedish is compact.',
+      'Preserve pauses and sentence cadence around key emotional beats.',
+    ],
+    genreNotes: [
+      'Sci-fi should stay tactile and socially specific.',
+      'Do not dilute speculative imagery into vague abstraction.',
+    ],
+    sampleTexts: [],
+  };
+}
+
+export function buildReferencePromptContext(styleProfile: StyleProfile): string {
   const styleBlock = redTwinReference.stylePrinciples
     .map((principle) => `- ${principle}`)
     .join('\n');
@@ -78,10 +109,44 @@ export function buildReferencePromptContext(): string {
     )
     .join('\n');
 
+  const profileVoiceBlock = styleProfile.voicePrinciples
+    .map((principle) => `- ${principle}`)
+    .join('\n');
+  const profileToneBlock = styleProfile.preferredTone.map((tone) => `- ${tone}`).join('\n');
+  const profileAvoidBlock = styleProfile.avoidPatterns.map((pattern) => `- ${pattern}`).join('\n');
+  const profileRhythmBlock = styleProfile.sentenceRhythmNotes.map((note) => `- ${note}`).join('\n');
+  const profileGenreBlock = styleProfile.genreNotes.map((note) => `- ${note}`).join('\n');
+  const profileSampleBlock =
+    styleProfile.sampleTexts.length > 0
+      ? styleProfile.sampleTexts
+          .map((sample) => {
+            const translatedText = sample.translatedText
+              ? `\n  English draft: ${sample.translatedText}`
+              : '';
+
+            return `- ${sample.sourceText}${translatedText}\n  Priority: ${sample.isPriority}`;
+          })
+          .join('\n')
+      : '- No sample texts yet.';
+
   return [
     `Reference title: ${redTwinReference.title}`,
     'Style principles:',
     styleBlock,
+    `Style profile: ${styleProfile.name}`,
+    `Profile description: ${styleProfile.description}`,
+    'Voice principles:',
+    profileVoiceBlock,
+    'Preferred tone:',
+    profileToneBlock,
+    'Avoid patterns:',
+    profileAvoidBlock,
+    'Sentence rhythm notes:',
+    profileRhythmBlock,
+    'Genre notes:',
+    profileGenreBlock,
+    'Sample texts:',
+    profileSampleBlock,
     'QA principles:',
     qaBlock,
     'Locked terminology:',

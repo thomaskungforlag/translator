@@ -1,6 +1,5 @@
 import type { QAFinding, SegmentStatus } from '@/lib/domain';
 
-import { redTwinReference } from './reference-material';
 import type { StudioShellProject, TranslationWorkspaceSeed } from './workspace';
 import { splitSourceText, type SegmentDraft } from './pipeline-core';
 import { createSegmentDrafts } from './pipeline-core';
@@ -217,6 +216,7 @@ export function buildStudioShellProject(
     title: seed.title,
     contentType: seed.contentType,
     targetLanguage: seed.targetLanguage,
+    styleProfile: seed.styleProfile,
     progress: buildProjectProgress(drafts),
     segments,
     glossary: seed.glossary,
@@ -309,11 +309,15 @@ export function exportProjectJson(project: StudioShellProject): string {
       qaFindings: project.qaFindings,
       segments: project.segments,
       styleProfile: {
-        title: redTwinReference.title,
-        stylePrinciples: redTwinReference.stylePrinciples,
-        qaPrinciples: redTwinReference.qaPrinciples,
-        lockedTerms: redTwinReference.lockedTerms,
-        translationMemory: redTwinReference.translationMemory,
+        id: project.styleProfile.id,
+        name: project.styleProfile.name,
+        description: project.styleProfile.description,
+        voicePrinciples: project.styleProfile.voicePrinciples,
+        preferredTone: project.styleProfile.preferredTone,
+        avoidPatterns: project.styleProfile.avoidPatterns,
+        sentenceRhythmNotes: project.styleProfile.sentenceRhythmNotes,
+        genreNotes: project.styleProfile.genreNotes,
+        sampleTexts: project.styleProfile.sampleTexts,
       },
     },
   };

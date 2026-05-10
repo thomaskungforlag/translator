@@ -1,6 +1,12 @@
 export type { SegmentDraft } from './pipeline-core';
 
 export {
+  buildDefaultStyleProfile,
+  buildReferencePromptContext,
+  redTwinReference,
+} from './reference-material';
+
+export {
   buildFaithfulDraft,
   buildLiteraryNaturalnessDraft,
   buildPolishedDraft,

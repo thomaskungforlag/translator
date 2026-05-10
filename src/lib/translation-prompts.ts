@@ -1,3 +1,4 @@
+import type { StyleProfile } from './domain';
 import { buildReferencePromptContext } from './reference-material';
 import type { TranslationWorkspaceSeed } from './workspace';
 
@@ -19,6 +20,7 @@ type StagePromptInput = {
   sourceSegments: StageSegment[];
   previousStages: Record<string, StageSegment[]>;
   instructions: string[];
+  styleProfile: StyleProfile;
 };
 
 type BuildStageInputArgs = {
@@ -37,7 +39,7 @@ export function buildStageInput({
   previousStages,
 }: BuildStageInputArgs): string {
   const payload: StagePromptInput = {
-    reference: buildReferencePromptContext(),
+    reference: buildReferencePromptContext(seed.styleProfile),
     project: {
       title: seed.title,
       contentType: seed.contentType,
@@ -46,6 +48,7 @@ export function buildStageInput({
       targetLanguageLabel: seed.targetLanguage.label,
     },
     stageName,
+    styleProfile: seed.styleProfile,
     sourceSegments: sourceSegments.map((segment, index) => ({
       index,
       text: segment,
@@ -68,7 +71,7 @@ export function buildQaPrompt(
 ): string {
   return JSON.stringify(
     {
-      reference: buildReferencePromptContext(),
+      reference: buildReferencePromptContext(seed.styleProfile),
       project: {
         title: seed.title,
         contentType: seed.contentType,
@@ -76,6 +79,7 @@ export function buildQaPrompt(
         targetLanguageCode: seed.targetLanguage.code,
         targetLanguageLabel: seed.targetLanguage.label,
       },
+      styleProfile: seed.styleProfile,
       sourceSegments,
       instructions: [
         'Review the final texts against the Swedish source and the reference material.',

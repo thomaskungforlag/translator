@@ -1,5 +1,6 @@
 import type { ContentType, LanguageConfig } from '@/lib/domain';
 
+import { buildDefaultStyleProfile } from './reference-material';
 import type { TranslationWorkspaceSeed } from './workspace';
 
 const defaultTargetLanguage: LanguageConfig = {
@@ -25,6 +26,7 @@ export const initialWorkspaceSeed: TranslationWorkspaceSeed = {
   sourceLanguageCode: 'sv',
   segmentationStrategy: 'hybrid',
   targetLanguage: defaultTargetLanguage,
+  styleProfile: buildDefaultStyleProfile(),
   sourceText: '',
   glossary: [],
 };

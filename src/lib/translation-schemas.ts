@@ -3,6 +3,26 @@ import { z } from 'zod';
 import { languageCodeValues } from './domain';
 import { segmentationStrategyValues } from './workspace';
 
+const styleSampleSchema = z.object({
+  id: z.string().min(1),
+  sourceLanguage: z.enum(languageCodeValues),
+  sourceText: z.string().min(1),
+  translatedText: z.string().optional(),
+  isPriority: z.boolean(),
+});
+
+const styleProfileSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  description: z.string().min(1),
+  voicePrinciples: z.array(z.string()),
+  preferredTone: z.array(z.string()),
+  avoidPatterns: z.array(z.string()),
+  sentenceRhythmNotes: z.array(z.string()),
+  genreNotes: z.array(z.string()),
+  sampleTexts: z.array(styleSampleSchema),
+});
+
 export const translationWorkspaceRequestSchema = z.object({
   projectId: z.string().min(1),
   title: z.string().min(1),
@@ -25,6 +45,7 @@ export const translationWorkspaceRequestSchema = z.object({
     punctuationRules: z.array(z.string()),
     marketQualityNotes: z.array(z.string()),
   }),
+  styleProfile: styleProfileSchema,
   sourceText: z.string().min(1),
   glossary: z.array(
     z.object({

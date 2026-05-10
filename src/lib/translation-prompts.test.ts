@@ -17,11 +17,15 @@ describe('translation-prompts', () => {
         targetLanguageCode: string;
         targetLanguageLabel: string;
       };
+      styleProfile: {
+        name: string;
+      };
     };
 
     expect(payload.project.sourceLanguageCode).toBe('sv');
     expect(payload.project.targetLanguageCode).toBe('en');
     expect(payload.project.targetLanguageLabel).toBe('English');
+    expect(payload.styleProfile.name).toBe('Röd Tvilling');
   });
 
   it('includes explicit source and target language parameters in QA prompts', () => {
@@ -40,11 +44,13 @@ describe('translation-prompts', () => {
         targetLanguageCode: string;
         targetLanguageLabel: string;
       };
+      reference: string;
     };
 
     expect(payload.project.sourceLanguageCode).toBe('sv');
     expect(payload.project.targetLanguageCode).toBe('en');
     expect(payload.project.targetLanguageLabel).toBe('English');
+    expect(payload.reference).toContain('Style profile: Röd Tvilling');
   });
 
   it('includes translation stiffness guidance in QA prompts', () => {
