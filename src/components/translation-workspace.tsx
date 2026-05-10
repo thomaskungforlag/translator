@@ -80,6 +80,10 @@ function hasUnresolvedQaFindings(findings: DocumentSegment['qaFindings']): boole
   return findings.some((finding) => !finding.resolved);
 }
 
+function hasFinalText(finalText: string | undefined): boolean {
+  return (finalText ?? '').trim().length > 0;
+}
+
 function stageStatus(hasValues: boolean, hasIssues: boolean): DocumentSegment['status'] {
   if (!hasValues) {
     return 'pending';
@@ -93,11 +97,9 @@ function updateProjectFromSegments(
   segments: DocumentSegment[],
 ): StudioShellProject {
   const qaFindings = segments.flatMap((segment) => segment.qaFindings);
-  const approvedSegments = segments.filter(
-    (segment) => !hasUnresolvedQaFindings(segment.qaFindings),
-  ).length;
+  const completedSegments = segments.filter((segment) => hasFinalText(segment.finalText)).length;
   const progress =
-    segments.length === 0 ? 0 : Math.round((approvedSegments / segments.length) * 100);
+    segments.length === 0 ? 0 : Math.round((completedSegments / segments.length) * 100);
   const hasQaFindings = segments.some((segment) => hasUnresolvedQaFindings(segment.qaFindings));
 
   return {

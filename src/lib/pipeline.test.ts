@@ -109,4 +109,36 @@ describe('buildStudioShellProject', () => {
     expect(project.pipelineStages.find((stage) => stage.label === 'QA')?.status).toBe('approved');
     expect(project.segments[0]?.status).toBe('approved');
   });
+
+  it('keeps progress complete when final text exists but QA has unresolved findings', () => {
+    const project = buildStudioShellProject(
+      {
+        ...demoWorkspaceSeed,
+        sourceText: 'En enda rad.',
+      },
+      [
+        {
+          sourceText: 'En enda rad.',
+          sourceAnalysis: 'Source prep: one short sentence.',
+          translationDraft: 'A single line.',
+          voiceAdaptedDraft: 'A single, measured line.',
+          polishedDraft: 'A single, measured line.',
+          finalText: 'A single, measured line.',
+          qaFindings: [
+            {
+              id: 'open-1',
+              severity: 'warning',
+              category: 'tone_shift',
+              issue: 'Minor tone shift.',
+              resolved: false,
+            },
+          ],
+        },
+      ],
+    );
+
+    expect(project.progress).toBe(100);
+    expect(project.pipelineStages.find((stage) => stage.label === 'QA')?.status).toBe('reviewed');
+    expect(project.segments[0]?.status).toBe('reviewed');
+  });
 });

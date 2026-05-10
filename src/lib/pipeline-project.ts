@@ -16,6 +16,10 @@ function hasUnresolvedFindings(findings: QAFinding[]): boolean {
   return findings.some((finding) => !finding.resolved);
 }
 
+function hasFinalText(finalText: string | undefined): boolean {
+  return (finalText ?? '').trim().length > 0;
+}
+
 function buildPipelineStages(segments: SegmentDraft[]) {
   const hasSegments = segments.length > 0;
   const hasSourceAnalysis = segments.every((segment) => segment.sourceAnalysis.length > 0);
@@ -39,11 +43,9 @@ function buildProjectProgress(segments: SegmentDraft[]): number {
     return 0;
   }
 
-  const approvedSegments = segments.filter(
-    (segment) => !hasUnresolvedFindings(segment.qaFindings),
-  ).length;
+  const completedSegments = segments.filter((segment) => hasFinalText(segment.finalText)).length;
 
-  return Math.round((approvedSegments / segments.length) * 100);
+  return Math.round((completedSegments / segments.length) * 100);
 }
 
 function buildProjectQaFindings(segments: SegmentDraft[]): QAFinding[] {
