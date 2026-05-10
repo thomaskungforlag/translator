@@ -9,7 +9,8 @@ If you are new to the repo, read these in order:
 1. [docs/architecture.md](docs/architecture.md) for the codebase shape and boundaries.
 2. [docs/standards.md](docs/standards.md) for the TypeScript, ESLint, Prettier, and SOC rules.
 3. [docs/testing.md](docs/testing.md) for the TDD and browser-testing workflow.
-4. [thomas_kung_translation_app_plan.md](thomas_kung_translation_app_plan.md) for the product plan.
+4. [docs/reference-material.md](docs/reference-material.md) for how the Röd Tvilling PDFs should be used.
+5. [thomas_kung_translation_app_plan.md](thomas_kung_translation_app_plan.md) for the product plan.
 
 ## Setup
 
@@ -26,6 +27,7 @@ If you are new to the repo, read these in order:
 - [src/lib/domain.ts](src/lib/domain.ts) defines the domain types and Zod schemas.
 - [src/lib/translation.ts](src/lib/translation.ts) adapts the OpenAI response into the app's project shape.
 - [src/app/api/translate/route.ts](src/app/api/translate/route.ts) exposes the translation pipeline endpoint.
+- [docs/reference-material.md](docs/reference-material.md) explains the Swedish source and English draft PDFs in `docs/`.
 - [eslint.config.mjs](eslint.config.mjs) defines the enforced code-quality rules.
 - [jest.config.ts](jest.config.ts) configures unit tests.
 - [playwright.config.ts](playwright.config.ts) configures browser tests.
