@@ -58,7 +58,8 @@ async function runChunkedStage(args: {
     | 'faithful_translation'
     | 'voice_adaptation'
     | 'literary_naturalness'
-    | 'polish_pass';
+    | 'polish_pass'
+    | 'professional_literary_copyedit';
   sourceSegments: string[];
   buildChunkPrompt: (chunk: ChunkDescriptor) => string;
   ensureTranslated?: boolean;
@@ -197,6 +198,36 @@ function buildPolishPrompt(prompt: {
   });
 }
 
+function buildProfessionalCopyeditPrompt(prompt: {
+  seed: TranslationWorkspaceSeed;
+  sourceSegments: string[];
+  analysisSegments: Array<{ index: number; text: string }>;
+  faithfulSegments: Array<{ index: number; text: string }>;
+  voiceSegments: Array<{ index: number; text: string }>;
+  naturalnessSegments: Array<{ index: number; text: string }>;
+  polishedSegments: Array<{ index: number; text: string }>;
+}): string {
+  return buildStageInput({
+    seed: prompt.seed,
+    sourceSegments: prompt.sourceSegments,
+    stageName: 'professional_literary_copyedit',
+    instructions: [
+      'Perform a minimal professional literary copyedit on each polished segment.',
+      'Apply only high-value precision edits: grammar flow, punctuation flow, idiomatic sharpness, and removal of residual translation stiffness.',
+      'Preserve source meaning, paragraph structure, emotional restraint, and Thomas Kung voice.',
+      'Do not add new imagery, simplify away subtext, or rewrite aggressively.',
+      'Return one JSON object per source segment, in source order, with the index and copyedited text.',
+    ],
+    previousStages: {
+      source_analysis: prompt.analysisSegments,
+      faithful_translation: prompt.faithfulSegments,
+      voice_adaptation: prompt.voiceSegments,
+      literary_naturalness: prompt.naturalnessSegments,
+      polish_pass: prompt.polishedSegments,
+    },
+  });
+}
+
 async function translateWithProvider(seed: TranslationWorkspaceSeed): Promise<SegmentDraft[]> {
   const sourceSegments = splitSourceText(seed.sourceText, seed.segmentationStrategy);
   const analysisSegments = await runChunkedStage({
@@ -279,6 +310,38 @@ async function translateWithProvider(seed: TranslationWorkspaceSeed): Promise<Se
     ensureTranslated: true,
   });
 
+  const professionalCopyeditSegments = await runChunkedStage({
+    stageName: 'professional_literary_copyedit',
+    sourceSegments,
+    buildChunkPrompt: (chunk) =>
+      buildProfessionalCopyeditPrompt({
+        seed,
+        sourceSegments: chunk.segments,
+        analysisSegments: toLocalIndexedSegments(
+          analysisSegments,
+          chunk.start,
+          chunk.segments.length,
+        ),
+        faithfulSegments: toLocalIndexedSegments(
+          faithfulSegments,
+          chunk.start,
+          chunk.segments.length,
+        ),
+        voiceSegments: toLocalIndexedSegments(voiceSegments, chunk.start, chunk.segments.length),
+        naturalnessSegments: toLocalIndexedSegments(
+          naturalnessSegments,
+          chunk.start,
+          chunk.segments.length,
+        ),
+        polishedSegments: toLocalIndexedSegments(
+          polishedSegments,
+          chunk.start,
+          chunk.segments.length,
+        ),
+      }),
+    ensureTranslated: true,
+  });
+
   return toDrafts({
     sourceSegments,
     analysisSegments,
@@ -286,6 +349,7 @@ async function translateWithProvider(seed: TranslationWorkspaceSeed): Promise<Se
     voiceSegments,
     naturalnessSegments,
     polishedSegments,
+    professionalCopyeditSegments,
   });
 }
 

@@ -15,6 +15,7 @@ const demoSegment: DocumentSegment = {
   voiceAdaptedDraft: 'Snow was beginning to fall.',
   literaryNaturalnessDraft: 'Snow had started to fall.',
   polishedDraft: 'Snow had begun to fall.',
+  professionalLiteraryCopyeditDraft: 'Snow had begun to fall.',
   finalText: 'Snow had begun to fall.',
   finalTextLocked: false,
   qaFindings: [],
@@ -29,7 +30,7 @@ describe('SelectedSegmentCard', () => {
 
     render(
       <SelectedSegmentCard
-        activePass={5}
+        activePass={6}
         selectedSegment={demoSegment}
         onFinalTextChange={handleFinalTextChange}
         onFinalTextLockChange={handleFinalTextLockChange}

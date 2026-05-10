@@ -3,6 +3,7 @@ import {
   buildFaithfulDraft,
   buildLiteraryNaturalnessDraft,
   buildPolishedDraft,
+  buildProfessionalLiteraryCopyeditDraft,
   buildSourceAnalysis,
   buildStudioShellProject,
   buildVoiceDraft,
@@ -60,6 +61,12 @@ describe('buildStudioShellProject', () => {
         'Snow had started to fall when she saw the light again.',
       ),
     ).toBe('Snow had begun to fall when she saw the light again.');
+    expect(
+      buildProfessionalLiteraryCopyeditDraft(
+        sourceSegments[0] ?? '',
+        'Snow had begun to fall when she saw the light again.',
+      ),
+    ).toBe('Snow had begun to fall when she saw the light again.');
   });
 
   it('uses supplied drafts when the pipeline is already generated', () => {
@@ -76,6 +83,7 @@ describe('buildStudioShellProject', () => {
           voiceAdaptedDraft: 'A single, measured line.',
           literaryNaturalnessDraft: 'A measured line.',
           polishedDraft: 'A single, measured line.',
+          professionalLiteraryCopyeditDraft: 'A single, measured line.',
           finalText: 'A single, measured line.',
           qaFindings: [],
         },
@@ -114,6 +122,7 @@ describe('buildStudioShellProject', () => {
           voiceAdaptedDraft: 'A single, measured line.',
           literaryNaturalnessDraft: 'A measured line.',
           polishedDraft: 'A single, measured line.',
+          professionalLiteraryCopyeditDraft: 'A single, measured line.',
           finalText: 'A single, measured line.',
           qaFindings: [
             {
@@ -149,6 +158,7 @@ describe('buildStudioShellProject', () => {
           voiceAdaptedDraft: 'A single, measured line.',
           literaryNaturalnessDraft: 'A measured line.',
           polishedDraft: 'A single, measured line.',
+          professionalLiteraryCopyeditDraft: 'A single, measured line.',
           finalText: 'A single, measured line.',
           qaFindings: [
             {

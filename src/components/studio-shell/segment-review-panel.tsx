@@ -14,6 +14,7 @@ const passLabels = [
   'Literary naturalness',
   'QA findings',
   'Final polish',
+  'Professional literary copyedit',
   'Final approved text',
 ] as const;
 

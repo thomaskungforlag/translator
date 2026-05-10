@@ -19,8 +19,8 @@ export function StageNotesCard(): ReactElement {
         </Stack>
         <Typography variant="body2" color="text.secondary">
           The workflow keeps each pass inspectable so Thomas can compare faithful translation, voice
-          adaptation, literary naturalness, QA findings, final polish, and final approved text
-          without losing earlier drafts.
+          adaptation, literary naturalness, QA findings, final polish, professional literary
+          copyedit, and final approved text without losing earlier drafts.
         </Typography>
       </Stack>
     </Paper>

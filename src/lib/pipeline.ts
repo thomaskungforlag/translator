@@ -4,6 +4,7 @@ export {
   buildFaithfulDraft,
   buildLiteraryNaturalnessDraft,
   buildPolishedDraft,
+  buildProfessionalLiteraryCopyeditDraft,
   buildSegmentQaFindings,
   buildSourceAnalysis,
   buildVoiceDraft,

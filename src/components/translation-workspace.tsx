@@ -144,11 +144,20 @@ function updateProjectFromSegments(
   const hasPolishedDraft = segments.every(
     (segment) => (segment.polishedDraft ?? '').trim().length > 0,
   );
+  const hasProfessionalCopyeditDraft = segments.every(
+    (segment) => (segment.professionalLiteraryCopyeditDraft ?? '').trim().length > 0,
+  );
   const hasTenseAspectFindings = segments.some((segment) =>
     hasUnresolvedQaCategories(segment.qaFindings, ['tense_aspect_drift']),
   );
   const hasImageFindings = segments.some((segment) =>
-    hasUnresolvedQaCategories(segment.qaFindings, ['image_drift']),
+    hasUnresolvedQaCategories(segment.qaFindings, ['image_drift', 'motion_image_drift']),
+  );
+  const hasGrammarFlowFindings = segments.some((segment) =>
+    hasUnresolvedQaCategories(segment.qaFindings, ['grammar_flow', 'punctuation_flow']),
+  );
+  const hasEmotionalIntensityFindings = segments.some((segment) =>
+    hasUnresolvedQaCategories(segment.qaFindings, ['emotional_intensity_drift']),
   );
   const hasStiffnessFindings = segments.some((segment) =>
     hasUnresolvedQaCategories(segment.qaFindings, [
@@ -190,6 +199,17 @@ function updateProjectFromSegments(
         return { ...stage, status: stageStatus(segments.length > 0, hasImageFindings) };
       }
 
+      if (stage.label === 'Grammar flow QA') {
+        return { ...stage, status: stageStatus(segments.length > 0, hasGrammarFlowFindings) };
+      }
+
+      if (stage.label === 'Emotional intensity QA') {
+        return {
+          ...stage,
+          status: stageStatus(segments.length > 0, hasEmotionalIntensityFindings),
+        };
+      }
+
       if (stage.label === 'Translation stiffness QA') {
         return { ...stage, status: stageStatus(segments.length > 0, hasStiffnessFindings) };
       }
@@ -200,6 +220,13 @@ function updateProjectFromSegments(
 
       if (stage.label === 'Final polish') {
         return { ...stage, status: stageStatus(segments.length > 0 && hasPolishedDraft, false) };
+      }
+
+      if (stage.label === 'Professional literary copyedit') {
+        return {
+          ...stage,
+          status: stageStatus(segments.length > 0 && hasProfessionalCopyeditDraft, false),
+        };
       }
 
       if (stage.label === 'QA') {

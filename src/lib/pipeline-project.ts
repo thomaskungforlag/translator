@@ -35,11 +35,20 @@ function buildPipelineStages(segments: SegmentDraft[]) {
     (segment) => segment.literaryNaturalnessDraft.length > 0,
   );
   const hasPolishedDraft = segments.every((segment) => segment.polishedDraft.length > 0);
+  const hasProfessionalCopyeditDraft = segments.every(
+    (segment) => segment.professionalLiteraryCopyeditDraft.length > 0,
+  );
   const hasTenseAspectFindings = segments.some((segment) =>
     hasUnresolvedCategoryFindings(segment.qaFindings, ['tense_aspect_drift']),
   );
   const hasImageFindings = segments.some((segment) =>
-    hasUnresolvedCategoryFindings(segment.qaFindings, ['image_drift']),
+    hasUnresolvedCategoryFindings(segment.qaFindings, ['image_drift', 'motion_image_drift']),
+  );
+  const hasGrammarFlowFindings = segments.some((segment) =>
+    hasUnresolvedCategoryFindings(segment.qaFindings, ['grammar_flow', 'punctuation_flow']),
+  );
+  const hasEmotionalIntensityFindings = segments.some((segment) =>
+    hasUnresolvedCategoryFindings(segment.qaFindings, ['emotional_intensity_drift']),
   );
   const hasStiffnessFindings = segments.some((segment) =>
     hasUnresolvedCategoryFindings(segment.qaFindings, [
@@ -66,9 +75,18 @@ function buildPipelineStages(segments: SegmentDraft[]) {
       status: stageStatus(hasSegments, hasTenseAspectFindings),
     },
     { label: 'Image drift QA', status: stageStatus(hasSegments, hasImageFindings) },
+    { label: 'Grammar flow QA', status: stageStatus(hasSegments, hasGrammarFlowFindings) },
+    {
+      label: 'Emotional intensity QA',
+      status: stageStatus(hasSegments, hasEmotionalIntensityFindings),
+    },
     { label: 'Translation stiffness QA', status: stageStatus(hasSegments, hasStiffnessFindings) },
     { label: 'Cultural texture QA', status: stageStatus(hasSegments, hasCulturalTextureFindings) },
     { label: 'Final polish', status: stageStatus(hasSegments && hasPolishedDraft, false) },
+    {
+      label: 'Professional literary copyedit',
+      status: stageStatus(hasSegments && hasProfessionalCopyeditDraft, false),
+    },
   ];
 
   return pipelineStages;
@@ -100,6 +118,7 @@ function buildDocumentSegment(projectId: string, index: number, draft: SegmentDr
     voiceAdaptedDraft: draft.voiceAdaptedDraft,
     literaryNaturalnessDraft: draft.literaryNaturalnessDraft,
     polishedDraft: draft.polishedDraft,
+    professionalLiteraryCopyeditDraft: draft.professionalLiteraryCopyeditDraft,
     finalText: draft.finalText,
     finalTextLocked: false,
     qaFindings: draft.qaFindings,
@@ -133,6 +152,8 @@ function formatSegmentMarkdown(segment: StudioShellProject['segments'][number]):
     `Naturalness draft: ${segment.literaryNaturalnessDraft ?? 'N/A'}`,
     '',
     `Polished draft: ${segment.polishedDraft ?? 'N/A'}`,
+    '',
+    `Professional copyedit draft: ${segment.professionalLiteraryCopyeditDraft ?? 'N/A'}`,
     '',
     `Final text: ${segment.finalText ?? 'N/A'}`,
     '',

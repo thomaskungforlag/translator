@@ -97,4 +97,89 @@ describe('pipeline-qa Tuya fixture regression', () => {
       ]),
     );
   });
+
+  it('flags grammar-flow issue in grass swayed ... brushed her bare legs phrasing', () => {
+    const findings = buildSegmentQaFindings(
+      'Graset svajade i en svag vind och smekte hennes nakna ben.',
+      'The grass swayed in a faint breeze, brushed her bare legs.',
+      7,
+    );
+
+    expect(findings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          category: 'grammar_flow',
+          suggestion: expect.stringContaining('brushing against her bare legs'),
+        }),
+      ]),
+    );
+  });
+
+  it('flags motion image drift for pulled him without directional continuation', () => {
+    const findings = buildSegmentQaFindings(
+      'Hon drog honom genom dorren.',
+      'She pulled him, through the door.',
+      8,
+    );
+
+    expect(findings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          category: 'motion_image_drift',
+          suggestion: expect.stringContaining('pulled him along'),
+        }),
+      ]),
+    );
+  });
+
+  it('flags emotional intensity drift for called out desperately in silent context', () => {
+    const findings = buildSegmentQaFindings(
+      'Hon skrek utan ljud, hennes lappar rorde sig men inget hordes.',
+      'She called out desperately, but no sound came.',
+      9,
+    );
+
+    expect(findings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          category: 'emotional_intensity_drift',
+          suggestion: expect.stringContaining('cried out desperately'),
+        }),
+      ]),
+    );
+  });
+
+  it('flags punctuation-flow issue in lifted from the ground and disappeared sequence', () => {
+    const findings = buildSegmentQaFindings(
+      'Hon steg upp fran marken och forsvann.',
+      'She rose, lifted from the ground and disappeared.',
+      10,
+    );
+
+    expect(findings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          category: 'punctuation_flow',
+          suggestion: expect.stringContaining('lifted from the ground, and disappeared'),
+        }),
+      ]),
+    );
+  });
+
+  it('flags image drift for On a hill Uncle Bold bathed in ...', () => {
+    const findings = buildSegmentQaFindings(
+      'Uppe pa en kulle stod Farbror Bold badad i vitt ljus.',
+      'On a hill Uncle Bold bathed in a pillar of white light.',
+      11,
+    );
+
+    expect(findings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          category: 'image_drift',
+          suggestion: expect.stringContaining('stood bathed in'),
+        }),
+      ]),
+    );
+  });
 });

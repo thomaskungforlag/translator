@@ -14,6 +14,7 @@ export type SegmentDraft = {
   voiceAdaptedDraft: string;
   literaryNaturalnessDraft: string;
   polishedDraft: string;
+  professionalLiteraryCopyeditDraft: string;
   finalText: string;
   qaFindings: QAFinding[];
 };
@@ -82,6 +83,19 @@ const naturalnessPhraseMap = new Map<string, string>([
     'Somewhere farther away, The Shadow Ship answered from the dark.',
     'Somewhere farther away, The Shadow Ship answered out of the dark.',
   ],
+]);
+
+const professionalCopyeditPhraseMap = new Map<string, string>([
+  ['brushed her bare legs', 'brushing against her bare legs'],
+  ['pulled him,', 'pulled him along,'],
+  [
+    'On a hill Uncle Bold bathed in a pillar of white light.',
+    'On a hill, Uncle Bold stood bathed in a pillar of white light.',
+  ],
+  ['with all the relatives', 'with the whole clan'],
+  ["Bold's smile blew away all the fear.", "Bold's smile blew her fear away."],
+  ['called out desperately', 'cried out desperately'],
+  [', lifted from the ground and disappeared', ', lifted from the ground, and disappeared'],
 ]);
 
 function trimParagraph(paragraph: string): string {
@@ -180,6 +194,30 @@ function buildFallbackLiteraryNaturalnessDraft(voiceDraft: string): string {
   return replaceExactPhrase(voiceDraft, naturalnessPhraseMap);
 }
 
+function buildFallbackProfessionalLiteraryCopyeditDraft(
+  sourceText: string,
+  polishedDraft: string,
+): string {
+  let copyedited = replaceExactPhrase(polishedDraft, professionalCopyeditPhraseMap);
+
+  if (/hela\s+slakten/i.test(sourceText)) {
+    copyedited = copyedited.replace(/\bwith all the relatives\b/gi, 'with the whole clan');
+  }
+
+  if (/utan\s+ljud|inget\s+ljud|inga\s+ljud|inga\s+ord/i.test(sourceText)) {
+    copyedited = copyedited.replace(/\bcalled out desperately\b/gi, 'cried out desperately');
+  }
+
+  if (/allt\s+blev\s+b[aä]ttre\s+nu/i.test(sourceText)) {
+    copyedited = copyedited.replace(
+      /\bEverything was getting better now\b/gi,
+      'Everything would be better now',
+    );
+  }
+
+  return copyedited;
+}
+
 export function splitSourceText(
   sourceText: string,
   segmentationStrategy: SegmentationStrategy = 'paragraph',
@@ -264,6 +302,19 @@ export function buildPolishedDraft(sourceText: string, naturalnessDraft: string)
   return buildFallbackPolishedDraft(naturalnessDraft);
 }
 
+export function buildProfessionalLiteraryCopyeditDraft(
+  sourceText: string,
+  polishedDraft: string,
+): string {
+  const memoryExample = findMemoryExample(sourceText);
+
+  if (memoryExample?.englishText === polishedDraft) {
+    return replaceExactPhrase(polishedDraft, professionalCopyeditPhraseMap);
+  }
+
+  return buildFallbackProfessionalLiteraryCopyeditDraft(sourceText, polishedDraft);
+}
+
 export function buildSegmentQaFindings(
   sourceText: string,
   finalText: string,
@@ -278,7 +329,11 @@ function buildSegmentDraft(sourceText: string, segmentIndex: number): SegmentDra
   const voiceAdaptedDraft = buildVoiceDraft(sourceText, translationDraft);
   const literaryNaturalnessDraft = buildLiteraryNaturalnessDraft(sourceText, voiceAdaptedDraft);
   const polishedDraft = buildPolishedDraft(sourceText, literaryNaturalnessDraft);
-  const finalText = polishedDraft;
+  const professionalLiteraryCopyeditDraft = buildProfessionalLiteraryCopyeditDraft(
+    sourceText,
+    polishedDraft,
+  );
+  const finalText = professionalLiteraryCopyeditDraft;
   const qaFindings = buildSegmentQaFindings(sourceText, finalText, segmentIndex);
 
   return {
@@ -288,6 +343,7 @@ function buildSegmentDraft(sourceText: string, segmentIndex: number): SegmentDra
     voiceAdaptedDraft,
     literaryNaturalnessDraft,
     polishedDraft,
+    professionalLiteraryCopyeditDraft,
     finalText,
     qaFindings,
   };

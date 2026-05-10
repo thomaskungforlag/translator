@@ -20,11 +20,15 @@ export const qafindingCategoryValues = [
   'mistranslation',
   'grammar',
   'spelling',
+  'grammar_flow',
   'style_drift',
   'tone_shift',
   'translation_stiffness',
   'tense_aspect_drift',
+  'motion_image_drift',
   'image_drift',
+  'emotional_intensity_drift',
+  'punctuation_flow',
   'family_term_naturalness',
   'cultural_texture_drift',
   'terminology',
@@ -73,6 +77,7 @@ export type DocumentSegment = {
   voiceAdaptedDraft?: string;
   literaryNaturalnessDraft?: string;
   polishedDraft?: string;
+  professionalLiteraryCopyeditDraft?: string;
   finalText?: string;
   finalTextLocked?: boolean;
   qaFindings: QAFinding[];
@@ -152,6 +157,7 @@ export const documentSegmentSchema = z.object({
   voiceAdaptedDraft: z.string().optional(),
   literaryNaturalnessDraft: z.string().optional(),
   polishedDraft: z.string().optional(),
+  professionalLiteraryCopyeditDraft: z.string().optional(),
   finalText: z.string().optional(),
   finalTextLocked: z.boolean().optional(),
   qaFindings: z.array(qafindingSchema),

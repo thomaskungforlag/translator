@@ -175,6 +175,18 @@ function buildImageDriftFinding(
     };
   }
 
+  if (/bold/i.test(sourceText) && /On\s+a\s+hill\s+Uncle\s+Bold\s+bathed\s+in/i.test(finalText)) {
+    return {
+      id: `qa-image-${segmentIndex}-${sourceText.length}-bold-bathed`,
+      severity: 'warning',
+      category: 'image_drift',
+      targetExcerpt: 'On a hill Uncle Bold bathed in ...',
+      issue: 'The image grammar is awkward and weakens the still visual framing.',
+      suggestion: 'Use "On a hill, Uncle Bold stood bathed in ..." for image stability.',
+      resolved: false,
+    };
+  }
+
   if (/statlig\.\s+oradd\./i.test(sourceText) && /proud\.\s+unafraid\./i.test(finalText)) {
     return {
       id: `qa-image-${segmentIndex}-${sourceText.length}-majestic`,
@@ -190,6 +202,95 @@ function buildImageDriftFinding(
   }
 
   return null;
+}
+
+function buildMotionImageDriftFinding(
+  _sourceText: string,
+  finalText: string,
+  segmentIndex: number,
+): QAFinding | null {
+  if (!/\bpulled\s+him,/i.test(finalText)) {
+    return null;
+  }
+
+  return {
+    id: `qa-motion-${segmentIndex}-${finalText.length}`,
+    severity: 'warning',
+    category: 'motion_image_drift',
+    targetExcerpt: 'pulled him,',
+    issue: 'Movement loses directional continuity and reads abruptly clipped.',
+    suggestion: 'Prefer "pulled him along," to preserve directional motion.',
+    resolved: false,
+  };
+}
+
+function buildEmotionalIntensityDriftFinding(
+  sourceText: string,
+  finalText: string,
+  segmentIndex: number,
+): QAFinding | null {
+  if (!/utan\s+ljud|inget\s+ljud|inga\s+ljud|inga\s+ord/i.test(sourceText)) {
+    return null;
+  }
+
+  if (!/\bcalled\s+out\s+desperately\b/i.test(finalText)) {
+    return null;
+  }
+
+  return {
+    id: `qa-emotion-${segmentIndex}-${sourceText.length}`,
+    severity: 'warning',
+    category: 'emotional_intensity_drift',
+    targetExcerpt: 'called out desperately',
+    issue: 'Verb choice underplays emotional urgency in close perspective.',
+    suggestion: 'Prefer "cried out desperately" where force should remain high.',
+    resolved: false,
+  };
+}
+
+function buildGrammarFlowFinding(
+  sourceText: string,
+  finalText: string,
+  segmentIndex: number,
+): QAFinding | null {
+  if (
+    /gr[aä]set\s+svajade|gr[aä]set\s+r[oö]rde/i.test(sourceText) &&
+    /\bthe\s+grass\s+swayed\s+in\s+a\s+faint\s+breeze,\s*brushed\s+her\s+bare\s+legs\b/i.test(
+      finalText,
+    )
+  ) {
+    return {
+      id: `qa-grammar-${segmentIndex}-${sourceText.length}`,
+      severity: 'warning',
+      category: 'grammar_flow',
+      targetExcerpt: 'the grass swayed in a faint breeze, brushed her bare legs',
+      issue: 'Verb agreement/flow is awkward after the comma and reads translated.',
+      suggestion: 'Use "...swayed in a faint breeze, brushing against her bare legs."',
+      resolved: false,
+    };
+  }
+
+  return null;
+}
+
+function buildPunctuationFlowFinding(
+  _sourceText: string,
+  finalText: string,
+  segmentIndex: number,
+): QAFinding | null {
+  if (!/,\s*lifted\s+from\s+the\s+ground\s+and\s+disappeared/i.test(finalText)) {
+    return null;
+  }
+
+  return {
+    id: `qa-punct-${segmentIndex}-${finalText.length}`,
+    severity: 'info',
+    category: 'punctuation_flow',
+    targetExcerpt: ', lifted from the ground and disappeared',
+    issue: 'Series punctuation rhythm is uneven for literary copy flow.',
+    suggestion: 'Use ", lifted from the ground, and disappeared" for balanced cadence.',
+    resolved: false,
+  };
 }
 
 function buildTranslationStiffnessFinding(
@@ -209,18 +310,6 @@ function buildTranslationStiffnessFinding(
       targetExcerpt: 'was coming from the sky',
       issue: 'The phrase feels literal and mechanically transferred from Swedish syntax.',
       suggestion: 'Prefer "descending from the sky" or "came down from the sky."',
-      resolved: false,
-    };
-  }
-
-  if (/\bcalled\s+out\s+desperately\b/i.test(finalText)) {
-    return {
-      id: `qa-stiffness-${segmentIndex}-${sourceText.length}-called-out`,
-      severity: 'info',
-      category: 'translation_stiffness',
-      targetExcerpt: 'called out desperately',
-      issue: 'The phrasing can read literal or flat in literary narration depending on context.',
-      suggestion: 'Consider "cried out desperately" when emotional force should be sharper.',
       resolved: false,
     };
   }
@@ -294,6 +383,10 @@ export function buildSegmentQaFindings(
     buildFormattingFinding(sourceText, finalText, segmentIndex),
     buildTenseAspectDriftFinding(sourceText, finalText, segmentIndex),
     buildImageDriftFinding(sourceText, finalText, segmentIndex),
+    buildMotionImageDriftFinding(sourceText, finalText, segmentIndex),
+    buildEmotionalIntensityDriftFinding(sourceText, finalText, segmentIndex),
+    buildGrammarFlowFinding(sourceText, finalText, segmentIndex),
+    buildPunctuationFlowFinding(sourceText, finalText, segmentIndex),
     buildTranslationStiffnessFinding(sourceText, finalText, segmentIndex),
     buildFamilyTermNaturalnessFinding(sourceText, finalText, segmentIndex),
     buildCulturalTextureFinding(sourceText, finalText, segmentIndex),

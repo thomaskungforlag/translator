@@ -37,6 +37,8 @@ const passCopy: Array<string | ((segment: DocumentSegment) => string)> = [
     segment.literaryNaturalnessDraft ?? 'No literary naturalness draft yet.',
   (segment: DocumentSegment) => formatSegmentQaFindings(segment),
   (segment: DocumentSegment) => segment.polishedDraft ?? 'No polished draft yet.',
+  (segment: DocumentSegment) =>
+    segment.professionalLiteraryCopyeditDraft ?? 'No professional literary copyedit draft yet.',
   (segment: DocumentSegment) => segment.finalText ?? 'No final text yet.',
 ] as const;
 
@@ -54,7 +56,7 @@ export function SelectedSegmentCard({
   onFinalTextLockChange,
 }: SelectedSegmentCardProps): ReactElement {
   const passText = passCopy[activePass];
-  const isFinalPass = activePass === 5;
+  const isFinalPass = activePass === 6;
 
   return (
     <Paper variant="outlined" sx={{ p: 2.25, minWidth: 0 }}>

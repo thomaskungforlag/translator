@@ -7,6 +7,7 @@ import {
   buildFaithfulDraft,
   buildLiteraryNaturalnessDraft,
   buildPolishedDraft,
+  buildProfessionalLiteraryCopyeditDraft,
   buildSourceAnalysis,
   buildVoiceDraft,
   type SegmentDraft,
@@ -190,6 +191,9 @@ function toStageResponseShape(candidate: unknown): unknown {
           record.voice,
           record.polish,
           record.polished,
+          record.copyedit,
+          record.professionalCopyedit,
+          record.professional_literary_copyedit,
           record.voiceAdapted,
           record.voice_adapted,
           record.output,
@@ -321,6 +325,8 @@ function toQaResponseShape(candidate: unknown): unknown {
       mistranslation: 'mistranslation',
       grammar: 'grammar',
       spelling: 'spelling',
+      grammar_flow: 'grammar_flow',
+      syntax_flow: 'grammar_flow',
       style_drift: 'style_drift',
       voice_drift: 'style_drift',
       style: 'style_drift',
@@ -333,8 +339,13 @@ function toQaResponseShape(candidate: unknown): unknown {
       tense_aspect_drift: 'tense_aspect_drift',
       tense_drift: 'tense_aspect_drift',
       aspect_drift: 'tense_aspect_drift',
+      motion_image_drift: 'motion_image_drift',
+      motion_drift: 'motion_image_drift',
       image_drift: 'image_drift',
       imagery_drift: 'image_drift',
+      emotional_intensity_drift: 'emotional_intensity_drift',
+      emotional_drift: 'emotional_intensity_drift',
+      punctuation_flow: 'punctuation_flow',
       family_term_naturalness: 'family_term_naturalness',
       family_terms: 'family_term_naturalness',
       family_naturalness: 'family_term_naturalness',
@@ -789,7 +800,12 @@ function looksLikeEnglish(value: string): boolean {
 }
 
 export function ensureStageLooksTranslated(
-  stageName: 'faithful_translation' | 'voice_adaptation' | 'literary_naturalness' | 'polish_pass',
+  stageName:
+    | 'faithful_translation'
+    | 'voice_adaptation'
+    | 'literary_naturalness'
+    | 'polish_pass'
+    | 'professional_literary_copyedit',
   sourceSegments: string[],
   stageSegments: StageSegment[],
 ): void {
@@ -824,6 +840,7 @@ type DraftStageSet = {
   voiceSegments: StageSegment[];
   naturalnessSegments: StageSegment[];
   polishedSegments: StageSegment[];
+  professionalCopyeditSegments: StageSegment[];
 };
 
 function resolveStageText(segments: StageSegment[], index: number, fallback: string): string {
@@ -837,6 +854,7 @@ export function toDrafts({
   voiceSegments,
   naturalnessSegments,
   polishedSegments,
+  professionalCopyeditSegments,
 }: DraftStageSet): SegmentDraft[] {
   return sourceSegments.map((sourceText, index) => {
     const translationDraft = resolveStageText(
@@ -859,6 +877,11 @@ export function toDrafts({
       index,
       buildPolishedDraft(sourceText, literaryNaturalnessDraft),
     );
+    const professionalLiteraryCopyeditDraft = resolveStageText(
+      professionalCopyeditSegments,
+      index,
+      buildProfessionalLiteraryCopyeditDraft(sourceText, polishedDraft),
+    );
 
     return {
       sourceText,
@@ -867,7 +890,8 @@ export function toDrafts({
       voiceAdaptedDraft,
       literaryNaturalnessDraft,
       polishedDraft,
-      finalText: polishedDraft,
+      professionalLiteraryCopyeditDraft,
+      finalText: professionalLiteraryCopyeditDraft,
       qaFindings: [],
     };
   });

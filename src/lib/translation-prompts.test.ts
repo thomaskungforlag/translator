@@ -61,6 +61,10 @@ describe('translation-prompts', () => {
     expect(prompt).toContain('literal syntax transfer');
     expect(prompt).toContain('tense_aspect_drift');
     expect(prompt).toContain('image_drift');
+    expect(prompt).toContain('motion_image_drift');
+    expect(prompt).toContain('emotional_intensity_drift');
+    expect(prompt).toContain('grammar_flow');
+    expect(prompt).toContain('punctuation_flow');
     expect(prompt).toContain('family_term_naturalness');
     expect(prompt).toContain('cultural_texture_drift');
     expect(prompt).toContain('hope, expectation, remembered belief, or childlike certainty');
