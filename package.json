@@ -8,8 +8,11 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint . --max-warnings=0",
+    "lint:fix": "eslint . --fix",
     "typecheck": "tsc --noEmit",
-    "verify": "npm run lint && npm run typecheck && npm run build"
+    "format": "prettier . --write",
+    "format:check": "prettier . --check",
+    "verify": "npm run lint && npm run typecheck && npm run format:check && npm run build"
   },
   "repository": {
     "type": "git",
@@ -31,11 +34,15 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.4",
     "@types/node": "^25.6.2",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "eslint": "^9.39.4",
     "eslint-config-next": "^16.2.6",
-    "typescript": "^6.0.3"
+    "eslint-config-prettier": "^10.1.8",
+    "prettier": "^3.8.3",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.59.2"
   }
 }

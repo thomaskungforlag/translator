@@ -1,0 +1,8 @@
+.next
+.playwright-mcp
+node_modules
+coverage
+out
+package-lock.json
+tsconfig.tsbuildinfo
+thomas_kung_translation_app_plan.md

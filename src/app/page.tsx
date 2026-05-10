@@ -2,7 +2,14 @@ import type { ReactElement } from 'react';
 
 import { StudioShell } from '@/components/studio-shell';
 import { env } from '@/lib/env';
-import type { ContentType, DocumentSegment, GlossaryEntry, LanguageConfig, Project, QAFinding } from '@/lib/domain';
+import type {
+  ContentType,
+  DocumentSegment,
+  GlossaryEntry,
+  LanguageConfig,
+  Project,
+  QAFinding,
+} from '@/lib/domain';
 
 const targetLanguage: LanguageConfig = {
   code: 'en',
@@ -102,7 +109,8 @@ const qaFindings: QAFinding[] = [
     id: 'qa_1',
     severity: 'warning',
     category: 'style_drift',
-    issue: 'The voice pass is currently preserving meaning, but the rhythm still feels slightly literal.',
+    issue:
+      'The voice pass is currently preserving meaning, but the rhythm still feels slightly literal.',
     suggestion: 'Re-run voice adaptation on segment 3 after glossary confirmation.',
     resolved: false,
   },

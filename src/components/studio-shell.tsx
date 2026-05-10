@@ -154,8 +154,16 @@ export function StudioShell({ apiKeyConfigured, project }: StudioShellProps): Re
 
                 <Stack spacing={1.5}>
                   <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}>
-                    <Chip size="small" icon={<DescriptionOutlinedIcon />} label={project.contentType} />
-                    <Chip size="small" icon={<ScienceOutlinedIcon />} label={project.targetLanguage.label} />
+                    <Chip
+                      size="small"
+                      icon={<DescriptionOutlinedIcon />}
+                      label={project.contentType}
+                    />
+                    <Chip
+                      size="small"
+                      icon={<ScienceOutlinedIcon />}
+                      label={project.targetLanguage.label}
+                    />
                   </Stack>
 
                   <Box>
@@ -244,13 +252,18 @@ export function StudioShell({ apiKeyConfigured, project }: StudioShellProps): Re
                   <Stack
                     direction={{ xs: 'column', md: 'row' }}
                     spacing={2}
-                    sx={{ justifyContent: 'space-between', alignItems: { xs: 'flex-start', md: 'center' } }}
+                    sx={{
+                      justifyContent: 'space-between',
+                      alignItems: { xs: 'flex-start', md: 'center' },
+                    }}
                   >
                     <Box>
                       <Typography variant="overline" color="text.secondary">
                         Segment review
                       </Typography>
-                      <Typography variant="h6">Source, draft, and final output side by side</Typography>
+                      <Typography variant="h6">
+                        Source, draft, and final output side by side
+                      </Typography>
                     </Box>
                     <Tabs
                       value={activePass}
@@ -289,10 +302,22 @@ export function StudioShell({ apiKeyConfigured, project }: StudioShellProps): Re
                               onClick={() => {
                                 setSelectedSegmentId(segment.id);
                               }}
-                              sx={{ justifyContent: 'flex-start', borderRadius: 3, px: 1.5, py: 1.25 }}
+                              sx={{
+                                justifyContent: 'flex-start',
+                                borderRadius: 3,
+                                px: 1.5,
+                                py: 1.25,
+                              }}
                             >
-                              <Stack spacing={0.25} sx={{ alignItems: 'flex-start', width: '100%' }}>
-                                <Stack direction="row" spacing={1} sx={{ alignItems: 'center', width: '100%' }}>
+                              <Stack
+                                spacing={0.25}
+                                sx={{ alignItems: 'flex-start', width: '100%' }}
+                              >
+                                <Stack
+                                  direction="row"
+                                  spacing={1}
+                                  sx={{ alignItems: 'center', width: '100%' }}
+                                >
                                   <Typography variant="body2" sx={{ fontWeight: 650 }}>
                                     Segment {segment.index + 1}
                                   </Typography>
@@ -359,11 +384,16 @@ export function StudioShell({ apiKeyConfigured, project }: StudioShellProps): Re
                           <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}>
                             <Chip icon={<AutoAwesomeRoundedIcon />} label="Voice preserved" />
                             <Chip icon={<BookOutlinedIcon />} label="Glossary locked" />
-                            <Chip icon={<WarningAmberRoundedIcon />} label="QA gated" color="warning" />
+                            <Chip
+                              icon={<WarningAmberRoundedIcon />}
+                              label="QA gated"
+                              color="warning"
+                            />
                           </Stack>
                           <Typography variant="body2" color="text.secondary">
-                            The MVP keeps each pass inspectable so Thomas can compare source meaning, literal
-                            translation, voice alignment, polish, and QA findings without losing earlier drafts.
+                            The MVP keeps each pass inspectable so Thomas can compare source
+                            meaning, literal translation, voice alignment, polish, and QA findings
+                            without losing earlier drafts.
                           </Typography>
                         </Stack>
                       </Paper>

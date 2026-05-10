@@ -16,7 +16,8 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: 'Thomas Kung Author Translation Studio',
-  description: 'A multi-pass literary translation workbench for Swedish fiction and author material.',
+  description:
+    'A multi-pass literary translation workbench for Swedish fiction and author material.',
 };
 
 type RootLayoutProps = Readonly<{
