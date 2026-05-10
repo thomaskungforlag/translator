@@ -1,9 +1,8 @@
 import type { ReactElement } from 'react';
 
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
-import EditRoundedIcon from '@mui/icons-material/EditRounded';
 import ScienceOutlinedIcon from '@mui/icons-material/ScienceOutlined';
-import { Box, Chip, IconButton, LinearProgress, Paper, Stack, Typography } from '@mui/material';
+import { Box, Chip, LinearProgress, Paper, Stack, Typography } from '@mui/material';
 
 import type { StudioShellProject } from '@/lib/workspace';
 
@@ -21,9 +20,6 @@ export function ProjectOverview({ project }: ProjectOverviewProps): ReactElement
           </Typography>
           <Typography variant="h6">{project.title}</Typography>
         </Box>
-        <IconButton size="small" color="primary">
-          <EditRoundedIcon fontSize="small" />
-        </IconButton>
       </Stack>
 
       <Stack spacing={1.5}>

@@ -25,6 +25,9 @@ export function StudioShell({
   onQaFindingResolvedChange,
   onSegmentFinalTextChange,
   onSegmentFinalTextLockChange,
+  onGlossaryEntryAdd,
+  onGlossaryEntryUpdate,
+  onGlossaryEntryRemove,
   isRunning = false,
 }: StudioShellProps): ReactElement {
   const shellRef = useRef<HTMLDivElement>(null);
@@ -70,7 +73,12 @@ export function StudioShell({
             <Stack spacing={3}>
               <ProjectOverview project={project} />
               <PipelineStagesPanel stages={project.pipelineStages} />
-              <GlossaryPanel entries={project.glossary} />
+              <GlossaryPanel
+                entries={project.glossary}
+                onAddEntry={onGlossaryEntryAdd}
+                onUpdateEntry={onGlossaryEntryUpdate}
+                onRemoveEntry={onGlossaryEntryRemove}
+              />
             </Stack>
           </Box>
 

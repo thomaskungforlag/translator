@@ -1,3 +1,4 @@
+import type { GlossaryEntry } from '@/lib/domain';
 import type { StudioShellProject } from '@/lib/workspace';
 
 export type StudioShellProps = {
@@ -11,5 +12,8 @@ export type StudioShellProps = {
   onQaFindingResolvedChange?: (findingId: string, resolved: boolean) => void;
   onSegmentFinalTextChange?: (segmentId: string, value: string) => void;
   onSegmentFinalTextLockChange?: (segmentId: string, locked: boolean) => void;
+  onGlossaryEntryAdd?: () => void;
+  onGlossaryEntryUpdate?: (entryId: string, patch: Partial<GlossaryEntry>) => void;
+  onGlossaryEntryRemove?: (entryId: string) => void;
   isRunning?: boolean;
 };

@@ -2,7 +2,7 @@ import type { ReactElement } from 'react';
 
 import { TranslationWorkspace } from '@/components/translation-workspace';
 import { env } from '@/lib/env';
-import { demoWorkspaceSeed } from '@/lib/demo-workspace';
+import { initialWorkspaceSeed } from '@/lib/initial-workspace';
 
 export default function HomePage(): ReactElement {
   const apiKeyConfigured =
@@ -16,7 +16,7 @@ export default function HomePage(): ReactElement {
     <TranslationWorkspace
       apiKeyConfigured={apiKeyConfigured}
       activeRuntimeModelLabel={activeRuntimeModelLabel}
-      initialSeed={demoWorkspaceSeed}
+      initialSeed={initialWorkspaceSeed}
     />
   );
 }

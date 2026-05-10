@@ -11,7 +11,7 @@ import {
   buildStudioShellProject,
   exportProjectMarkdown,
 } from '@/lib/pipeline';
-import type { DocumentSegment } from '@/lib/domain';
+import type { DocumentSegment, GlossaryEntry } from '@/lib/domain';
 import type { StudioShellProject, TranslationWorkspaceSeed } from '@/lib/workspace';
 
 import { WorkspaceControls } from './workspace-controls';
@@ -33,6 +33,13 @@ type StatusNotice = {
   severity: AlertColor;
 };
 
+type PersistedWorkspaceState = {
+  sourceText: string;
+  project: StudioShellProject;
+};
+
+const workspaceStorageKey = 'translator.workspace.v1';
+
 type TranslationWorkspaceViewProps = {
   apiKeyConfigured: boolean;
   activeRuntimeModelLabel: string;
@@ -51,6 +58,9 @@ type TranslationWorkspaceViewProps = {
   onQaFindingResolvedChange: (findingId: string, resolved: boolean) => void;
   onSegmentFinalTextChange: (segmentId: string, value: string) => void;
   onSegmentFinalTextLockChange: (segmentId: string, locked: boolean) => void;
+  onGlossaryEntryAdd: () => void;
+  onGlossaryEntryUpdate: (entryId: string, patch: Partial<GlossaryEntry>) => void;
+  onGlossaryEntryRemove: (entryId: string) => void;
 };
 
 function buildFinalTranslationText(project: StudioShellProject): string {
@@ -288,6 +298,59 @@ function buildImportedSeed(
   };
 }
 
+function canUseLocalStorage(): boolean {
+  return typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
+}
+
+function loadPersistedWorkspaceState(): PersistedWorkspaceState | null {
+  if (!canUseLocalStorage()) {
+    return null;
+  }
+
+  try {
+    const raw = window.localStorage.getItem(workspaceStorageKey);
+
+    if (!raw) {
+      return null;
+    }
+
+    const parsed = JSON.parse(raw) as unknown;
+
+    if (!parsed || typeof parsed !== 'object') {
+      return null;
+    }
+
+    const record = parsed as Record<string, unknown>;
+
+    if (
+      typeof record.sourceText !== 'string' ||
+      !record.project ||
+      typeof record.project !== 'object'
+    ) {
+      return null;
+    }
+
+    return {
+      sourceText: record.sourceText,
+      project: record.project as StudioShellProject,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function persistWorkspaceState(state: PersistedWorkspaceState): void {
+  if (!canUseLocalStorage()) {
+    return;
+  }
+
+  try {
+    window.localStorage.setItem(workspaceStorageKey, JSON.stringify(state));
+  } catch {
+    // Ignore quota and serialization errors to avoid blocking editing.
+  }
+}
+
 function downloadMarkdown(project: StudioShellProject): void {
   const markdown = exportProjectMarkdown(project);
   const blob = new Blob([markdown], { type: 'text/markdown;charset=utf-8' });
@@ -318,6 +381,9 @@ function TranslationWorkspaceView({
   onQaFindingResolvedChange,
   onSegmentFinalTextChange,
   onSegmentFinalTextLockChange,
+  onGlossaryEntryAdd,
+  onGlossaryEntryUpdate,
+  onGlossaryEntryRemove,
 }: TranslationWorkspaceViewProps): ReactElement {
   return (
     <Stack spacing={3}>
@@ -345,9 +411,20 @@ function TranslationWorkspaceView({
         onQaFindingResolvedChange={onQaFindingResolvedChange}
         onSegmentFinalTextChange={onSegmentFinalTextChange}
         onSegmentFinalTextLockChange={onSegmentFinalTextLockChange}
+        onGlossaryEntryAdd={onGlossaryEntryAdd}
+        onGlossaryEntryUpdate={onGlossaryEntryUpdate}
+        onGlossaryEntryRemove={onGlossaryEntryRemove}
       />
     </Stack>
   );
+}
+
+function createGlossaryEntryId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+
+  return `gl-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
 export function TranslationWorkspace({
@@ -364,6 +441,30 @@ export function TranslationWorkspace({
   const [statusNotice, setStatusNotice] = useState<StatusNotice | undefined>(
     buildInitialStatus(apiKeyConfigured),
   );
+  const [storageHydrated, setStorageHydrated] = useState(false);
+
+  useEffect(() => {
+    const persisted = loadPersistedWorkspaceState();
+
+    if (persisted) {
+      setSourceText(persisted.sourceText);
+      setProject(persisted.project);
+      setStatusNotice({
+        message: 'Restored the previous workspace session.',
+        severity: 'info',
+      });
+    }
+
+    setStorageHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (!storageHydrated) {
+      return;
+    }
+
+    persistWorkspaceState({ sourceText, project });
+  }, [project, sourceText, storageHydrated]);
 
   useEffect(() => {
     if (!isRunning) {
@@ -561,6 +662,38 @@ export function TranslationWorkspace({
     });
   };
 
+  const handleGlossaryEntryAdd = (): void => {
+    setProject((currentProject) => ({
+      ...currentProject,
+      glossary: [
+        ...currentProject.glossary,
+        {
+          id: createGlossaryEntryId(),
+          sourceTerm: '',
+          targetTerm: '',
+          category: 'other',
+          locked: false,
+        },
+      ],
+    }));
+  };
+
+  const handleGlossaryEntryUpdate = (entryId: string, patch: Partial<GlossaryEntry>): void => {
+    setProject((currentProject) => ({
+      ...currentProject,
+      glossary: currentProject.glossary.map((entry) =>
+        entry.id === entryId ? { ...entry, ...patch } : entry,
+      ),
+    }));
+  };
+
+  const handleGlossaryEntryRemove = (entryId: string): void => {
+    setProject((currentProject) => ({
+      ...currentProject,
+      glossary: currentProject.glossary.filter((entry) => entry.id !== entryId),
+    }));
+  };
+
   return (
     <TranslationWorkspaceView
       apiKeyConfigured={apiKeyConfigured}
@@ -580,6 +713,9 @@ export function TranslationWorkspace({
       onQaFindingResolvedChange={handleQaFindingResolvedChange}
       onSegmentFinalTextChange={handleSegmentFinalTextChange}
       onSegmentFinalTextLockChange={handleSegmentFinalTextLockChange}
+      onGlossaryEntryAdd={handleGlossaryEntryAdd}
+      onGlossaryEntryUpdate={handleGlossaryEntryUpdate}
+      onGlossaryEntryRemove={handleGlossaryEntryRemove}
     />
   );
 }

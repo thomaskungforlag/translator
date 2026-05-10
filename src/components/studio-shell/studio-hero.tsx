@@ -35,7 +35,7 @@ export function StudioHero({
       >
         <Box>
           <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mb: 1 }}>
-            <Chip size="small" color="primary" label="MVP foundation" />
+            <Chip size="small" color="primary" label="Translation workspace" />
             <Chip
               size="small"
               variant="outlined"
