@@ -8,8 +8,9 @@ import {
 import { buildQaPrompt, buildStageInput } from './translation-prompts';
 import { translationWorkspaceRequestSchema } from './translation-schemas';
 import {
+  activeProviderMode,
   ensureStageCoverage,
-  isOpenAIConfigured,
+  isLlmConfigured,
   parseQaResponse,
   parseStageResponse,
   toDrafts,
@@ -188,12 +189,12 @@ export async function runTranslationWorkspace(
       throw new Error('Source text is required.');
     }
 
-    if (!isOpenAIConfigured) {
+    if (!isLlmConfigured) {
       return {
         project: buildStudioShellProject(seed),
         mode: 'fallback',
         message:
-          'OpenAI key is not configured. Showing demo fallback drafts only; do not treat them as production translation.',
+          'The configured model provider is unavailable. Showing demo fallback drafts only; do not treat them as production translation.',
       };
     }
 
@@ -202,7 +203,7 @@ export async function runTranslationWorkspace(
 
     return {
       project: buildStudioShellProject(seed, draftsWithQa),
-      mode: 'openai',
+      mode: activeProviderMode,
     };
   } catch (error) {
     const message =

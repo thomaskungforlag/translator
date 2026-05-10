@@ -23,7 +23,7 @@ type TranslationWorkspaceProps = {
 
 type TranslationWorkspaceResponse = {
   project: StudioShellProject;
-  mode: 'openai' | 'fallback';
+  mode: 'openai' | 'poe' | 'fallback';
   message?: string;
 };
 
@@ -150,10 +150,10 @@ function deriveImportedTitle(fileName: string, fallbackTitle: string): string {
 
 function buildInitialStatus(apiKeyConfigured: boolean): StatusNotice {
   return apiKeyConfigured
-    ? { message: 'Ready to call OpenAI.', severity: 'info' }
+    ? { message: 'Ready to call the configured model provider.', severity: 'info' }
     : {
         message:
-          'OpenAI key missing. Demo fallback only; do not treat output as production translation.',
+          'Provider key missing. Demo fallback only; do not treat output as production translation.',
         severity: 'warning',
       };
 }
@@ -161,7 +161,8 @@ function buildInitialStatus(apiKeyConfigured: boolean): StatusNotice {
 function buildFallbackStatus(message?: string): StatusNotice {
   return {
     message:
-      message ?? 'OpenAI is unavailable. Showing demo fallback drafts only; review before using.',
+      message ??
+      'The configured model provider is unavailable. Showing demo fallback drafts only; review before using.',
     severity: 'warning',
   };
 }
@@ -279,9 +280,15 @@ export function TranslationWorkspace({
           ? mergeLockedSegments(project, result.project)
           : result.project;
       const baseStatus =
-        result.mode === 'openai'
-          ? { message: 'Translation completed with OpenAI.', severity: 'success' as const }
-          : buildFallbackStatus(result.message);
+        result.mode === 'fallback'
+          ? buildFallbackStatus(result.message)
+          : {
+              message:
+                result.mode === 'poe'
+                  ? 'Translation completed with Poe.'
+                  : 'Translation completed with OpenAI.',
+              severity: 'success' as const,
+            };
       const lockStatus =
         lockedConflictCount > 0 && !shouldOverwriteLockedSegments
           ? {

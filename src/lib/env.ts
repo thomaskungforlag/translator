@@ -9,11 +9,19 @@ const blankToUndefined = (value: string | undefined): string | undefined => {
 };
 
 const envSchema = z.object({
+  AI_PROVIDER: z.enum(['openai', 'poe']).default('openai'),
   OPENAI_API_KEY: z.string().min(1).optional(),
   OPENAI_MODEL: z.string().min(1).optional(),
+  POE_API_KEY: z.string().min(1).optional(),
+  POE_BOT: z.string().min(1).optional(),
+  POE_API_URL: z.string().url().optional(),
 });
 
 export const env = envSchema.parse({
+  AI_PROVIDER: blankToUndefined(process.env.AI_PROVIDER),
   OPENAI_API_KEY: blankToUndefined(process.env.OPENAI_API_KEY),
   OPENAI_MODEL: blankToUndefined(process.env.OPENAI_MODEL),
+  POE_API_KEY: blankToUndefined(process.env.POE_API_KEY),
+  POE_BOT: blankToUndefined(process.env.POE_BOT),
+  POE_API_URL: blankToUndefined(process.env.POE_API_URL),
 });

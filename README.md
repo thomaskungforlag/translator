@@ -34,13 +34,15 @@ If you are new to the repo, read these in order:
 ## Setup
 
 1. Copy `.env.example` to `.env.local`.
-2. Set `OPENAI_API_KEY` to enable the OpenAI-backed pipeline.
-3. Optionally set `OPENAI_MODEL` if you want to override the default model.
+2. Set `AI_PROVIDER` to `openai` or `poe`.
+3. If `AI_PROVIDER=openai`, set `OPENAI_API_KEY`.
+4. If `AI_PROVIDER=poe`, set `POE_API_KEY` and optionally `POE_BOT`.
+5. Optionally set `OPENAI_MODEL` if you want to override the default OpenAI model.
    The code defaults to `gpt-5-mini` because it is the best cost-quality
    starting point for the explicit multi-pass translation pipeline. Use
    `gpt-5.1` if you want to spend more for maximum output quality, or
    `gpt-4.1` if you want a non-reasoning alternative.
-4. Run `npm run dev`.
+6. Run `npm run dev`.
 
 ## Code Map
 
@@ -48,7 +50,7 @@ If you are new to the repo, read these in order:
 - [src/components/studio-shell.tsx](src/components/studio-shell.tsx) is the top-level UI coordinator.
 - [src/components/studio-shell/](src/components/studio-shell) holds the small dashboard panels and review widgets.
 - [src/lib/domain.ts](src/lib/domain.ts) defines the domain types and Zod schemas.
-- [src/lib/translation.ts](src/lib/translation.ts) adapts the OpenAI response into the app's project shape.
+- [src/lib/translation.ts](src/lib/translation.ts) orchestrates provider responses into the app's project shape.
 - [src/app/api/translate/route.ts](src/app/api/translate/route.ts) exposes the translation pipeline endpoint.
 - [docs/reference-material.md](docs/reference-material.md) explains the Swedish source and English draft PDFs in `docs/`.
 - [eslint.config.mjs](eslint.config.mjs) defines the enforced code-quality rules.
