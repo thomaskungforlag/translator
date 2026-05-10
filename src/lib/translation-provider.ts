@@ -19,6 +19,77 @@ import {
 } from './translation-provider-utils';
 import type { TranslationWorkspaceSeed } from './workspace';
 
+type IndexedTextSegment = { index: number; text: string };
+
+type ChunkDescriptor = {
+  start: number;
+  segments: string[];
+};
+
+const stageChunkSize = 8;
+
+function splitIntoChunks(sourceSegments: string[], chunkSize = stageChunkSize): ChunkDescriptor[] {
+  const chunks: ChunkDescriptor[] = [];
+
+  for (let start = 0; start < sourceSegments.length; start += chunkSize) {
+    chunks.push({
+      start,
+      segments: sourceSegments.slice(start, start + chunkSize),
+    });
+  }
+
+  return chunks;
+}
+
+function toLocalIndexedSegments(
+  segments: IndexedTextSegment[],
+  chunkStart: number,
+  chunkLength: number,
+): IndexedTextSegment[] {
+  return segments.slice(chunkStart, chunkStart + chunkLength).map((segment, localIndex) => ({
+    index: localIndex,
+    text: segment.text,
+  }));
+}
+
+async function runChunkedStage(args: {
+  stageName:
+    | 'source_analysis'
+    | 'faithful_translation'
+    | 'voice_adaptation'
+    | 'literary_naturalness'
+    | 'polish_pass';
+  sourceSegments: string[];
+  buildChunkPrompt: (chunk: ChunkDescriptor) => string;
+  ensureTranslated?: boolean;
+}): Promise<IndexedTextSegment[]> {
+  const chunks = splitIntoChunks(args.sourceSegments);
+  const chunkedResults = await Promise.all(
+    chunks.map(async (chunk) => {
+      const stageSegments = await parseStageResponse(args.stageName, args.buildChunkPrompt(chunk));
+
+      ensureStageCoverage(args.stageName, chunk.segments, stageSegments);
+
+      if (args.ensureTranslated) {
+        ensureStageLooksTranslated(args.stageName, chunk.segments, stageSegments);
+      }
+
+      return stageSegments.map((segment) => ({
+        index: segment.index + chunk.start,
+        text: segment.text,
+      }));
+    }),
+  );
+
+  return chunkedResults
+    .flat()
+    .sort((left, right) => left.index - right.index)
+    .map((segment, index) => ({
+      index,
+      text: segment.text,
+    }));
+}
+
 function buildAnalysisPrompt(seed: TranslationWorkspaceSeed, sourceSegments: string[]): string {
   return buildStageInput({
     seed,
@@ -127,53 +198,86 @@ function buildPolishPrompt(prompt: {
 }
 
 async function translateWithProvider(seed: TranslationWorkspaceSeed): Promise<SegmentDraft[]> {
-  const sourceSegments = splitSourceText(seed.sourceText);
-  const analysisSegments = await parseStageResponse(
-    'source_analysis',
-    buildAnalysisPrompt(seed, sourceSegments),
-  );
-  ensureStageCoverage('source_analysis', sourceSegments, analysisSegments);
+  const sourceSegments = splitSourceText(seed.sourceText, seed.segmentationStrategy);
+  const analysisSegments = await runChunkedStage({
+    stageName: 'source_analysis',
+    sourceSegments,
+    buildChunkPrompt: (chunk) => buildAnalysisPrompt(seed, chunk.segments),
+  });
 
-  const faithfulSegments = await parseStageResponse(
-    'faithful_translation',
-    buildFaithfulPrompt(seed, sourceSegments, analysisSegments),
-  );
-  ensureStageCoverage('faithful_translation', sourceSegments, faithfulSegments);
-  ensureStageLooksTranslated('faithful_translation', sourceSegments, faithfulSegments);
+  const faithfulSegments = await runChunkedStage({
+    stageName: 'faithful_translation',
+    sourceSegments,
+    buildChunkPrompt: (chunk) =>
+      buildFaithfulPrompt(
+        seed,
+        chunk.segments,
+        toLocalIndexedSegments(analysisSegments, chunk.start, chunk.segments.length),
+      ),
+    ensureTranslated: true,
+  });
 
-  const voiceSegments = await parseStageResponse(
-    'voice_adaptation',
-    buildVoicePrompt(seed, sourceSegments, analysisSegments, faithfulSegments),
-  );
-  ensureStageCoverage('voice_adaptation', sourceSegments, voiceSegments);
-  ensureStageLooksTranslated('voice_adaptation', sourceSegments, voiceSegments);
+  const voiceSegments = await runChunkedStage({
+    stageName: 'voice_adaptation',
+    sourceSegments,
+    buildChunkPrompt: (chunk) =>
+      buildVoicePrompt(
+        seed,
+        chunk.segments,
+        toLocalIndexedSegments(analysisSegments, chunk.start, chunk.segments.length),
+        toLocalIndexedSegments(faithfulSegments, chunk.start, chunk.segments.length),
+      ),
+    ensureTranslated: true,
+  });
 
-  const naturalnessSegments = await parseStageResponse(
-    'literary_naturalness',
-    buildLiteraryNaturalnessPrompt({
-      seed,
-      sourceSegments,
-      analysisSegments,
-      faithfulSegments,
-      voiceSegments,
-    }),
-  );
-  ensureStageCoverage('literary_naturalness', sourceSegments, naturalnessSegments);
-  ensureStageLooksTranslated('literary_naturalness', sourceSegments, naturalnessSegments);
+  const naturalnessSegments = await runChunkedStage({
+    stageName: 'literary_naturalness',
+    sourceSegments,
+    buildChunkPrompt: (chunk) =>
+      buildLiteraryNaturalnessPrompt({
+        seed,
+        sourceSegments: chunk.segments,
+        analysisSegments: toLocalIndexedSegments(
+          analysisSegments,
+          chunk.start,
+          chunk.segments.length,
+        ),
+        faithfulSegments: toLocalIndexedSegments(
+          faithfulSegments,
+          chunk.start,
+          chunk.segments.length,
+        ),
+        voiceSegments: toLocalIndexedSegments(voiceSegments, chunk.start, chunk.segments.length),
+      }),
+    ensureTranslated: true,
+  });
 
-  const polishedSegments = await parseStageResponse(
-    'polish_pass',
-    buildPolishPrompt({
-      seed,
-      sourceSegments,
-      analysisSegments,
-      faithfulSegments,
-      voiceSegments,
-      naturalnessSegments,
-    }),
-  );
-  ensureStageCoverage('polish_pass', sourceSegments, polishedSegments);
-  ensureStageLooksTranslated('polish_pass', sourceSegments, polishedSegments);
+  const polishedSegments = await runChunkedStage({
+    stageName: 'polish_pass',
+    sourceSegments,
+    buildChunkPrompt: (chunk) =>
+      buildPolishPrompt({
+        seed,
+        sourceSegments: chunk.segments,
+        analysisSegments: toLocalIndexedSegments(
+          analysisSegments,
+          chunk.start,
+          chunk.segments.length,
+        ),
+        faithfulSegments: toLocalIndexedSegments(
+          faithfulSegments,
+          chunk.start,
+          chunk.segments.length,
+        ),
+        voiceSegments: toLocalIndexedSegments(voiceSegments, chunk.start, chunk.segments.length),
+        naturalnessSegments: toLocalIndexedSegments(
+          naturalnessSegments,
+          chunk.start,
+          chunk.segments.length,
+        ),
+      }),
+    ensureTranslated: true,
+  });
 
   return toDrafts({
     sourceSegments,
@@ -189,18 +293,34 @@ async function finalizeWithQa(
   seed: TranslationWorkspaceSeed,
   drafts: SegmentDraft[],
 ): Promise<SegmentDraft[]> {
-  const sourceSegments = splitSourceText(seed.sourceText);
-  const findings = await parseQaResponse(
-    buildQaPrompt(
-      seed,
-      sourceSegments.map((segment, index) => ({
-        index,
-        sourceText: segment,
-        sourceAnalysis: drafts[index]?.sourceAnalysis ?? buildSourceAnalysis(segment),
-        finalText: drafts[index]?.finalText ?? '',
-      })),
-    ),
-  );
+  const sourceSegments = splitSourceText(seed.sourceText, seed.segmentationStrategy);
+  const qaChunks = splitIntoChunks(sourceSegments);
+  const findings = (
+    await Promise.all(
+      qaChunks.map(async (chunk) => {
+        const chunkFindings = await parseQaResponse(
+          buildQaPrompt(
+            seed,
+            chunk.segments.map((segment, localIndex) => {
+              const index = chunk.start + localIndex;
+
+              return {
+                index: localIndex,
+                sourceText: segment,
+                sourceAnalysis: drafts[index]?.sourceAnalysis ?? buildSourceAnalysis(segment),
+                finalText: drafts[index]?.finalText ?? '',
+              };
+            }),
+          ),
+        );
+
+        return chunkFindings.map((finding) => ({
+          ...finding,
+          segmentIndex: finding.segmentIndex + chunk.start,
+        }));
+      }),
+    )
+  ).flat();
   const findingsByIndex = new Map<number, SegmentDraft['qaFindings']>();
 
   for (const finding of findings) {

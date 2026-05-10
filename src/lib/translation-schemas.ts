@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { languageCodeValues } from './domain';
+import { segmentationStrategyValues } from './workspace';
 
 export const translationWorkspaceRequestSchema = z.object({
   projectId: z.string().min(1),
@@ -14,6 +15,7 @@ export const translationWorkspaceRequestSchema = z.object({
     'social_post',
   ]),
   sourceLanguageCode: z.enum(languageCodeValues),
+  segmentationStrategy: z.enum(segmentationStrategyValues).default('paragraph'),
   targetLanguage: z.object({
     code: z.enum(languageCodeValues),
     label: z.string().min(1),

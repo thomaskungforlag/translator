@@ -86,6 +86,20 @@ describe('buildStudioShellProject', () => {
     expect(project.segments[0]?.finalText).toBe('A single, measured line.');
   });
 
+  it('supports scene-marker segmentation', () => {
+    const sourceText = ['Forsta scenen.', '***', 'Andra scenen.'].join('\n\n');
+    const segments = splitSourceText(sourceText, 'scene_markers');
+
+    expect(segments).toEqual(['Forsta scenen.', 'Andra scenen.']);
+  });
+
+  it('uses hybrid segmentation to prefer scene markers when present', () => {
+    const sourceText = ['Forsta scenen.', 'SCENE BREAK', 'Andra scenen.'].join('\n\n');
+    const segments = splitSourceText(sourceText, 'hybrid');
+
+    expect(segments).toEqual(['Forsta scenen.', 'Andra scenen.']);
+  });
+
   it('treats resolved QA findings as complete for progress', () => {
     const project = buildStudioShellProject(
       {

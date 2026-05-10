@@ -10,9 +10,14 @@ import {
   buildSegmentQaFindings,
   buildStudioShellProject,
   exportProjectMarkdown,
+  splitSourceText,
 } from '@/lib/pipeline';
 import type { DocumentSegment, GlossaryEntry } from '@/lib/domain';
-import type { StudioShellProject, TranslationWorkspaceSeed } from '@/lib/workspace';
+import type {
+  SegmentationStrategy,
+  StudioShellProject,
+  TranslationWorkspaceSeed,
+} from '@/lib/workspace';
 
 import { WorkspaceControls } from './workspace-controls';
 
@@ -35,6 +40,7 @@ type StatusNotice = {
 
 type PersistedWorkspaceState = {
   sourceText: string;
+  segmentationStrategy: SegmentationStrategy;
   project: StudioShellProject;
 };
 
@@ -44,12 +50,20 @@ type TranslationWorkspaceViewProps = {
   apiKeyConfigured: boolean;
   activeRuntimeModelLabel: string;
   sourceText: string;
+  segmentationStrategy: SegmentationStrategy;
+  segmentPreviewCount: number;
+  editableSegments: string[];
   project: StudioShellProject;
   isRunning: boolean;
   runElapsedSeconds: number;
   statusMessage?: string;
   statusSeverity?: AlertColor;
   onSourceTextChange: (value: string) => void;
+  onSegmentationStrategyChange: (value: SegmentationStrategy) => void;
+  onEditableSegmentChange: (index: number, value: string) => void;
+  onEditableSegmentAdd: () => void;
+  onEditableSegmentRemove: (index: number) => void;
+  onSplitSourceByLineBreaks: () => void;
   onImportText: (value: string, fileName: string) => void;
   onRunPipeline: () => void;
   onExportMarkdown: () => void;
@@ -290,12 +304,47 @@ function buildImportedSeed(
   initialSeed: TranslationWorkspaceSeed,
   importedText: string,
   fileName: string,
+  segmentationStrategy: SegmentationStrategy,
 ): TranslationWorkspaceSeed {
   return {
     ...initialSeed,
     title: deriveImportedTitle(fileName, initialSeed.title),
     sourceText: importedText,
+    segmentationStrategy,
   };
+}
+
+function resolveSegmentationStrategy(value: unknown): SegmentationStrategy {
+  if (value === 'paragraph' || value === 'scene_markers' || value === 'hybrid') {
+    return value;
+  }
+
+  return 'paragraph';
+}
+
+function joinSegmentsAsSourceText(
+  segments: string[],
+  segmentationStrategy: SegmentationStrategy,
+): string {
+  const normalized = segments
+    .map((segment) => segment.trim())
+    .filter((segment) => segment.length > 0);
+
+  if (normalized.length === 0) {
+    return '';
+  }
+
+  const separator = segmentationStrategy === 'paragraph' ? '\n\n' : '\n\n***\n\n';
+
+  return normalized.join(separator);
+}
+
+function splitBySingleLineBreaks(sourceText: string): string[] {
+  return sourceText
+    .replace(/\r\n?/g, '\n')
+    .split(/\n+/)
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
 }
 
 function canUseLocalStorage(): boolean {
@@ -332,6 +381,7 @@ function loadPersistedWorkspaceState(): PersistedWorkspaceState | null {
 
     return {
       sourceText: record.sourceText,
+      segmentationStrategy: resolveSegmentationStrategy(record.segmentationStrategy),
       project: record.project as StudioShellProject,
     };
   } catch {
@@ -367,12 +417,20 @@ function TranslationWorkspaceView({
   apiKeyConfigured,
   activeRuntimeModelLabel,
   sourceText,
+  segmentationStrategy,
+  segmentPreviewCount,
+  editableSegments,
   project,
   isRunning,
   runElapsedSeconds,
   statusMessage,
   statusSeverity,
   onSourceTextChange,
+  onSegmentationStrategyChange,
+  onEditableSegmentChange,
+  onEditableSegmentAdd,
+  onEditableSegmentRemove,
+  onSplitSourceByLineBreaks,
   onImportText,
   onRunPipeline,
   onExportMarkdown,
@@ -391,11 +449,19 @@ function TranslationWorkspaceView({
         sourceText={sourceText}
         contentType={project.contentType}
         targetLanguage={project.targetLanguage}
+        segmentationStrategy={segmentationStrategy}
+        segmentPreviewCount={segmentPreviewCount}
+        editableSegments={editableSegments}
         isRunning={isRunning}
         runElapsedSeconds={runElapsedSeconds}
         statusMessage={statusMessage}
         statusSeverity={statusSeverity}
         onSourceTextChange={onSourceTextChange}
+        onSegmentationStrategyChange={onSegmentationStrategyChange}
+        onEditableSegmentChange={onEditableSegmentChange}
+        onEditableSegmentAdd={onEditableSegmentAdd}
+        onEditableSegmentRemove={onEditableSegmentRemove}
+        onSplitSourceByLineBreaks={onSplitSourceByLineBreaks}
         onImportText={onImportText}
         onRunPipeline={onRunPipeline}
       />
@@ -432,9 +498,13 @@ export function TranslationWorkspace({
   activeRuntimeModelLabel,
   initialSeed,
 }: TranslationWorkspaceProps): ReactElement {
+  const defaultSegmentationStrategy = initialSeed.segmentationStrategy ?? 'paragraph';
   const [sourceText, setSourceText] = useState(initialSeed.sourceText);
+  const [segmentationStrategy, setSegmentationStrategy] = useState<SegmentationStrategy>(
+    defaultSegmentationStrategy,
+  );
   const [project, setProject] = useState<StudioShellProject>(() =>
-    buildStudioShellProject(initialSeed),
+    buildStudioShellProject({ ...initialSeed, segmentationStrategy: defaultSegmentationStrategy }),
   );
   const [isRunning, setIsRunning] = useState(false);
   const [runElapsedSeconds, setRunElapsedSeconds] = useState(0);
@@ -448,6 +518,7 @@ export function TranslationWorkspace({
 
     if (persisted) {
       setSourceText(persisted.sourceText);
+      setSegmentationStrategy(persisted.segmentationStrategy);
       setProject(persisted.project);
       setStatusNotice({
         message: 'Restored the previous workspace session.',
@@ -463,8 +534,8 @@ export function TranslationWorkspace({
       return;
     }
 
-    persistWorkspaceState({ sourceText, project });
-  }, [project, sourceText, storageHydrated]);
+    persistWorkspaceState({ sourceText, segmentationStrategy, project });
+  }, [project, segmentationStrategy, sourceText, storageHydrated]);
 
   useEffect(() => {
     if (!isRunning) {
@@ -497,6 +568,7 @@ export function TranslationWorkspace({
           ...initialSeed,
           title: project.title,
           sourceText,
+          segmentationStrategy,
         }),
       });
 
@@ -539,7 +611,14 @@ export function TranslationWorkspace({
       setProject(nextProject);
       setStatusNotice(lockStatus ?? baseStatus);
     } catch (error) {
-      setProject(buildStudioShellProject({ ...initialSeed, title: project.title, sourceText }));
+      setProject(
+        buildStudioShellProject({
+          ...initialSeed,
+          title: project.title,
+          sourceText,
+          segmentationStrategy,
+        }),
+      );
       setStatusNotice(
         error instanceof Error
           ? buildFallbackStatus(`${error.message} Demo fallback only.`)
@@ -551,7 +630,7 @@ export function TranslationWorkspace({
   };
 
   const handleImportText = (importedText: string, fileName: string): void => {
-    const nextSeed = buildImportedSeed(initialSeed, importedText, fileName);
+    const nextSeed = buildImportedSeed(initialSeed, importedText, fileName, segmentationStrategy);
 
     setSourceText(importedText);
     setProject(buildStudioShellProject(nextSeed));
@@ -563,6 +642,39 @@ export function TranslationWorkspace({
 
   const triggerRunPipeline = (): void => {
     void handleRunPipeline();
+  };
+
+  const editableSegments = splitSourceText(sourceText, segmentationStrategy);
+  const segmentPreviewCount = editableSegments.length;
+
+  const handleEditableSegmentChange = (index: number, value: string): void => {
+    const nextSegments = editableSegments.map((segment, segmentIndex) =>
+      segmentIndex === index ? value : segment,
+    );
+
+    setSourceText(joinSegmentsAsSourceText(nextSegments, segmentationStrategy));
+  };
+
+  const handleEditableSegmentAdd = (): void => {
+    const nextSegments = [...editableSegments, '(new segment)'];
+
+    setSourceText(joinSegmentsAsSourceText(nextSegments, segmentationStrategy));
+  };
+
+  const handleEditableSegmentRemove = (index: number): void => {
+    const nextSegments = editableSegments.filter((_, segmentIndex) => segmentIndex !== index);
+
+    setSourceText(joinSegmentsAsSourceText(nextSegments, segmentationStrategy));
+  };
+
+  const handleSplitSourceByLineBreaks = (): void => {
+    const lineBreakSegments = splitBySingleLineBreaks(sourceText);
+
+    setSourceText(joinSegmentsAsSourceText(lineBreakSegments, segmentationStrategy));
+    setStatusNotice({
+      message: `Split source into ${lineBreakSegments.length} segment${lineBreakSegments.length === 1 ? '' : 's'} by line breaks.`,
+      severity: 'info',
+    });
   };
 
   const handleExportMarkdown = (): void => {
@@ -699,12 +811,20 @@ export function TranslationWorkspace({
       apiKeyConfigured={apiKeyConfigured}
       activeRuntimeModelLabel={activeRuntimeModelLabel}
       sourceText={sourceText}
+      segmentationStrategy={segmentationStrategy}
+      segmentPreviewCount={segmentPreviewCount}
+      editableSegments={editableSegments}
       project={project}
       isRunning={isRunning}
       runElapsedSeconds={runElapsedSeconds}
       statusMessage={statusNotice?.message}
       statusSeverity={statusNotice?.severity}
       onSourceTextChange={setSourceText}
+      onSegmentationStrategyChange={setSegmentationStrategy}
+      onEditableSegmentChange={handleEditableSegmentChange}
+      onEditableSegmentAdd={handleEditableSegmentAdd}
+      onEditableSegmentRemove={handleEditableSegmentRemove}
+      onSplitSourceByLineBreaks={handleSplitSourceByLineBreaks}
       onImportText={handleImportText}
       onRunPipeline={triggerRunPipeline}
       onExportMarkdown={handleExportMarkdown}

@@ -1,4 +1,5 @@
 import type { QAFinding } from '@/lib/domain';
+import type { SegmentationStrategy } from './workspace';
 
 import { redTwinReference } from './reference-material';
 import {
@@ -18,6 +19,8 @@ export type SegmentDraft = {
 };
 
 const paragraphSeparator = /\n{2,}/;
+const sceneBreakLine =
+  /^\s*(?:\*{3,}|#{3,}|-{3,}|_{3,}|~{3,}|scene\s*break|scenbrott|scene\s*\d+|\*\s*\*\s*\*)\s*$/i;
 
 const knownTranslationMemory = new Map(
   redTwinReference.translationMemory.map((example) => [example.sourceText, example]),
@@ -85,6 +88,53 @@ function trimParagraph(paragraph: string): string {
   return paragraph.trim().replace(/\s+/g, ' ');
 }
 
+function normalizeLineEndings(sourceText: string): string {
+  return sourceText.replace(/\r\n?/g, '\n');
+}
+
+function splitByParagraphs(sourceText: string): string[] {
+  return normalizeLineEndings(sourceText)
+    .trim()
+    .split(paragraphSeparator)
+    .map(trimParagraph)
+    .filter(Boolean);
+}
+
+function splitBySceneMarkers(sourceText: string): string[] {
+  const lines = normalizeLineEndings(sourceText).split('\n');
+  const scenes: string[] = [];
+  let currentScene: string[] = [];
+
+  for (const line of lines) {
+    if (sceneBreakLine.test(line)) {
+      const sceneText = trimParagraph(currentScene.join('\n'));
+
+      if (sceneText.length > 0) {
+        scenes.push(sceneText);
+      }
+
+      currentScene = [];
+      continue;
+    }
+
+    currentScene.push(line);
+  }
+
+  const trailingSceneText = trimParagraph(currentScene.join('\n'));
+
+  if (trailingSceneText.length > 0) {
+    scenes.push(trailingSceneText);
+  }
+
+  return scenes;
+}
+
+function hasSceneMarkers(sourceText: string): boolean {
+  return normalizeLineEndings(sourceText)
+    .split('\n')
+    .some((line) => sceneBreakLine.test(line));
+}
+
 function countSentences(sourceText: string): number {
   const sentenceCount = sourceText
     .split(/[.!?]+/)
@@ -130,8 +180,21 @@ function buildFallbackLiteraryNaturalnessDraft(voiceDraft: string): string {
   return replaceExactPhrase(voiceDraft, naturalnessPhraseMap);
 }
 
-export function splitSourceText(sourceText: string): string[] {
-  return sourceText.trim().split(paragraphSeparator).map(trimParagraph).filter(Boolean);
+export function splitSourceText(
+  sourceText: string,
+  segmentationStrategy: SegmentationStrategy = 'paragraph',
+): string[] {
+  if (segmentationStrategy === 'scene_markers') {
+    return splitBySceneMarkers(sourceText);
+  }
+
+  if (segmentationStrategy === 'hybrid') {
+    return hasSceneMarkers(sourceText)
+      ? splitBySceneMarkers(sourceText)
+      : splitByParagraphs(sourceText);
+  }
+
+  return splitByParagraphs(sourceText);
 }
 
 export function buildSourceAnalysis(sourceText: string): string {
@@ -230,6 +293,11 @@ function buildSegmentDraft(sourceText: string, segmentIndex: number): SegmentDra
   };
 }
 
-export function createSegmentDrafts(sourceText: string): SegmentDraft[] {
-  return splitSourceText(sourceText).map((paragraph, index) => buildSegmentDraft(paragraph, index));
+export function createSegmentDrafts(
+  sourceText: string,
+  segmentationStrategy: SegmentationStrategy = 'paragraph',
+): SegmentDraft[] {
+  return splitSourceText(sourceText, segmentationStrategy).map((paragraph, index) =>
+    buildSegmentDraft(paragraph, index),
+  );
 }

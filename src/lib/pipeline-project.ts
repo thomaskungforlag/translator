@@ -143,9 +143,9 @@ function formatSegmentMarkdown(segment: StudioShellProject['segments'][number]):
 
 export function buildStudioShellProject(
   seed: TranslationWorkspaceSeed,
-  drafts: SegmentDraft[] = createSegmentDrafts(seed.sourceText),
+  drafts: SegmentDraft[] = createSegmentDrafts(seed.sourceText, seed.segmentationStrategy),
 ): StudioShellProject {
-  const sourceSegments = splitSourceText(seed.sourceText);
+  const sourceSegments = splitSourceText(seed.sourceText, seed.segmentationStrategy);
 
   if (sourceSegments.length !== drafts.length) {
     throw new Error('Segment draft count does not match the source text.');

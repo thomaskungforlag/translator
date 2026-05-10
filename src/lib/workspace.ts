@@ -13,6 +13,9 @@ export type PipelineStage = {
   status: SegmentStatus | 'running' | 'idle';
 };
 
+export const segmentationStrategyValues = ['paragraph', 'scene_markers', 'hybrid'] as const;
+export type SegmentationStrategy = (typeof segmentationStrategyValues)[number];
+
 export type StudioShellProject = {
   title: string;
   contentType: ContentType;
@@ -32,4 +35,5 @@ export type TranslationWorkspaceSeed = {
   targetLanguage: LanguageConfig;
   sourceText: string;
   glossary: GlossaryEntry[];
+  segmentationStrategy?: SegmentationStrategy;
 };

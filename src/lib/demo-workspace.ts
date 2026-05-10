@@ -54,6 +54,7 @@ export const demoWorkspaceSeed: TranslationWorkspaceSeed = {
   title: 'Chapter 03 - The Signal in the Ice',
   contentType: demoContentType,
   sourceLanguageCode: 'sv',
+  segmentationStrategy: 'paragraph',
   targetLanguage: demoTargetLanguage,
   sourceText: demoSourceText,
   glossary: demoGlossary,

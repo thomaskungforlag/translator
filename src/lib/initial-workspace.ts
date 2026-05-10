@@ -23,6 +23,7 @@ export const initialWorkspaceSeed: TranslationWorkspaceSeed = {
   title: 'Untitled project',
   contentType: defaultContentType,
   sourceLanguageCode: 'sv',
+  segmentationStrategy: 'hybrid',
   targetLanguage: defaultTargetLanguage,
   sourceText: '',
   glossary: [],
