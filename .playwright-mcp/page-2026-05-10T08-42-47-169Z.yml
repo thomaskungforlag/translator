@@ -1,0 +1,164 @@
+- generic [ref=e3]:
+  - generic [ref=e5]:
+    - generic [ref=e6]:
+      - generic [ref=e7]:
+        - generic [ref=e9]: MVP foundation
+        - generic [ref=e11]: OpenAI key missing
+      - heading "Thomas Kung Author Translation Studio" [level=1] [ref=e12]
+      - paragraph [ref=e13]: A multi-pass literary translation workbench for Swedish fiction, built to preserve voice, structure, terminology, and QA traceability from source text to final market-ready English.
+    - generic [ref=e14]:
+      - button "Run pipeline" [ref=e15] [cursor=pointer]:
+        - img [ref=e17]
+        - text: Run pipeline
+      - button "Export Markdown" [ref=e19] [cursor=pointer]:
+        - img [ref=e21]
+        - text: Export Markdown
+  - generic [ref=e23]:
+    - generic [ref=e25]:
+      - generic [ref=e26]:
+        - generic [ref=e27]:
+          - generic [ref=e28]:
+            - text: Project
+            - heading "Chapter 03 - The Signal in the Ice" [level=6] [ref=e29]
+          - button [ref=e30] [cursor=pointer]:
+            - img [ref=e31]
+        - generic [ref=e33]:
+          - generic [ref=e34]:
+            - generic [ref=e35]:
+              - img [ref=e36]
+              - generic [ref=e38]: novel_chapter
+            - generic [ref=e39]:
+              - img [ref=e40]
+              - generic [ref=e42]: English
+          - generic [ref=e43]:
+            - generic [ref=e44]:
+              - paragraph [ref=e45]: Pipeline progress
+              - paragraph [ref=e46]: 58%
+            - progressbar [ref=e47]
+      - generic [ref=e49]:
+        - text: Pipeline stages
+        - generic [ref=e50]:
+          - generic [ref=e53]:
+            - paragraph [ref=e54]: Source analysis
+            - generic [ref=e56]: approved
+          - generic [ref=e59]:
+            - paragraph [ref=e60]: Faithful translation
+            - generic [ref=e62]: approved
+          - generic [ref=e65]:
+            - paragraph [ref=e66]: Voice adaptation
+            - generic [ref=e68]: running
+          - generic [ref=e71]:
+            - paragraph [ref=e72]: Literary polish
+            - generic [ref=e74]: idle
+          - generic [ref=e77]:
+            - paragraph [ref=e78]: QA review
+            - generic [ref=e80]: idle
+      - generic [ref=e81]:
+        - text: Glossary snapshot
+        - list [ref=e82]:
+          - listitem [ref=e83]:
+            - button "Skuggskeppet worldbuilding The Shadow Ship" [ref=e84] [cursor=pointer]:
+              - generic [ref=e85]:
+                - generic [ref=e87]:
+                  - paragraph [ref=e88]: Skuggskeppet
+                  - generic [ref=e90]: worldbuilding
+                - paragraph [ref=e91]: The Shadow Ship
+          - listitem [ref=e92]:
+            - button "Norrhamn place North Harbor" [ref=e93] [cursor=pointer]:
+              - generic [ref=e94]:
+                - generic [ref=e96]:
+                  - paragraph [ref=e97]: Norrhamn
+                  - generic [ref=e99]: place
+                - paragraph [ref=e100]: North Harbor
+          - listitem [ref=e101]:
+            - button "vågkam phrase wave crest" [ref=e102] [cursor=pointer]:
+              - generic [ref=e103]:
+                - generic [ref=e105]:
+                  - paragraph [ref=e106]: vågkam
+                  - generic [ref=e108]: phrase
+                - paragraph [ref=e109]: wave crest
+    - generic [ref=e113]:
+      - generic [ref=e114]:
+        - generic [ref=e115]:
+          - text: Segment review
+          - heading "Source, draft, and final output side by side" [level=6] [ref=e116]
+        - tablist [ref=e119]:
+          - tab "Source prep" [ref=e120] [cursor=pointer]
+          - tab "Faithful" [ref=e121] [cursor=pointer]
+          - tab "Voice" [selected] [ref=e122] [cursor=pointer]: Voice
+          - tab "Polish" [ref=e124] [cursor=pointer]
+          - tab "QA" [ref=e125] [cursor=pointer]
+      - generic [ref=e126]:
+        - generic [ref=e128]:
+          - heading "Segments" [level=6] [ref=e129]
+          - button "Segment 1 approved Det hade börjat snöa när hon såg ljuset igen." [ref=e130] [cursor=pointer]:
+            - generic [ref=e131]:
+              - generic [ref=e132]:
+                - paragraph [ref=e133]: Segment 1
+                - generic [ref=e135]: approved
+              - generic [ref=e136]: Det hade börjat snöa när hon såg ljuset igen.
+          - button "Segment 2 reviewed Han visste att det var för sent att ringa tillbaka." [ref=e137] [cursor=pointer]:
+            - generic [ref=e138]:
+              - generic [ref=e139]:
+                - paragraph [ref=e140]: Segment 2
+                - generic [ref=e142]: reviewed
+              - generic [ref=e143]: Han visste att det var för sent att ringa tillbaka.
+          - button "Segment 3 translated Någonstans längre bort svarade Skuggskeppet i mörkret." [ref=e144] [cursor=pointer]:
+            - generic [ref=e145]:
+              - generic [ref=e146]:
+                - paragraph [ref=e147]: Segment 3
+                - generic [ref=e149]: translated
+              - generic [ref=e150]: Någonstans längre bort svarade Skuggskeppet i mörkret.
+        - generic [ref=e151]:
+          - generic [ref=e153]:
+            - generic [ref=e154]:
+              - heading "Selected segment" [level=6] [ref=e155]
+              - generic [ref=e156]:
+                - button "Copy source" [ref=e157] [cursor=pointer]:
+                  - img [ref=e158]
+                - button "Mark approved" [ref=e160] [cursor=pointer]:
+                  - img [ref=e161]
+            - paragraph [ref=e163]: Det hade börjat snöa när hon såg ljuset igen.
+            - separator [ref=e164]
+            - paragraph [ref=e165]: Snow had begun to fall when she saw the light again.
+          - generic [ref=e167]:
+            - heading "Stage notes" [level=6] [ref=e168]
+            - generic [ref=e169]:
+              - generic [ref=e170]:
+                - img [ref=e171]
+                - generic [ref=e173]: Voice preserved
+              - generic [ref=e174]:
+                - img [ref=e175]
+                - generic [ref=e177]: Glossary locked
+              - generic [ref=e178]:
+                - img [ref=e179]
+                - generic [ref=e181]: QA gated
+            - paragraph [ref=e182]: The MVP keeps each pass inspectable so Thomas can compare source meaning, literal translation, voice alignment, polish, and QA findings without losing earlier drafts.
+    - generic [ref=e184]:
+      - generic [ref=e185]:
+        - text: QA findings
+        - generic [ref=e186]:
+          - generic [ref=e189]:
+            - generic [ref=e190]:
+              - generic [ref=e192]: warning
+              - generic [ref=e193]: style_drift
+            - paragraph [ref=e194]: The voice pass is currently preserving meaning, but the rhythm still feels slightly literal.
+            - paragraph [ref=e195]: "Suggestion: Re-run voice adaptation on segment 3 after glossary confirmation."
+          - generic [ref=e198]:
+            - generic [ref=e199]:
+              - generic [ref=e201]: critical
+              - generic [ref=e202]: terminology
+            - paragraph [ref=e203]: Locked glossary term Skuggskeppet must remain capitalized as The Shadow Ship.
+            - paragraph [ref=e204]: "Suggestion: Lock the term in the glossary and re-check final output."
+      - generic [ref=e205]:
+        - text: Quick actions
+        - generic [ref=e206]:
+          - button "Translate selected segment" [ref=e207] [cursor=pointer]:
+            - img [ref=e209]
+            - text: Translate selected segment
+          - button "Edit final text" [ref=e211] [cursor=pointer]:
+            - img [ref=e213]
+            - text: Edit final text
+          - button "Export QA report" [ref=e215] [cursor=pointer]:
+            - img [ref=e217]
+            - text: Export QA report

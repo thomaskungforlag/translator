@@ -1,0 +1,29 @@
+:root {
+  color-scheme: dark;
+}
+
+html {
+  height: 100%;
+}
+
+body {
+  min-height: 100%;
+  margin: 0;
+  background:
+    radial-gradient(circle at top left, rgba(125, 211, 252, 0.14), transparent 30%),
+    radial-gradient(circle at top right, rgba(167, 139, 250, 0.12), transparent 26%),
+    radial-gradient(circle at bottom center, rgba(45, 212, 191, 0.09), transparent 24%),
+    linear-gradient(180deg, #050816 0%, #060b17 100%);
+  background-attachment: fixed;
+  color: #f4f7fb;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+::selection {
+  background: rgba(125, 211, 252, 0.3);
+  color: #f4f7fb;
+}
