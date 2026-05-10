@@ -221,6 +221,12 @@ function toStageResponseShape(candidate: unknown): unknown {
   }
 
   const record = candidate as Record<string, unknown>;
+  const nestedStageContainer =
+    record.stageResult ?? record.stage_result ?? record.result ?? record.payload;
+
+  if (nestedStageContainer && typeof nestedStageContainer === 'object') {
+    return toStageResponseShape(nestedStageContainer);
+  }
 
   const resolveArrayContainer = (): unknown[] | null => {
     const prioritizedKeys = [
@@ -283,7 +289,12 @@ function toQaResponseShape(candidate: unknown): unknown {
       return 'critical';
     }
 
-    if (normalized === 'warning' || normalized === 'medium' || normalized === 'warn') {
+    if (
+      normalized === 'warning' ||
+      normalized === 'medium' ||
+      normalized === 'warn' ||
+      normalized === 'minor'
+    ) {
       return 'warning';
     }
 
@@ -310,6 +321,7 @@ function toQaResponseShape(candidate: unknown): unknown {
       grammar: 'grammar',
       spelling: 'spelling',
       style_drift: 'style_drift',
+      voice_drift: 'style_drift',
       style: 'style_drift',
       terminology: 'terminology',
       locked_terminology: 'terminology',
@@ -338,9 +350,11 @@ function toQaResponseShape(candidate: unknown): unknown {
         const segmentIndex =
           typeof record.segmentIndex === 'number'
             ? record.segmentIndex
-            : typeof record.index === 'number'
-              ? record.index
-              : null;
+            : typeof record.segment_index === 'number'
+              ? record.segment_index
+              : typeof record.index === 'number'
+                ? record.index
+                : null;
         const severity = normalizeQaSeverity(record.severity);
         const issue = toOptionalText(record.issue) ?? toOptionalText(record.finding);
 
@@ -363,13 +377,16 @@ function toQaResponseShape(candidate: unknown): unknown {
         }
 
         const sourceExcerpt =
-          toOptionalText(record.sourceExcerpt) ?? toOptionalText(record.evidence);
+          toOptionalText(record.sourceExcerpt) ??
+          toOptionalText(record.source_phrase) ??
+          toOptionalText(record.evidence);
 
         if (sourceExcerpt) {
           normalizedFinding.sourceExcerpt = sourceExcerpt;
         }
 
-        const targetExcerpt = toOptionalText(record.targetExcerpt);
+        const targetExcerpt =
+          toOptionalText(record.targetExcerpt) ?? toOptionalText(record.final_phrase);
 
         if (targetExcerpt) {
           normalizedFinding.targetExcerpt = targetExcerpt;
@@ -532,7 +549,7 @@ async function parsePoeJsonWithRepair<T>(
     return initial.result.data as T;
   }
 
-  console.warn('[poe] initial parse failed, attempting repair', {
+  console.info('[poe] initial parse mismatch; attempting one repair pass', {
     schemaName,
     issues: summarizeParseIssues(initial.result),
     rawPreview: preview(rawResponse),
@@ -544,6 +561,11 @@ async function parsePoeJsonWithRepair<T>(
   const repaired = parseCandidate(repairedResponse);
 
   if (repaired.result.success) {
+    console.info('[poe] repair pass succeeded', {
+      schemaName,
+      initialIssues: summarizeParseIssues(initial.result),
+    });
+
     return repaired.result.data as T;
   }
 
@@ -695,6 +717,85 @@ export function ensureStageCoverage(
     if (actualIndexes[index] !== expectedIndex) {
       throw new Error(`OpenAI returned an out-of-order response for ${stageName}.`);
     }
+  }
+}
+
+function normalizeComparableText(value: string): string {
+  return value
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9\s]/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase();
+}
+
+function countMatches(value: string, words: string[]): number {
+  return words.reduce((count, word) => {
+    const regex = new RegExp(`\\b${word}\\b`, 'g');
+    const matches = value.match(regex);
+
+    return count + (matches?.length ?? 0);
+  }, 0);
+}
+
+function looksLikeSwedish(value: string): boolean {
+  const lower = value.toLowerCase();
+
+  if (/[åäö]/.test(lower)) {
+    return true;
+  }
+
+  const swedishMarkers = [
+    'och',
+    'att',
+    'det',
+    'som',
+    'inte',
+    'för',
+    'med',
+    'till',
+    'var',
+    'när',
+    'hade',
+  ];
+
+  return countMatches(lower, swedishMarkers) >= 3;
+}
+
+function looksLikeEnglish(value: string): boolean {
+  const lower = value.toLowerCase();
+  const englishMarkers = ['the', 'and', 'was', 'were', 'with', 'from', 'that', 'she', 'he'];
+
+  return countMatches(lower, englishMarkers) >= 2;
+}
+
+export function ensureStageLooksTranslated(
+  stageName: 'faithful_translation' | 'voice_adaptation' | 'polish_pass',
+  sourceSegments: string[],
+  stageSegments: StageSegment[],
+): void {
+  const suspiciousIndexes = stageSegments
+    .filter((segment) => {
+      const source = sourceSegments[segment.index] ?? '';
+      const sourceComparable = normalizeComparableText(source);
+      const outputComparable = normalizeComparableText(segment.text);
+      const unchanged =
+        sourceComparable.length > 0 &&
+        sourceComparable === outputComparable &&
+        outputComparable.length > 0;
+      const likelySwedishOutput = looksLikeSwedish(segment.text) && !looksLikeEnglish(segment.text);
+
+      return unchanged || likelySwedishOutput;
+    })
+    .map((segment) => segment.index);
+
+  if (suspiciousIndexes.length > 0) {
+    const previewIndexes = suspiciousIndexes.slice(0, 8).join(', ');
+
+    throw new Error(
+      `Model output for ${stageName} appears untranslated in segment index(es): ${previewIndexes}.`,
+    );
   }
 }
 

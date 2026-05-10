@@ -12,7 +12,8 @@ type StagePromptInput = {
     title: string;
     contentType: TranslationWorkspaceSeed['contentType'];
     sourceLanguageCode: TranslationWorkspaceSeed['sourceLanguageCode'];
-    targetLanguage: string;
+    targetLanguageCode: TranslationWorkspaceSeed['targetLanguage']['code'];
+    targetLanguageLabel: TranslationWorkspaceSeed['targetLanguage']['label'];
   };
   stageName: string;
   sourceSegments: StageSegment[];
@@ -41,7 +42,8 @@ export function buildStageInput({
       title: seed.title,
       contentType: seed.contentType,
       sourceLanguageCode: seed.sourceLanguageCode,
-      targetLanguage: seed.targetLanguage.label,
+      targetLanguageCode: seed.targetLanguage.code,
+      targetLanguageLabel: seed.targetLanguage.label,
     },
     stageName,
     sourceSegments: sourceSegments.map((segment, index) => ({
@@ -70,7 +72,9 @@ export function buildQaPrompt(
       project: {
         title: seed.title,
         contentType: seed.contentType,
-        targetLanguage: seed.targetLanguage.label,
+        sourceLanguageCode: seed.sourceLanguageCode,
+        targetLanguageCode: seed.targetLanguage.code,
+        targetLanguageLabel: seed.targetLanguage.label,
       },
       sourceSegments,
       instructions: [

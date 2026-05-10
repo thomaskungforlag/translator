@@ -158,6 +158,38 @@ describe('translation-provider-utils (provider adapters)', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
+  it('normalizes stageResult wrapper payloads with analyses array', async () => {
+    process.env.AI_PROVIDER = 'poe';
+    process.env.POE_API_KEY = 'test-poe-key';
+
+    const fetchMock = jest.mocked(globalThis.fetch);
+
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () =>
+        mockPoeResponse(
+          JSON.stringify({
+            stageResult: {
+              stageName: 'source_analysis',
+              analyses: [
+                { index: 0, analysis: 'Analysis A' },
+                { index: 1, analysis: 'Analysis B' },
+              ],
+            },
+          }),
+        ),
+    } as Response);
+
+    const utils = await loadUtilsModule();
+    const segments = await utils.parseStageResponse('source_analysis', 'prompt');
+
+    expect(segments).toEqual([
+      { index: 0, text: 'Analysis A' },
+      { index: 1, text: 'Analysis B' },
+    ]);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
   it('normalizes dynamic segment keys like voiceAdaptedSegments', async () => {
     process.env.AI_PROVIDER = 'poe';
     process.env.POE_API_KEY = 'test-poe-key';
@@ -352,5 +384,78 @@ describe('translation-provider-utils (provider adapters)', () => {
       },
     ]);
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('normalizes snake_case QA payload fields from Poe', async () => {
+    process.env.AI_PROVIDER = 'poe';
+    process.env.POE_API_KEY = 'test-poe-key';
+
+    const fetchMock = jest.mocked(globalThis.fetch);
+
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () =>
+        mockPoeResponse(
+          JSON.stringify({
+            findings: [
+              {
+                segment_index: 0,
+                severity: 'minor',
+                category: 'voice_drift',
+                source_phrase: 'raglade runt i lagenheten',
+                final_phrase: 'staggered around the apartment',
+                issue: 'Tone softening in violent context.',
+                suggestion: 'use "hurling" for stronger force',
+              },
+            ],
+          }),
+        ),
+    } as Response);
+
+    const utils = await loadUtilsModule();
+    const findings = await utils.parseQaResponse('qa prompt');
+
+    expect(findings).toEqual([
+      {
+        segmentIndex: 0,
+        severity: 'warning',
+        category: 'style_drift',
+        sourceExcerpt: 'raglade runt i lagenheten',
+        targetExcerpt: 'staggered around the apartment',
+        issue: 'Tone softening in violent context.',
+        suggestion: 'use "hurling" for stronger force',
+      },
+    ]);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('flags unchanged faithful output as untranslated', async () => {
+    process.env.AI_PROVIDER = 'poe';
+    process.env.POE_API_KEY = 'test-poe-key';
+
+    const utils = await loadUtilsModule();
+
+    expect(() =>
+      utils.ensureStageLooksTranslated(
+        'faithful_translation',
+        ['Tuya var tillbaka i lägenheten.'],
+        [{ index: 0, text: 'Tuya var tillbaka i lägenheten.' }],
+      ),
+    ).toThrow(/appears untranslated/i);
+  });
+
+  it('accepts English faithful output as translated', async () => {
+    process.env.AI_PROVIDER = 'poe';
+    process.env.POE_API_KEY = 'test-poe-key';
+
+    const utils = await loadUtilsModule();
+
+    expect(() =>
+      utils.ensureStageLooksTranslated(
+        'faithful_translation',
+        ['Tuya var tillbaka i lägenheten.'],
+        [{ index: 0, text: 'Tuya was back in the apartment.' }],
+      ),
+    ).not.toThrow();
   });
 });

@@ -10,6 +10,7 @@ import { translationWorkspaceRequestSchema } from './translation-schemas';
 import {
   activeProviderMode,
   ensureStageCoverage,
+  ensureStageLooksTranslated,
   isLlmConfigured,
   parseQaResponse,
   parseStageResponse,
@@ -109,12 +110,14 @@ async function translateWithProvider(seed: TranslationWorkspaceSeed): Promise<Se
     buildFaithfulPrompt(seed, sourceSegments, analysisSegments),
   );
   ensureStageCoverage('faithful_translation', sourceSegments, faithfulSegments);
+  ensureStageLooksTranslated('faithful_translation', sourceSegments, faithfulSegments);
 
   const voiceSegments = await parseStageResponse(
     'voice_adaptation',
     buildVoicePrompt(seed, sourceSegments, analysisSegments, faithfulSegments),
   );
   ensureStageCoverage('voice_adaptation', sourceSegments, voiceSegments);
+  ensureStageLooksTranslated('voice_adaptation', sourceSegments, voiceSegments);
 
   const polishedSegments = await parseStageResponse(
     'polish_pass',
@@ -127,6 +130,7 @@ async function translateWithProvider(seed: TranslationWorkspaceSeed): Promise<Se
     }),
   );
   ensureStageCoverage('polish_pass', sourceSegments, polishedSegments);
+  ensureStageLooksTranslated('polish_pass', sourceSegments, polishedSegments);
 
   return toDrafts({
     sourceSegments,
