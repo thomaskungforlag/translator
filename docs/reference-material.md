@@ -25,6 +25,7 @@ Two PDF files were added under `docs/` to anchor the translation workflow.
 - Use the English PDF as a seed for draft reuse where segments overlap.
 - Run QA on the English draft before trusting it in the pipeline.
 - Prefer the Swedish PDF whenever there is a disagreement between the two.
+- Treat the current repo integration as a style and terminology seed, not a full corpus-backed QA system yet.
 
 ## Practical Use In MVP
 

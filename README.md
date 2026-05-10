@@ -1,6 +1,6 @@
 # Thomas Kung Author Translation Studio
 
-Next.js + TypeScript + MUI foundation for a multi-pass literary translation workbench.
+Next.js + TypeScript + MUI workbench for an inspectable multi-pass literary translation workflow.
 
 ## Start Here
 
@@ -47,7 +47,9 @@ This repo is intentionally strict so new code stays readable and testable:
 - TDD is the default approach: write or update tests alongside behavior changes.
 - Jest covers unit and component logic.
 - Playwright covers browser flows and smoke tests.
-- The translation endpoint falls back to the local demo pipeline if OpenAI is unavailable.
+- The translation endpoint can fall back to a local demo pipeline if OpenAI is unavailable.
+- Demo fallback output is for degraded-mode inspection only, not production translation use.
+- The current `Röd Tvilling` integration is a style and terminology seed, not yet a full corpus-backed QA system.
 
 ## Scripts
 

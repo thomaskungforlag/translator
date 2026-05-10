@@ -2,6 +2,7 @@
 
 import { useState, type ReactElement } from 'react';
 
+import type { AlertColor } from '@mui/material';
 import { Stack } from '@mui/material';
 
 import { StudioShell } from '@/components/studio-shell';
@@ -21,12 +22,18 @@ type TranslationWorkspaceResponse = {
   message?: string;
 };
 
+type StatusNotice = {
+  message: string;
+  severity: AlertColor;
+};
+
 type TranslationWorkspaceViewProps = {
   apiKeyConfigured: boolean;
   sourceText: string;
   project: StudioShellProject;
   isRunning: boolean;
   statusMessage?: string;
+  statusSeverity?: AlertColor;
   onSourceTextChange: (value: string) => void;
   onImportText: (value: string, fileName: string) => void;
   onRunPipeline: () => void;
@@ -40,6 +47,36 @@ function deriveImportedTitle(fileName: string, fallbackTitle: string): string {
     .trim();
 
   return baseName.length > 0 ? baseName : fallbackTitle;
+}
+
+function buildInitialStatus(apiKeyConfigured: boolean): StatusNotice {
+  return apiKeyConfigured
+    ? { message: 'Ready to call OpenAI.', severity: 'info' }
+    : {
+        message:
+          'OpenAI key missing. Demo fallback only; do not treat output as production translation.',
+        severity: 'warning',
+      };
+}
+
+function buildFallbackStatus(message?: string): StatusNotice {
+  return {
+    message:
+      message ?? 'OpenAI is unavailable. Showing demo fallback drafts only; review before using.',
+    severity: 'warning',
+  };
+}
+
+function buildImportedSeed(
+  initialSeed: TranslationWorkspaceSeed,
+  importedText: string,
+  fileName: string,
+): TranslationWorkspaceSeed {
+  return {
+    ...initialSeed,
+    title: deriveImportedTitle(fileName, initialSeed.title),
+    sourceText: importedText,
+  };
 }
 
 function downloadMarkdown(project: StudioShellProject): void {
@@ -60,6 +97,7 @@ function TranslationWorkspaceView({
   project,
   isRunning,
   statusMessage,
+  statusSeverity,
   onSourceTextChange,
   onImportText,
   onRunPipeline,
@@ -73,6 +111,7 @@ function TranslationWorkspaceView({
         targetLanguage={project.targetLanguage}
         isRunning={isRunning}
         statusMessage={statusMessage}
+        statusSeverity={statusSeverity}
         onSourceTextChange={onSourceTextChange}
         onImportText={onImportText}
         onRunPipeline={onRunPipeline}
@@ -97,13 +136,13 @@ export function TranslationWorkspace({
     buildStudioShellProject(initialSeed),
   );
   const [isRunning, setIsRunning] = useState(false);
-  const [statusMessage, setStatusMessage] = useState<string | undefined>(
-    apiKeyConfigured ? 'Ready to call OpenAI.' : 'OpenAI key missing. Using local fallback.',
+  const [statusNotice, setStatusNotice] = useState<StatusNotice | undefined>(
+    buildInitialStatus(apiKeyConfigured),
   );
 
   const handleRunPipeline = async (): Promise<void> => {
     setIsRunning(true);
-    setStatusMessage(undefined);
+    setStatusNotice(undefined);
 
     try {
       const response = await fetch('/api/translate', {
@@ -113,6 +152,7 @@ export function TranslationWorkspace({
         },
         body: JSON.stringify({
           ...initialSeed,
+          title: project.title,
           sourceText,
         }),
       });
@@ -123,17 +163,17 @@ export function TranslationWorkspace({
 
       const result = (await response.json()) as TranslationWorkspaceResponse;
       setProject(result.project);
-      setStatusMessage(
+      setStatusNotice(
         result.mode === 'openai'
-          ? 'Translation completed with OpenAI.'
-          : (result.message ?? 'Using local fallback drafts.'),
+          ? { message: 'Translation completed with OpenAI.', severity: 'success' }
+          : buildFallbackStatus(result.message),
       );
     } catch (error) {
-      setProject(buildStudioShellProject({ ...initialSeed, sourceText }));
-      setStatusMessage(
+      setProject(buildStudioShellProject({ ...initialSeed, title: project.title, sourceText }));
+      setStatusNotice(
         error instanceof Error
-          ? error.message
-          : 'Translation pipeline failed. Using fallback drafts.',
+          ? buildFallbackStatus(`${error.message} Demo fallback only.`)
+          : buildFallbackStatus(),
       );
     } finally {
       setIsRunning(false);
@@ -141,18 +181,14 @@ export function TranslationWorkspace({
   };
 
   const handleImportText = (importedText: string, fileName: string): void => {
-    const title = deriveImportedTitle(fileName, initialSeed.title);
-    const nextSeed = {
-      ...initialSeed,
-      title,
-      sourceText: importedText,
-    };
+    const nextSeed = buildImportedSeed(initialSeed, importedText, fileName);
 
     setSourceText(importedText);
     setProject(buildStudioShellProject(nextSeed));
-    setStatusMessage(
-      `Imported ${fileName}. Re-run the pipeline to refresh the translation passes.`,
-    );
+    setStatusNotice({
+      message: `Imported ${fileName}. Re-run the pipeline to refresh the translation passes.`,
+      severity: 'info',
+    });
   };
 
   const triggerRunPipeline = (): void => {
@@ -169,7 +205,8 @@ export function TranslationWorkspace({
       sourceText={sourceText}
       project={project}
       isRunning={isRunning}
-      statusMessage={statusMessage}
+      statusMessage={statusNotice?.message}
+      statusSeverity={statusNotice?.severity}
       onSourceTextChange={setSourceText}
       onImportText={handleImportText}
       onRunPipeline={triggerRunPipeline}

@@ -192,7 +192,8 @@ export async function runTranslationWorkspace(
       return {
         project: buildStudioShellProject(seed),
         mode: 'fallback',
-        message: 'OpenAI key is not configured, using local fallback.',
+        message:
+          'OpenAI key is not configured. Showing demo fallback drafts only; do not treat them as production translation.',
       };
     }
 
@@ -212,7 +213,7 @@ export async function runTranslationWorkspace(
     return {
       project: buildStudioShellProject(seed),
       mode: 'fallback',
-      message,
+      message: `${message} Showing demo fallback drafts only; review before use.`,
     };
   }
 }

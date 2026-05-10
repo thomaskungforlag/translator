@@ -1,5 +1,6 @@
 import { type ChangeEvent, type ReactElement } from 'react';
 
+import type { AlertColor } from '@mui/material';
 import { Alert, Button, MenuItem, Paper, Stack, TextField, Typography } from '@mui/material';
 
 import type { ContentType, LanguageConfig } from '@/lib/domain';
@@ -10,6 +11,7 @@ type WorkspaceControlsProps = {
   targetLanguage: LanguageConfig;
   isRunning: boolean;
   statusMessage?: string;
+  statusSeverity?: AlertColor;
   onSourceTextChange: (value: string) => void;
   onImportText: (value: string, fileName: string) => void;
   onRunPipeline: () => void;
@@ -21,6 +23,7 @@ export function WorkspaceControls({
   targetLanguage,
   isRunning,
   statusMessage,
+  statusSeverity = 'info',
   onSourceTextChange,
   onImportText,
   onRunPipeline,
@@ -78,7 +81,7 @@ export function WorkspaceControls({
             {isRunning ? 'Running pipeline…' : 'Run pipeline'}
           </Button>
         </Stack>
-        {statusMessage ? <Alert severity="info">{statusMessage}</Alert> : null}
+        {statusMessage ? <Alert severity={statusSeverity}>{statusMessage}</Alert> : null}
       </Stack>
     </Paper>
   );

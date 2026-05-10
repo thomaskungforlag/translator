@@ -20,7 +20,7 @@ It should support:
 - Character and worldbuilding consistency.
 - Grammar, spelling, and language QA.
 - Side-by-side review of source, drafts, critique, and final output.
-- Export to Markdown, DOCX, and possibly JSON.
+- Export to Markdown now, with richer export formats later.
 - Future support for other target languages.
 
 ---
@@ -49,9 +49,8 @@ Each text segment should pass through multiple specialized stages:
 2. Faithful translation.
 3. Voice adaptation.
 4. Literary polish.
-5. Language QA.
-6. Consistency QA.
-7. Final market-quality output.
+5. QA review.
+6. Final market-quality output.
 
 Every stage should be inspectable.
 
@@ -62,20 +61,15 @@ Every stage should be inspectable.
 The MVP should support:
 
 - Paste or upload Swedish text.
-- Select target language, initially English.
-- Select content type:
-  - Novel chapter.
-  - Short story.
-  - Blurb.
-  - Website copy.
-  - Newsletter.
-  - Social post.
+- Target English first, while keeping the data model open to more languages later.
+- Start with the seeded content type and language controls already present in the UI.
 - Run a multi-pass translation pipeline.
-- Show source and final translation side by side.
+- Show source analysis, faithful draft, voice draft, polish draft, final output, and QA findings.
 - Show QA findings separately.
-- Allow user edits.
+- Allow source-text editing and manual copy/paste review.
 - Export final translation as Markdown.
-- Store project files locally or in app storage.
+- Import plain text or Markdown.
+- Make degraded fallback mode explicit when OpenAI is unavailable or fails.
 
 Out of scope for MVP:
 
@@ -84,6 +78,8 @@ Out of scope for MVP:
 - Payment/authentication.
 - Publisher-ready layout.
 - Full CAT-tool functionality.
+- Local persistence beyond copy/paste plus import/export.
+- DOCX import/export.
 
 ---
 
@@ -94,17 +90,15 @@ Out of scope for MVP:
 - Next.js
 - TypeScript
 - React
-- Tailwind CSS
-- shadcn/ui
-- Zustand or React Context for lightweight state
+- MUI
+- Small client components with typed props and minimal shared state
 
 ### Backend
 
 - Next.js API routes or server actions
 - OpenAI API
 - Zod for schema validation
-- SQLite or Postgres depending on project size
-- Prisma or Drizzle ORM
+- No database in the first MVP slice
 
 ### Document Handling
 
@@ -121,16 +115,16 @@ Later:
 
 ### Storage
 
-MVP options:
+MVP:
 
-- Local file-based JSON project storage
-- SQLite
+- Copy/paste workflow
+- Text and Markdown import
+- Markdown export
 
-Production options:
+Later:
 
-- Postgres
-- Supabase
-- Local-first sync later if needed
+- Local project persistence if the review workflow proves it is necessary
+- Postgres or Supabase if multi-project storage becomes a real product need
 
 ---
 
@@ -160,6 +154,7 @@ type DocumentSegment = {
   projectId: string;
   index: number;
   sourceText: string;
+  sourceAnalysis: string;
   sourceNotes?: string;
   translationDraft?: string;
   voiceAdaptedDraft?: string;
@@ -239,8 +234,7 @@ Purpose:
 Output:
 
 - Segmented source text.
-- Potential glossary candidates.
-- Tone and scene notes.
+- Source analysis notes for translation and QA review.
 
 Prompt role:
 
@@ -995,4 +989,3 @@ Do not build authentication, payments, or complex manuscript management yet.
 ## Future North Star
 
 Eventually this could become a private literary translation workbench for Thomas Kung’s author universe: a place where manuscripts, characters, invented terminology, tone, worldbuilding, blurbs, and translations live together and improve over time.
-
