@@ -59,5 +59,10 @@ describe('translation-prompts', () => {
 
     expect(prompt).toContain('translation_stiffness');
     expect(prompt).toContain('literal syntax transfer');
+    expect(prompt).toContain('tense_aspect_drift');
+    expect(prompt).toContain('image_drift');
+    expect(prompt).toContain('family_term_naturalness');
+    expect(prompt).toContain('cultural_texture_drift');
+    expect(prompt).toContain('hope, expectation, remembered belief, or childlike certainty');
   });
 });

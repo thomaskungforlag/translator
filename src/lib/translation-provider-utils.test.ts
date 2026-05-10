@@ -466,6 +466,79 @@ describe('translation-provider-utils (provider adapters)', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
+  it('maps new QA category aliases for tense, image, family, and cultural drift', async () => {
+    process.env.AI_PROVIDER = 'poe';
+    process.env.POE_API_KEY = 'test-poe-key';
+
+    const fetchMock = jest.mocked(globalThis.fetch);
+
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () =>
+        mockPoeResponse(
+          JSON.stringify({
+            findings: [
+              {
+                segmentIndex: 0,
+                severity: 'warning',
+                category: 'tense_drift',
+                issue: 'Past expectation became progressive action.',
+              },
+              {
+                segmentIndex: 1,
+                severity: 'warning',
+                category: 'imagery_drift',
+                issue: 'Image lost precision.',
+              },
+              {
+                segmentIndex: 2,
+                severity: 'warning',
+                category: 'family_terms',
+                issue: 'Literal family terms sound awkward in English.',
+              },
+              {
+                segmentIndex: 3,
+                severity: 'warning',
+                category: 'cultural_texture',
+                issue: 'Communal warmth was flattened.',
+              },
+            ],
+          }),
+        ),
+    } as Response);
+
+    const utils = await loadUtilsModule();
+    const findings = await utils.parseQaResponse('qa prompt');
+
+    expect(findings).toEqual([
+      {
+        segmentIndex: 0,
+        severity: 'warning',
+        category: 'tense_aspect_drift',
+        issue: 'Past expectation became progressive action.',
+      },
+      {
+        segmentIndex: 1,
+        severity: 'warning',
+        category: 'image_drift',
+        issue: 'Image lost precision.',
+      },
+      {
+        segmentIndex: 2,
+        severity: 'warning',
+        category: 'family_term_naturalness',
+        issue: 'Literal family terms sound awkward in English.',
+      },
+      {
+        segmentIndex: 3,
+        severity: 'warning',
+        category: 'cultural_texture_drift',
+        issue: 'Communal warmth was flattened.',
+      },
+    ]);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
   it('flags unchanged faithful output as untranslated', async () => {
     process.env.AI_PROVIDER = 'poe';
     process.env.POE_API_KEY = 'test-poe-key';

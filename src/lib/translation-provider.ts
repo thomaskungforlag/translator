@@ -87,6 +87,7 @@ function buildLiteraryNaturalnessPrompt(prompt: {
     instructions: [
       'Revise each voice-adapted segment into natural literary English while preserving source meaning and paragraph structure.',
       'Preserve emotional restraint, Scandinavian tonal quality, sci-fi atmosphere, character perspective, and intentional rhythm, ambiguity, and subtext.',
+      "When revising, pay special attention to Swedish tense/aspect and close third-person perspective. Some Swedish past-tense constructions express a character's expectation, hope, or emotional certainty about what will happen next. Do not flatten these into English progressive constructions. Choose English tense/aspect that preserves the character's felt meaning.",
       'Improve stiffness from literal transfer: Swedish-like syntax, awkward articles/pronouns, unnatural collocations, flat literal choices, weak verbs, and accidental melodrama.',
       'Do not add meaning, explain subtext, genericize voice, or smooth away intentional starkness.',
       'Return one JSON object per source segment, in source order, with the index and naturalness-revised text.',

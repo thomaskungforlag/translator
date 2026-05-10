@@ -115,7 +115,9 @@ describe('buildStudioShellProject', () => {
     );
 
     expect(project.progress).toBe(100);
-    expect(project.pipelineStages.find((stage) => stage.label === 'QA')?.status).toBe('approved');
+    expect(
+      project.pipelineStages.find((stage) => stage.label === 'Translation stiffness QA')?.status,
+    ).toBe('approved');
     expect(project.segments[0]?.status).toBe('approved');
   });
 
@@ -148,7 +150,9 @@ describe('buildStudioShellProject', () => {
     );
 
     expect(project.progress).toBe(100);
-    expect(project.pipelineStages.find((stage) => stage.label === 'QA')?.status).toBe('reviewed');
+    expect(
+      project.pipelineStages.find((stage) => stage.label === 'Translation stiffness QA')?.status,
+    ).toBe('reviewed');
     expect(project.segments[0]?.status).toBe('reviewed');
   });
 });

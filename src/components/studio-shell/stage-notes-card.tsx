@@ -18,9 +18,9 @@ export function StageNotesCard(): ReactElement {
           <Chip icon={<WarningAmberRoundedIcon />} label="QA gated" color="warning" />
         </Stack>
         <Typography variant="body2" color="text.secondary">
-          The MVP keeps each pass inspectable so Thomas can compare source meaning, literal
-          translation, voice alignment, literary naturalness, polish, and QA findings without losing
-          earlier drafts.
+          The workflow keeps each pass inspectable so Thomas can compare faithful translation, voice
+          adaptation, literary naturalness, QA findings, final polish, and final approved text
+          without losing earlier drafts.
         </Typography>
       </Stack>
     </Paper>

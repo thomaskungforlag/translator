@@ -16,12 +16,26 @@ import ContentCopyRoundedIcon from '@mui/icons-material/ContentCopyRounded';
 
 import type { DocumentSegment } from '@/lib/domain';
 
+function formatSegmentQaFindings(segment: DocumentSegment): string {
+  if (segment.qaFindings.length === 0) {
+    return 'No QA findings for this segment.';
+  }
+
+  return segment.qaFindings
+    .map((finding) => {
+      const suggestion = finding.suggestion ? ` Suggestion: ${finding.suggestion}` : '';
+
+      return `[${finding.severity}] ${finding.category}: ${finding.issue}${suggestion}`;
+    })
+    .join(' ');
+}
+
 const passCopy: Array<string | ((segment: DocumentSegment) => string)> = [
-  (segment: DocumentSegment) => segment.sourceAnalysis,
   (segment: DocumentSegment) => segment.translationDraft ?? 'No translation draft yet.',
   (segment: DocumentSegment) => segment.voiceAdaptedDraft ?? 'No voice-adapted draft yet.',
   (segment: DocumentSegment) =>
     segment.literaryNaturalnessDraft ?? 'No literary naturalness draft yet.',
+  (segment: DocumentSegment) => formatSegmentQaFindings(segment),
   (segment: DocumentSegment) => segment.polishedDraft ?? 'No polished draft yet.',
   (segment: DocumentSegment) => segment.finalText ?? 'No final text yet.',
 ] as const;

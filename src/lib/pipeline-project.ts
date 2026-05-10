@@ -16,27 +16,59 @@ function hasUnresolvedFindings(findings: QAFinding[]): boolean {
   return findings.some((finding) => !finding.resolved);
 }
 
+function hasUnresolvedCategoryFindings(
+  findings: QAFinding[],
+  categories: ReadonlyArray<QAFinding['category']>,
+): boolean {
+  return findings.some((finding) => !finding.resolved && categories.includes(finding.category));
+}
+
 function hasFinalText(finalText: string | undefined): boolean {
   return (finalText ?? '').trim().length > 0;
 }
 
 function buildPipelineStages(segments: SegmentDraft[]) {
   const hasSegments = segments.length > 0;
-  const hasSourceAnalysis = segments.every((segment) => segment.sourceAnalysis.length > 0);
   const hasFaithfulDraft = segments.every((segment) => segment.translationDraft.length > 0);
   const hasVoiceDraft = segments.every((segment) => segment.voiceAdaptedDraft.length > 0);
   const hasNaturalnessDraft = segments.every(
     (segment) => segment.literaryNaturalnessDraft.length > 0,
   );
   const hasPolishedDraft = segments.every((segment) => segment.polishedDraft.length > 0);
-  const hasQaFindings = segments.some((segment) => hasUnresolvedFindings(segment.qaFindings));
+  const hasTenseAspectFindings = segments.some((segment) =>
+    hasUnresolvedCategoryFindings(segment.qaFindings, ['tense_aspect_drift']),
+  );
+  const hasImageFindings = segments.some((segment) =>
+    hasUnresolvedCategoryFindings(segment.qaFindings, ['image_drift']),
+  );
+  const hasStiffnessFindings = segments.some((segment) =>
+    hasUnresolvedCategoryFindings(segment.qaFindings, [
+      'translation_stiffness',
+      'family_term_naturalness',
+      'style_drift',
+      'tone_shift',
+      'market_quality',
+      'character_voice',
+    ]),
+  );
+  const hasCulturalTextureFindings = segments.some((segment) =>
+    hasUnresolvedCategoryFindings(segment.qaFindings, ['cultural_texture_drift']),
+  );
   const pipelineStages: StudioShellProject['pipelineStages'] = [
-    { label: 'Source prep', status: stageStatus(hasSegments && hasSourceAnalysis, false) },
-    { label: 'Faithful', status: stageStatus(hasSegments && hasFaithfulDraft, false) },
-    { label: 'Voice', status: stageStatus(hasSegments && hasVoiceDraft, false) },
-    { label: 'Naturalness', status: stageStatus(hasSegments && hasNaturalnessDraft, false) },
-    { label: 'Polish', status: stageStatus(hasSegments && hasPolishedDraft, false) },
-    { label: 'QA', status: stageStatus(hasSegments, hasQaFindings) },
+    { label: 'Faithful translation', status: stageStatus(hasSegments && hasFaithfulDraft, false) },
+    { label: 'Voice adaptation', status: stageStatus(hasSegments && hasVoiceDraft, false) },
+    {
+      label: 'Literary naturalness',
+      status: stageStatus(hasSegments && hasNaturalnessDraft, false),
+    },
+    {
+      label: 'Tense/aspect/perspective QA',
+      status: stageStatus(hasSegments, hasTenseAspectFindings),
+    },
+    { label: 'Image drift QA', status: stageStatus(hasSegments, hasImageFindings) },
+    { label: 'Translation stiffness QA', status: stageStatus(hasSegments, hasStiffnessFindings) },
+    { label: 'Cultural texture QA', status: stageStatus(hasSegments, hasCulturalTextureFindings) },
+    { label: 'Final polish', status: stageStatus(hasSegments && hasPolishedDraft, false) },
   ];
 
   return pipelineStages;

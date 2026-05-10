@@ -22,7 +22,7 @@ const demoSegment: DocumentSegment = {
 };
 
 describe('SelectedSegmentCard', () => {
-  it('renders editable final text controls in QA pass', async () => {
+  it('renders editable final text controls in final approved pass', async () => {
     const user = userEvent.setup();
     const handleFinalTextChange = jest.fn();
     const handleFinalTextLockChange = jest.fn();
@@ -48,8 +48,8 @@ describe('SelectedSegmentCard', () => {
     expect(handleFinalTextLockChange).toHaveBeenCalledWith(true);
   });
 
-  it('renders read-only pass text outside QA pass', () => {
-    render(<SelectedSegmentCard activePass={1} selectedSegment={demoSegment} />);
+  it('renders read-only pass text outside final approved pass', () => {
+    render(<SelectedSegmentCard activePass={0} selectedSegment={demoSegment} />);
 
     expect(screen.getByText('It had started to snow.')).toBeVisible();
     expect(screen.queryByRole('textbox', { name: /final text/i })).not.toBeInTheDocument();
