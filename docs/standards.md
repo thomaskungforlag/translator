@@ -1,6 +1,13 @@
 # Standards
 
-This project uses strict linting and explicit quality gates so new code stays small, readable, and testable.
+## Table of Contents
+
+- [TypeScript](#typescript)
+- [ESLint](#eslint)
+- [Prettier](#prettier)
+- [Component Design](#component-design)
+- [Testing](#testing)
+- [Enforcement](#enforcement)
 
 ## TypeScript
 

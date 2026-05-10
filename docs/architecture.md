@@ -1,6 +1,10 @@
 # Architecture
 
-This repo is a Next.js App Router application with a client-side MUI shell and a typed domain layer.
+## Table of Contents
+
+- [Layout](#layout)
+- [Boundaries](#boundaries)
+- [Current Entry Points](#current-entry-points)
 
 ## Layout
 

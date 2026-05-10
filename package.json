@@ -5,6 +5,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "docs:toc": "node scripts/update-tocs.mjs && git add **/*.md",
     "build": "next build",
     "start": "next start",
     "lint": "eslint . --max-warnings=0",

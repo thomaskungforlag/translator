@@ -5,7 +5,7 @@ coverage
 out
 package-lock.json
 tsconfig.tsbuildinfo
-thomas_kung_translation_app_plan.md
+.docs/thomas_kung_translation_app_plan.md
 next-env.d.ts
 *.log
 *.tsbuildinfo

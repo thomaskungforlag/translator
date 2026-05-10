@@ -1,6 +1,11 @@
 # Testing
 
-The repo is set up to support TDD and fast feedback.
+## Table of Contents
+
+- [Unit Tests](#unit-tests)
+- [Browser Tests](#browser-tests)
+- [Recommended Flow](#recommended-flow)
+- [What To Test](#what-to-test)
 
 ## Unit Tests
 

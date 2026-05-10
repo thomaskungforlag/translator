@@ -2,6 +2,25 @@
 
 Next.js + TypeScript + MUI workbench for an inspectable multi-pass literary translation workflow.
 
+<!-- TOC-START -->
+
+### Documentation
+
+- [architecture](/docs/architecture.md)
+- [reference-material](/docs/reference-material.md)
+- [standards](/docs/standards.md)
+- [testing](/docs/testing.md)
+- [thomas_kung_translation_app_plan](/docs/thomas_kung_translation_app_plan.md)
+
+### Main Sections
+
+- [Start Here](#start-here)
+- [Setup](#setup)
+- [Code Map](#code-map)
+- [Standards](#standards)
+- [Scripts](#scripts)
+<!-- TOC-END -->
+
 ## Start Here
 
 If you are new to the repo, read these in order:
@@ -10,7 +29,7 @@ If you are new to the repo, read these in order:
 2. [docs/standards.md](docs/standards.md) for the TypeScript, ESLint, Prettier, and SOC rules.
 3. [docs/testing.md](docs/testing.md) for the TDD and browser-testing workflow.
 4. [docs/reference-material.md](docs/reference-material.md) for how the Röd Tvilling PDFs should be used.
-5. [thomas_kung_translation_app_plan.md](thomas_kung_translation_app_plan.md) for the product plan.
+5. [docs/thomas_kung_translation_app_plan.md](docs/thomas_kung_translation_app_plan.md) for the product plan.
 
 ## Setup
 

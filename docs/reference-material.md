@@ -1,6 +1,11 @@
 # Reference Material
 
-Two PDF files were added under `docs/` to anchor the translation workflow.
+## Table of Contents
+
+- [`RodTvilling.6x9.Hardcover.pdf`](#rodtvilling6x9hardcoverpdf)
+- [`RodTvilling.English.pdf`](#rodtvillingenglishpdf)
+- [Recommendation](#recommendation)
+- [Practical Use In MVP](#practical-use-in-mvp)
 
 ## `RodTvilling.6x9.Hardcover.pdf`
 
