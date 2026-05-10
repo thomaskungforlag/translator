@@ -12,13 +12,17 @@ function stageStatus(hasValues: boolean, hasIssues: boolean): SegmentStatus {
   return hasIssues ? 'reviewed' : 'approved';
 }
 
+function hasUnresolvedFindings(findings: QAFinding[]): boolean {
+  return findings.some((finding) => !finding.resolved);
+}
+
 function buildPipelineStages(segments: SegmentDraft[]) {
   const hasSegments = segments.length > 0;
   const hasSourceAnalysis = segments.every((segment) => segment.sourceAnalysis.length > 0);
   const hasFaithfulDraft = segments.every((segment) => segment.translationDraft.length > 0);
   const hasVoiceDraft = segments.every((segment) => segment.voiceAdaptedDraft.length > 0);
   const hasPolishedDraft = segments.every((segment) => segment.polishedDraft.length > 0);
-  const hasQaFindings = segments.some((segment) => segment.qaFindings.length > 0);
+  const hasQaFindings = segments.some((segment) => hasUnresolvedFindings(segment.qaFindings));
   const pipelineStages: StudioShellProject['pipelineStages'] = [
     { label: 'Source prep', status: stageStatus(hasSegments && hasSourceAnalysis, false) },
     { label: 'Faithful', status: stageStatus(hasSegments && hasFaithfulDraft, false) },
@@ -35,7 +39,9 @@ function buildProjectProgress(segments: SegmentDraft[]): number {
     return 0;
   }
 
-  const approvedSegments = segments.filter((segment) => segment.qaFindings.length === 0).length;
+  const approvedSegments = segments.filter(
+    (segment) => !hasUnresolvedFindings(segment.qaFindings),
+  ).length;
 
   return Math.round((approvedSegments / segments.length) * 100);
 }
@@ -58,7 +64,7 @@ function buildDocumentSegment(projectId: string, index: number, draft: SegmentDr
     finalText: draft.finalText,
     finalTextLocked: false,
     qaFindings: draft.qaFindings,
-    status: draft.qaFindings.length > 0 ? 'reviewed' : 'approved',
+    status: hasUnresolvedFindings(draft.qaFindings) ? 'reviewed' : 'approved',
   } as const;
 }
 

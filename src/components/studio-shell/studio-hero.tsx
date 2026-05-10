@@ -6,6 +6,7 @@ import { Box, Button, Chip, Paper, Stack, Typography } from '@mui/material';
 
 type StudioHeroProps = {
   apiKeyConfigured: boolean;
+  activeRuntimeModelLabel: string;
   onRunPipeline?: () => void;
   onExportMarkdown?: () => void;
   isRunning?: boolean;
@@ -13,6 +14,7 @@ type StudioHeroProps = {
 
 export function StudioHero({
   apiKeyConfigured,
+  activeRuntimeModelLabel,
   onRunPipeline,
   onExportMarkdown,
   isRunning = false,
@@ -37,7 +39,13 @@ export function StudioHero({
             <Chip
               size="small"
               variant="outlined"
-              label={apiKeyConfigured ? 'OpenAI key configured' : 'OpenAI key missing'}
+              label={`Active model: ${activeRuntimeModelLabel}`}
+              color="info"
+            />
+            <Chip
+              size="small"
+              variant="outlined"
+              label={apiKeyConfigured ? 'Provider key configured' : 'Provider key missing'}
               color={apiKeyConfigured ? 'success' : 'warning'}
             />
           </Stack>

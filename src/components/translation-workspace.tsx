@@ -18,6 +18,7 @@ import { WorkspaceControls } from './workspace-controls';
 
 type TranslationWorkspaceProps = {
   apiKeyConfigured: boolean;
+  activeRuntimeModelLabel: string;
   initialSeed: TranslationWorkspaceSeed;
 };
 
@@ -34,6 +35,7 @@ type StatusNotice = {
 
 type TranslationWorkspaceViewProps = {
   apiKeyConfigured: boolean;
+  activeRuntimeModelLabel: string;
   sourceText: string;
   project: StudioShellProject;
   isRunning: boolean;
@@ -45,6 +47,7 @@ type TranslationWorkspaceViewProps = {
   onExportMarkdown: () => void;
   onCopyFinalText: () => void;
   onCopyQaSummary: () => void;
+  onQaFindingResolvedChange: (findingId: string, resolved: boolean) => void;
   onSegmentFinalTextChange: (segmentId: string, value: string) => void;
   onSegmentFinalTextLockChange: (segmentId: string, locked: boolean) => void;
 };
@@ -72,6 +75,10 @@ function buildQaSummaryText(project: StudioShellProject): string {
     .join('\n');
 }
 
+function hasUnresolvedQaFindings(findings: DocumentSegment['qaFindings']): boolean {
+  return findings.some((finding) => !finding.resolved);
+}
+
 function stageStatus(hasValues: boolean, hasIssues: boolean): DocumentSegment['status'] {
   if (!hasValues) {
     return 'pending';
@@ -85,10 +92,12 @@ function updateProjectFromSegments(
   segments: DocumentSegment[],
 ): StudioShellProject {
   const qaFindings = segments.flatMap((segment) => segment.qaFindings);
-  const approvedSegments = segments.filter((segment) => segment.qaFindings.length === 0).length;
+  const approvedSegments = segments.filter(
+    (segment) => !hasUnresolvedQaFindings(segment.qaFindings),
+  ).length;
   const progress =
     segments.length === 0 ? 0 : Math.round((approvedSegments / segments.length) * 100);
-  const hasQaFindings = segments.some((segment) => segment.qaFindings.length > 0);
+  const hasQaFindings = segments.some((segment) => hasUnresolvedQaFindings(segment.qaFindings));
 
   return {
     ...project,
@@ -110,7 +119,7 @@ function updateSegmentQa(segment: DocumentSegment, finalText: string): DocumentS
     ...segment,
     finalText,
     qaFindings,
-    status: qaFindings.length > 0 ? 'reviewed' : 'approved',
+    status: hasUnresolvedQaFindings(qaFindings) ? 'reviewed' : 'approved',
   };
 }
 
@@ -218,6 +227,7 @@ function downloadMarkdown(project: StudioShellProject): void {
 
 function TranslationWorkspaceView({
   apiKeyConfigured,
+  activeRuntimeModelLabel,
   sourceText,
   project,
   isRunning,
@@ -229,6 +239,7 @@ function TranslationWorkspaceView({
   onExportMarkdown,
   onCopyFinalText,
   onCopyQaSummary,
+  onQaFindingResolvedChange,
   onSegmentFinalTextChange,
   onSegmentFinalTextLockChange,
 }: TranslationWorkspaceViewProps): ReactElement {
@@ -247,12 +258,14 @@ function TranslationWorkspaceView({
       />
       <StudioShell
         apiKeyConfigured={apiKeyConfigured}
+        activeRuntimeModelLabel={activeRuntimeModelLabel}
         project={project}
         isRunning={isRunning}
         onRunPipeline={onRunPipeline}
         onExportMarkdown={onExportMarkdown}
         onCopyFinalText={onCopyFinalText}
         onCopyQaSummary={onCopyQaSummary}
+        onQaFindingResolvedChange={onQaFindingResolvedChange}
         onSegmentFinalTextChange={onSegmentFinalTextChange}
         onSegmentFinalTextLockChange={onSegmentFinalTextLockChange}
       />
@@ -262,6 +275,7 @@ function TranslationWorkspaceView({
 
 export function TranslationWorkspace({
   apiKeyConfigured,
+  activeRuntimeModelLabel,
   initialSeed,
 }: TranslationWorkspaceProps): ReactElement {
   const [sourceText, setSourceText] = useState(initialSeed.sourceText);
@@ -427,9 +441,32 @@ export function TranslationWorkspace({
     });
   };
 
+  const handleQaFindingResolvedChange = (findingId: string, resolved: boolean): void => {
+    setProject((currentProject) => {
+      const segments = currentProject.segments.map((segment) => {
+        if (!segment.qaFindings.some((finding) => finding.id === findingId)) {
+          return segment;
+        }
+
+        const qaFindings = segment.qaFindings.map((finding) =>
+          finding.id === findingId ? { ...finding, resolved } : finding,
+        );
+
+        return {
+          ...segment,
+          qaFindings,
+          status: hasUnresolvedQaFindings(qaFindings) ? 'reviewed' : 'approved',
+        };
+      });
+
+      return updateProjectFromSegments(currentProject, segments);
+    });
+  };
+
   return (
     <TranslationWorkspaceView
       apiKeyConfigured={apiKeyConfigured}
+      activeRuntimeModelLabel={activeRuntimeModelLabel}
       sourceText={sourceText}
       project={project}
       isRunning={isRunning}
@@ -441,6 +478,7 @@ export function TranslationWorkspace({
       onExportMarkdown={handleExportMarkdown}
       onCopyFinalText={handleCopyFinalText}
       onCopyQaSummary={handleCopyQaSummary}
+      onQaFindingResolvedChange={handleQaFindingResolvedChange}
       onSegmentFinalTextChange={handleSegmentFinalTextChange}
       onSegmentFinalTextLockChange={handleSegmentFinalTextLockChange}
     />

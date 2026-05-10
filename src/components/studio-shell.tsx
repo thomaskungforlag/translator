@@ -16,11 +16,13 @@ import { StudioHero } from './studio-shell/studio-hero';
 
 export function StudioShell({
   apiKeyConfigured,
+  activeRuntimeModelLabel,
   project,
   onRunPipeline,
   onExportMarkdown,
   onCopyFinalText,
   onCopyQaSummary,
+  onQaFindingResolvedChange,
   onSegmentFinalTextChange,
   onSegmentFinalTextLockChange,
   isRunning = false,
@@ -47,6 +49,7 @@ export function StudioShell({
       <Stack spacing={3}>
         <StudioHero
           apiKeyConfigured={apiKeyConfigured}
+          activeRuntimeModelLabel={activeRuntimeModelLabel}
           onRunPipeline={onRunPipeline}
           onExportMarkdown={onExportMarkdown}
           isRunning={isRunning}
@@ -81,7 +84,10 @@ export function StudioShell({
 
           <Box sx={{ minWidth: 0 }}>
             <Stack spacing={3}>
-              <QAFindingsPanel findings={project.qaFindings} />
+              <QAFindingsPanel
+                findings={project.qaFindings}
+                onResolvedChange={onQaFindingResolvedChange}
+              />
               <QuickActionsPanel
                 onRunPipeline={onRunPipeline}
                 onExportMarkdown={onExportMarkdown}
