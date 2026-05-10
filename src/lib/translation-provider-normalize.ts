@@ -149,6 +149,33 @@ function extractJsonCandidate(rawText: string): unknown {
 }
 
 function toStageResponseShape(candidate: unknown): unknown {
+  const pickStageText = (record: Record<string, unknown>): string | undefined =>
+    [
+      record.text,
+      record.analysis,
+      record.translation,
+      record.translation_text,
+      record.draft,
+      record.voice,
+      record.voice_adapted_text,
+      record.voiceAdaptedText,
+      record.polish,
+      record.polished,
+      record.polishedText,
+      record.polished_text,
+      record.copyedit,
+      record.copyeditedText,
+      record.copyedited_text,
+      record.professionalCopyedit,
+      record.professional_copyedit,
+      record.professional_literary_copyedit,
+      record.professional_literary_copyedit_text,
+      record.professionalLiteraryCopyeditText,
+      record.voiceAdapted,
+      record.voice_adapted,
+      record.output,
+    ].find((value) => typeof value === 'string' && value.trim().length > 0) as string | undefined;
+
   const normalizeStageItems = (items: unknown[]): Array<{ index: number; text: string }> =>
     items
       .map((item) => {
@@ -158,23 +185,7 @@ function toStageResponseShape(candidate: unknown): unknown {
 
         const record = item as Record<string, unknown>;
         const index = typeof record.index === 'number' ? record.index : null;
-        const textCandidate = [
-          record.text,
-          record.analysis,
-          record.translation,
-          record.draft,
-          record.voice,
-          record.polish,
-          record.polished,
-          record.copyedit,
-          record.professionalCopyedit,
-          record.professional_literary_copyedit,
-          record.voiceAdapted,
-          record.voice_adapted,
-          record.output,
-        ].find((value) => typeof value === 'string' && value.trim().length > 0) as
-          | string
-          | undefined;
+        const textCandidate = pickStageText(record);
 
         if (index === null || !textCandidate) {
           return null;
@@ -183,6 +194,36 @@ function toStageResponseShape(candidate: unknown): unknown {
         return { index, text: textCandidate };
       })
       .filter((item): item is { index: number; text: string } => item !== null);
+
+  const normalizeStageRecord = (
+    record: Record<string, unknown>,
+  ): Array<{ index: number; text: string }> | null => {
+    const index = typeof record.index === 'number' ? record.index : null;
+    const textCandidate = pickStageText(record);
+
+    if (index === null || !textCandidate) {
+      return null;
+    }
+
+    return [{ index, text: textCandidate }];
+  };
+
+  const normalizeIndexedRecordContainer = (
+    record: Record<string, unknown>,
+  ): Array<{ index: number; text: string }> | null => {
+    const numericEntries = Object.entries(record)
+      .filter(([key]) => /^\d+$/.test(key))
+      .sort(([left], [right]) => Number(left) - Number(right))
+      .map(([, value]) => value);
+
+    if (numericEntries.length === 0) {
+      return null;
+    }
+
+    const normalized = normalizeStageItems(numericEntries);
+
+    return normalized.length > 0 ? normalized : null;
+  };
 
   if (Array.isArray(candidate)) {
     const normalized = normalizeStageItems(candidate);
@@ -198,10 +239,26 @@ function toStageResponseShape(candidate: unknown): unknown {
 
   const record = candidate as Record<string, unknown>;
   const nestedStageContainer =
-    record.stageResult ?? record.stage_result ?? record.result ?? record.payload;
+    record.stageResult ??
+    record.stage_result ??
+    record.stage_response ??
+    record.result ??
+    record.payload;
 
   if (nestedStageContainer && typeof nestedStageContainer === 'object') {
     return toStageResponseShape(nestedStageContainer);
+  }
+
+  const singleRecord = normalizeStageRecord(record);
+
+  if (singleRecord) {
+    return { segments: singleRecord };
+  }
+
+  const indexedRecordContainer = normalizeIndexedRecordContainer(record);
+
+  if (indexedRecordContainer) {
+    return { segments: indexedRecordContainer };
   }
 
   const resolveArrayContainer = (): unknown[] | null => {

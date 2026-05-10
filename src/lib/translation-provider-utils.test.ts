@@ -1,5 +1,7 @@
 /** @jest-environment node */
 
+export {};
+
 const ORIGINAL_ENV = process.env;
 
 type PoeMockPayload = {
