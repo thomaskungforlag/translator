@@ -80,7 +80,7 @@ const professionalCopyeditPhraseMap = new Map<string, string>([
 ]);
 
 function trimParagraph(paragraph: string): string {
-  return paragraph.trim().replace(/\s+/g, ' ');
+  return paragraph.trim();
 }
 
 function normalizeLineEndings(sourceText: string): string {
