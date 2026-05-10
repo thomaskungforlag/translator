@@ -19,6 +19,23 @@ export default defineConfig(
         tsconfigRootDir: import.meta.dirname,
       },
     },
+    rules: {
+      complexity: ['error', 8],
+      'max-depth': ['error', 3],
+      'max-len': [
+        'error',
+        {
+          code: 100,
+          ignoreComments: true,
+          ignoreStrings: true,
+          ignoreTemplateLiterals: true,
+          ignoreUrls: true,
+        },
+      ],
+      'max-lines': ['error', { max: 250, skipBlankLines: true, skipComments: true }],
+      'max-lines-per-function': ['error', { max: 80, skipBlankLines: true, skipComments: true }],
+      'max-params': ['error', 4],
+    },
   },
   {
     files: ['**/*.{js,mjs,cjs}'],

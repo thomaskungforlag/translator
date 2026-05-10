@@ -13,5 +13,7 @@ Next.js + TypeScript + MUI foundation for a multi-pass literary translation work
 - `npm run dev` - start the development server
 - `npm run lint` - run ESLint
 - `npm run typecheck` - run the TypeScript compiler
+- `npm run test:unit` - run Jest unit tests
+- `npm run test:e2e` - run Playwright browser tests
 - `npm run build` - build for production
-- `npm run verify` - run lint, typecheck, and build
+- `npm run verify` - run lint, typecheck, format check, unit tests, and build
