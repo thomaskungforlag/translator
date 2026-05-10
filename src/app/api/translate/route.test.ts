@@ -1,3 +1,5 @@
+/** @jest-environment node */
+
 import { demoWorkspaceSeed } from '@/lib/demo-workspace';
 import * as translationModule from '@/lib/translation';
 

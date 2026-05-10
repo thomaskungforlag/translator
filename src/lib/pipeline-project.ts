@@ -19,14 +19,15 @@ function buildPipelineStages(segments: SegmentDraft[]) {
   const hasVoiceDraft = segments.every((segment) => segment.voiceAdaptedDraft.length > 0);
   const hasPolishedDraft = segments.every((segment) => segment.polishedDraft.length > 0);
   const hasQaFindings = segments.some((segment) => segment.qaFindings.length > 0);
-
-  return [
+  const pipelineStages: StudioShellProject['pipelineStages'] = [
     { label: 'Source prep', status: stageStatus(hasSegments && hasSourceAnalysis, false) },
     { label: 'Faithful', status: stageStatus(hasSegments && hasFaithfulDraft, false) },
     { label: 'Voice', status: stageStatus(hasSegments && hasVoiceDraft, false) },
     { label: 'Polish', status: stageStatus(hasSegments && hasPolishedDraft, false) },
     { label: 'QA', status: stageStatus(hasSegments, hasQaFindings) },
-  ] as const;
+  ];
+
+  return pipelineStages;
 }
 
 function buildProjectProgress(segments: SegmentDraft[]): number {

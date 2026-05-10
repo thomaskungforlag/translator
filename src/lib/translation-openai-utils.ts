@@ -24,7 +24,7 @@ export type TranslationWorkspaceResponse = {
 };
 
 const openaiClient = env.OPENAI_API_KEY ? new OpenAI({ apiKey: env.OPENAI_API_KEY }) : null;
-const openaiModel = env.OPENAI_MODEL ?? 'gpt-4.1-mini';
+const openaiModel = env.OPENAI_MODEL ?? 'gpt-5-mini';
 
 export const isOpenAIConfigured = Boolean(openaiClient);
 

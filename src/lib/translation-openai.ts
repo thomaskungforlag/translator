@@ -127,13 +127,13 @@ async function translateWithOpenAI(seed: TranslationWorkspaceSeed): Promise<Segm
   );
   ensureStageCoverage('polish_pass', sourceSegments, polishedSegments);
 
-  return toDrafts(
+  return toDrafts({
     sourceSegments,
     analysisSegments,
     faithfulSegments,
     voiceSegments,
     polishedSegments,
-  );
+  });
 }
 
 async function finalizeWithQa(

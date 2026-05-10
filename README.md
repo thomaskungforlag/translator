@@ -17,6 +17,10 @@ If you are new to the repo, read these in order:
 1. Copy `.env.example` to `.env.local`.
 2. Set `OPENAI_API_KEY` to enable the OpenAI-backed pipeline.
 3. Optionally set `OPENAI_MODEL` if you want to override the default model.
+   The code defaults to `gpt-5-mini` because it is the best cost-quality
+   starting point for the explicit multi-pass translation pipeline. Use
+   `gpt-5.1` if you want to spend more for maximum output quality, or
+   `gpt-4.1` if you want a non-reasoning alternative.
 4. Run `npm run dev`.
 
 ## Code Map
