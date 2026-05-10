@@ -1,24 +1,9 @@
-import type {
-  ContentType,
-  DocumentSegment,
-  GlossaryEntry,
-  LanguageConfig,
-  QAFinding,
-  SegmentStatus,
-} from '@/lib/domain';
-
-export type StudioShellProject = {
-  title: string;
-  contentType: ContentType;
-  targetLanguage: LanguageConfig;
-  progress: number;
-  segments: DocumentSegment[];
-  glossary: GlossaryEntry[];
-  qaFindings: QAFinding[];
-  pipelineStages: Array<{ label: string; status: SegmentStatus | 'running' | 'idle' }>;
-};
+import type { StudioShellProject } from '@/lib/workspace';
 
 export type StudioShellProps = {
   apiKeyConfigured: boolean;
   project: StudioShellProject;
+  onRunPipeline?: () => void;
+  onExportMarkdown?: () => void;
+  isRunning?: boolean;
 };

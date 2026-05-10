@@ -5,7 +5,7 @@ import EditRoundedIcon from '@mui/icons-material/EditRounded';
 import ScienceOutlinedIcon from '@mui/icons-material/ScienceOutlined';
 import { Box, Chip, IconButton, LinearProgress, Paper, Stack, Typography } from '@mui/material';
 
-import type { StudioShellProject } from './types';
+import type { StudioShellProject } from '@/lib/workspace';
 
 type ProjectOverviewProps = {
   project: StudioShellProject;

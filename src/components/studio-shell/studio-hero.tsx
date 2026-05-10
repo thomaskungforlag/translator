@@ -6,9 +6,17 @@ import { Box, Button, Chip, Paper, Stack, Typography } from '@mui/material';
 
 type StudioHeroProps = {
   apiKeyConfigured: boolean;
+  onRunPipeline?: () => void;
+  onExportMarkdown?: () => void;
+  isRunning?: boolean;
 };
 
-export function StudioHero({ apiKeyConfigured }: StudioHeroProps): ReactElement {
+export function StudioHero({
+  apiKeyConfigured,
+  onRunPipeline,
+  onExportMarkdown,
+  isRunning = false,
+}: StudioHeroProps): ReactElement {
   return (
     <Paper
       sx={{
@@ -44,10 +52,15 @@ export function StudioHero({ apiKeyConfigured }: StudioHeroProps): ReactElement 
         </Box>
 
         <Stack direction="row" spacing={1.5} sx={{ flexWrap: 'wrap' }}>
-          <Button variant="contained" startIcon={<PlayArrowRoundedIcon />}>
+          <Button
+            variant="contained"
+            startIcon={<PlayArrowRoundedIcon />}
+            onClick={onRunPipeline}
+            disabled={isRunning}
+          >
             Run pipeline
           </Button>
-          <Button variant="outlined" startIcon={<DownloadRoundedIcon />}>
+          <Button variant="outlined" startIcon={<DownloadRoundedIcon />} onClick={onExportMarkdown}>
             Export Markdown
           </Button>
         </Stack>

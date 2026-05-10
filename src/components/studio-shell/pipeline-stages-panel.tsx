@@ -2,7 +2,7 @@ import type { ReactElement } from 'react';
 
 import { Card, CardContent, Chip, Paper, Stack, Typography } from '@mui/material';
 
-import type { StudioShellProject } from './types';
+import type { StudioShellProject } from '@/lib/workspace';
 
 type PipelineStagesPanelProps = {
   stages: StudioShellProject['pipelineStages'];

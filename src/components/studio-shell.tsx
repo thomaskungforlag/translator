@@ -14,7 +14,13 @@ import { QuickActionsPanel } from './studio-shell/quick-actions-panel';
 import { SegmentReviewPanel } from './studio-shell/segment-review-panel';
 import { StudioHero } from './studio-shell/studio-hero';
 
-export function StudioShell({ apiKeyConfigured, project }: StudioShellProps): ReactElement {
+export function StudioShell({
+  apiKeyConfigured,
+  project,
+  onRunPipeline,
+  onExportMarkdown,
+  isRunning = false,
+}: StudioShellProps): ReactElement {
   const shellRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -35,7 +41,12 @@ export function StudioShell({ apiKeyConfigured, project }: StudioShellProps): Re
       }}
     >
       <Stack spacing={3}>
-        <StudioHero apiKeyConfigured={apiKeyConfigured} />
+        <StudioHero
+          apiKeyConfigured={apiKeyConfigured}
+          onRunPipeline={onRunPipeline}
+          onExportMarkdown={onExportMarkdown}
+          isRunning={isRunning}
+        />
 
         <Box
           sx={{
@@ -63,7 +74,11 @@ export function StudioShell({ apiKeyConfigured, project }: StudioShellProps): Re
           <Box sx={{ minWidth: 0 }}>
             <Stack spacing={3}>
               <QAFindingsPanel findings={project.qaFindings} />
-              <QuickActionsPanel />
+              <QuickActionsPanel
+                onRunPipeline={onRunPipeline}
+                onExportMarkdown={onExportMarkdown}
+                isRunning={isRunning}
+              />
             </Stack>
           </Box>
         </Box>
