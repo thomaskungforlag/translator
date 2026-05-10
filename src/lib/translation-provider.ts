@@ -15,7 +15,7 @@ import {
   parseStageResponse,
   toDrafts,
   type TranslationWorkspaceResponse,
-} from './translation-openai-utils';
+} from './translation-provider-utils';
 import type { TranslationWorkspaceSeed } from './workspace';
 
 function buildAnalysisPrompt(seed: TranslationWorkspaceSeed, sourceSegments: string[]): string {
@@ -96,7 +96,7 @@ function buildPolishPrompt(prompt: {
   });
 }
 
-async function translateWithOpenAI(seed: TranslationWorkspaceSeed): Promise<SegmentDraft[]> {
+async function translateWithProvider(seed: TranslationWorkspaceSeed): Promise<SegmentDraft[]> {
   const sourceSegments = splitSourceText(seed.sourceText);
   const analysisSegments = await parseStageResponse(
     'source_analysis',
@@ -159,7 +159,7 @@ async function finalizeWithQa(
     const existing = findingsByIndex.get(finding.segmentIndex) ?? [];
 
     existing.push({
-      id: `qa-openai-${finding.segmentIndex}-${existing.length + 1}`,
+      id: `qa-provider-${finding.segmentIndex}-${existing.length + 1}`,
       severity: finding.severity,
       category: finding.category,
       sourceExcerpt: finding.sourceExcerpt,
@@ -198,14 +198,23 @@ export async function runTranslationWorkspace(
       };
     }
 
-    const openaiDrafts = await translateWithOpenAI(seed);
-    const draftsWithQa = await finalizeWithQa(seed, openaiDrafts);
+    const providerDrafts = await translateWithProvider(seed);
+    const draftsWithQa = await finalizeWithQa(seed, providerDrafts);
 
     return {
       project: buildStudioShellProject(seed, draftsWithQa),
       mode: activeProviderMode,
     };
   } catch (error) {
+    console.error('[translation] pipeline failed, returning fallback', {
+      provider: activeProviderMode,
+      projectId: seed.projectId,
+      title: seed.title,
+      sourceLength: seed.sourceText.length,
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
+
     const message =
       error instanceof Error
         ? error.message
