@@ -1,0 +1,70 @@
+import { z } from 'zod';
+
+import { languageCodeValues } from './domain';
+
+export const translationWorkspaceRequestSchema = z.object({
+  projectId: z.string().min(1),
+  title: z.string().min(1),
+  contentType: z.enum([
+    'novel_chapter',
+    'short_story',
+    'blurb',
+    'website_copy',
+    'newsletter',
+    'social_post',
+  ]),
+  sourceLanguageCode: z.enum(languageCodeValues),
+  targetLanguage: z.object({
+    code: z.enum(languageCodeValues),
+    label: z.string().min(1),
+    locale: z.string().min(1),
+    translationNotes: z.array(z.string()),
+    dialogueRules: z.array(z.string()),
+    punctuationRules: z.array(z.string()),
+    marketQualityNotes: z.array(z.string()),
+  }),
+  sourceText: z.string().min(1),
+  glossary: z.array(
+    z.object({
+      id: z.string().min(1),
+      sourceTerm: z.string().min(1),
+      targetTerm: z.string().min(1),
+      category: z.enum(['character', 'place', 'technology', 'worldbuilding', 'phrase', 'other']),
+      notes: z.string().optional(),
+      locked: z.boolean(),
+    }),
+  ),
+});
+
+export const stageSegmentSchema = z.object({
+  index: z.number().int().nonnegative(),
+  text: z.string().min(1),
+});
+
+export const stageResponseSchema = z.object({
+  segments: z.array(stageSegmentSchema).min(1),
+});
+
+export const qaFindingSchema = z.object({
+  segmentIndex: z.number().int().nonnegative(),
+  severity: z.enum(['info', 'warning', 'critical']),
+  category: z.enum([
+    'omission',
+    'mistranslation',
+    'grammar',
+    'spelling',
+    'style_drift',
+    'terminology',
+    'character_voice',
+    'market_quality',
+    'formatting',
+  ]),
+  sourceExcerpt: z.string().optional(),
+  targetExcerpt: z.string().optional(),
+  issue: z.string().min(1),
+  suggestion: z.string().optional(),
+});
+
+export const qaResponseSchema = z.object({
+  findings: z.array(qaFindingSchema),
+});

@@ -61,6 +61,7 @@ export type DocumentSegment = {
   projectId: string;
   index: number;
   sourceText: string;
+  sourceAnalysis: string;
   sourceNotes?: string;
   translationDraft?: string;
   voiceAdaptedDraft?: string;
@@ -137,6 +138,7 @@ export const documentSegmentSchema = z.object({
   projectId: z.string().min(1),
   index: z.number().int().nonnegative(),
   sourceText: z.string().min(1),
+  sourceAnalysis: z.string().min(1),
   sourceNotes: z.string().optional(),
   translationDraft: z.string().optional(),
   voiceAdaptedDraft: z.string().optional(),

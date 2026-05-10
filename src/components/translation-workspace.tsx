@@ -21,6 +21,27 @@ type TranslationWorkspaceResponse = {
   message?: string;
 };
 
+type TranslationWorkspaceViewProps = {
+  apiKeyConfigured: boolean;
+  sourceText: string;
+  project: StudioShellProject;
+  isRunning: boolean;
+  statusMessage?: string;
+  onSourceTextChange: (value: string) => void;
+  onImportText: (value: string, fileName: string) => void;
+  onRunPipeline: () => void;
+  onExportMarkdown: () => void;
+};
+
+function deriveImportedTitle(fileName: string, fallbackTitle: string): string {
+  const baseName = fileName
+    .replace(/\.[^.]+$/, '')
+    .replace(/[-_]+/g, ' ')
+    .trim();
+
+  return baseName.length > 0 ? baseName : fallbackTitle;
+}
+
 function downloadMarkdown(project: StudioShellProject): void {
   const markdown = exportProjectMarkdown(project);
   const blob = new Blob([markdown], { type: 'text/markdown;charset=utf-8' });
@@ -31,6 +52,40 @@ function downloadMarkdown(project: StudioShellProject): void {
   anchor.download = `${project.title.replace(/\s+/g, '-').toLowerCase()}.md`;
   anchor.click();
   URL.revokeObjectURL(url);
+}
+
+function TranslationWorkspaceView({
+  apiKeyConfigured,
+  sourceText,
+  project,
+  isRunning,
+  statusMessage,
+  onSourceTextChange,
+  onImportText,
+  onRunPipeline,
+  onExportMarkdown,
+}: TranslationWorkspaceViewProps): ReactElement {
+  return (
+    <Stack spacing={3}>
+      <WorkspaceControls
+        sourceText={sourceText}
+        contentType={project.contentType}
+        targetLanguage={project.targetLanguage}
+        isRunning={isRunning}
+        statusMessage={statusMessage}
+        onSourceTextChange={onSourceTextChange}
+        onImportText={onImportText}
+        onRunPipeline={onRunPipeline}
+      />
+      <StudioShell
+        apiKeyConfigured={apiKeyConfigured}
+        project={project}
+        isRunning={isRunning}
+        onRunPipeline={onRunPipeline}
+        onExportMarkdown={onExportMarkdown}
+      />
+    </Stack>
+  );
 }
 
 export function TranslationWorkspace({
@@ -85,6 +140,21 @@ export function TranslationWorkspace({
     }
   };
 
+  const handleImportText = (importedText: string, fileName: string): void => {
+    const title = deriveImportedTitle(fileName, initialSeed.title);
+    const nextSeed = {
+      ...initialSeed,
+      title,
+      sourceText: importedText,
+    };
+
+    setSourceText(importedText);
+    setProject(buildStudioShellProject(nextSeed));
+    setStatusMessage(
+      `Imported ${fileName}. Re-run the pipeline to refresh the translation passes.`,
+    );
+  };
+
   const triggerRunPipeline = (): void => {
     void handleRunPipeline();
   };
@@ -94,23 +164,16 @@ export function TranslationWorkspace({
   };
 
   return (
-    <Stack spacing={3}>
-      <WorkspaceControls
-        sourceText={sourceText}
-        contentType={initialSeed.contentType}
-        targetLanguage={initialSeed.targetLanguage}
-        isRunning={isRunning}
-        statusMessage={statusMessage}
-        onSourceTextChange={setSourceText}
-        onRunPipeline={triggerRunPipeline}
-      />
-      <StudioShell
-        apiKeyConfigured={apiKeyConfigured}
-        project={project}
-        isRunning={isRunning}
-        onRunPipeline={triggerRunPipeline}
-        onExportMarkdown={handleExportMarkdown}
-      />
-    </Stack>
+    <TranslationWorkspaceView
+      apiKeyConfigured={apiKeyConfigured}
+      sourceText={sourceText}
+      project={project}
+      isRunning={isRunning}
+      statusMessage={statusMessage}
+      onSourceTextChange={setSourceText}
+      onImportText={handleImportText}
+      onRunPipeline={triggerRunPipeline}
+      onExportMarkdown={handleExportMarkdown}
+    />
   );
 }

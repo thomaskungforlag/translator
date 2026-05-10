@@ -15,7 +15,7 @@ type SegmentReviewPanelProps = {
 };
 
 export function SegmentReviewPanel({ segments }: SegmentReviewPanelProps): ReactElement {
-  const [activePass, setActivePass] = useState(2);
+  const [activePass, setActivePass] = useState(0);
   const [selectedSegmentId, setSelectedSegmentId] = useState(segments[0]?.id ?? '');
 
   const selectedSegment =

@@ -7,7 +7,7 @@ import ContentCopyRoundedIcon from '@mui/icons-material/ContentCopyRounded';
 import type { DocumentSegment } from '@/lib/domain';
 
 const passCopy: Array<string | ((segment: DocumentSegment) => string)> = [
-  'Paragraph structure is preserved and the source text is normalized before translation.',
+  (segment: DocumentSegment) => segment.sourceAnalysis,
   (segment: DocumentSegment) => segment.translationDraft ?? 'No translation draft yet.',
   (segment: DocumentSegment) => segment.voiceAdaptedDraft ?? 'No voice-adapted draft yet.',
   (segment: DocumentSegment) => segment.polishedDraft ?? 'No polished draft yet.',

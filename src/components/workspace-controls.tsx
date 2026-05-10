@@ -1,4 +1,4 @@
-import type { ReactElement } from 'react';
+import { type ChangeEvent, type ReactElement } from 'react';
 
 import { Alert, Button, MenuItem, Paper, Stack, TextField, Typography } from '@mui/material';
 
@@ -11,6 +11,7 @@ type WorkspaceControlsProps = {
   isRunning: boolean;
   statusMessage?: string;
   onSourceTextChange: (value: string) => void;
+  onImportText: (value: string, fileName: string) => void;
   onRunPipeline: () => void;
 };
 
@@ -21,8 +22,22 @@ export function WorkspaceControls({
   isRunning,
   statusMessage,
   onSourceTextChange,
+  onImportText,
   onRunPipeline,
 }: WorkspaceControlsProps): ReactElement {
+  const handleImportChange = async (event: ChangeEvent<HTMLInputElement>): Promise<void> => {
+    const input = event.currentTarget;
+    const file = input.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    const importedText = await file.text();
+    onImportText(importedText, file.name);
+    input.value = '';
+  };
+
   return (
     <Paper sx={{ p: 2.5 }}>
       <Stack spacing={2}>
@@ -47,9 +62,22 @@ export function WorkspaceControls({
           minRows={6}
           fullWidth
         />
-        <Button variant="contained" onClick={onRunPipeline} disabled={isRunning}>
-          {isRunning ? 'Running pipeline…' : 'Run pipeline'}
-        </Button>
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
+          <Button variant="outlined" component="label">
+            Import text/Markdown
+            <input
+              hidden
+              type="file"
+              accept=".txt,.md,text/plain,text/markdown"
+              onChange={(event) => {
+                void handleImportChange(event);
+              }}
+            />
+          </Button>
+          <Button variant="contained" onClick={onRunPipeline} disabled={isRunning}>
+            {isRunning ? 'Running pipeline…' : 'Run pipeline'}
+          </Button>
+        </Stack>
         {statusMessage ? <Alert severity="info">{statusMessage}</Alert> : null}
       </Stack>
     </Paper>
