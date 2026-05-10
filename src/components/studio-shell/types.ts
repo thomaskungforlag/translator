@@ -7,6 +7,8 @@ export type StudioShellProps = {
   project: StudioShellProject;
   onRunPipeline?: () => void;
   onExportMarkdown?: () => void;
+  onExportQaReport?: () => void;
+  onExportProjectJson?: () => void;
   onCopyFinalText?: () => void;
   onCopyQaSummary?: () => void;
   onQaFindingResolvedChange?: (findingId: string, resolved: boolean) => void;

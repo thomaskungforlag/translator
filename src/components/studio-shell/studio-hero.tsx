@@ -9,6 +9,8 @@ type StudioHeroProps = {
   activeRuntimeModelLabel: string;
   onRunPipeline?: () => void;
   onExportMarkdown?: () => void;
+  onExportQaReport?: () => void;
+  onExportProjectJson?: () => void;
   isRunning?: boolean;
 };
 
@@ -17,6 +19,8 @@ export function StudioHero({
   activeRuntimeModelLabel,
   onRunPipeline,
   onExportMarkdown,
+  onExportQaReport,
+  onExportProjectJson,
   isRunning = false,
 }: StudioHeroProps): ReactElement {
   return (
@@ -70,6 +74,16 @@ export function StudioHero({
           </Button>
           <Button variant="outlined" startIcon={<DownloadRoundedIcon />} onClick={onExportMarkdown}>
             Export Markdown
+          </Button>
+          <Button variant="outlined" startIcon={<DownloadRoundedIcon />} onClick={onExportQaReport}>
+            Export QA Report
+          </Button>
+          <Button
+            variant="outlined"
+            startIcon={<DownloadRoundedIcon />}
+            onClick={onExportProjectJson}
+          >
+            Export Project JSON
           </Button>
         </Stack>
       </Stack>

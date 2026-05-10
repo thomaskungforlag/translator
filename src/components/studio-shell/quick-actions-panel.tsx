@@ -8,6 +8,8 @@ import { Button, Paper, Stack, Typography } from '@mui/material';
 type QuickActionsPanelProps = {
   onRunPipeline?: () => void;
   onExportMarkdown?: () => void;
+  onExportQaReport?: () => void;
+  onExportProjectJson?: () => void;
   onCopyFinalText?: () => void;
   onCopyQaSummary?: () => void;
   isRunning?: boolean;
@@ -16,6 +18,8 @@ type QuickActionsPanelProps = {
 export function QuickActionsPanel({
   onRunPipeline,
   onExportMarkdown,
+  onExportQaReport,
+  onExportProjectJson,
   onCopyFinalText,
   onCopyQaSummary,
   isRunning = false,
@@ -58,6 +62,22 @@ export function QuickActionsPanel({
           onClick={onExportMarkdown}
         >
           Export Markdown
+        </Button>
+        <Button
+          variant="outlined"
+          fullWidth
+          startIcon={<DownloadRoundedIcon />}
+          onClick={onExportQaReport}
+        >
+          Export QA Report
+        </Button>
+        <Button
+          variant="outlined"
+          fullWidth
+          startIcon={<DownloadRoundedIcon />}
+          onClick={onExportProjectJson}
+        >
+          Export Project JSON
         </Button>
       </Stack>
     </Paper>

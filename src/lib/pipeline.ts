@@ -12,4 +12,9 @@ export {
   splitSourceText,
 } from './pipeline-core';
 
-export { buildStudioShellProject, exportProjectMarkdown } from './pipeline-project';
+export {
+  buildStudioShellProject,
+  exportProjectJson,
+  exportProjectMarkdown,
+  exportProjectQaReportMarkdown,
+} from './pipeline-project';

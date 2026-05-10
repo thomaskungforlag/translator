@@ -1,5 +1,6 @@
 import type { QAFinding, SegmentStatus } from '@/lib/domain';
 
+import { redTwinReference } from './reference-material';
 import type { StudioShellProject, TranslationWorkspaceSeed } from './workspace';
 import { splitSourceText, type SegmentDraft } from './pipeline-core';
 import { createSegmentDrafts } from './pipeline-core';
@@ -132,6 +133,44 @@ function formatFinding(finding: QAFinding): string {
   return `- [${finding.severity}] ${finding.category}: ${finding.issue}${suggestion}`;
 }
 
+function buildSourceText(project: StudioShellProject): string {
+  return project.segments.map((segment) => segment.sourceText).join('\n\n');
+}
+
+function buildOpenFindings(project: StudioShellProject): QAFinding[] {
+  return project.qaFindings.filter((finding) => !finding.resolved);
+}
+
+function countFindingsBySeverity(findings: QAFinding[]): Record<QAFinding['severity'], number> {
+  return findings.reduce(
+    (counts, finding) => ({
+      ...counts,
+      [finding.severity]: counts[finding.severity] + 1,
+    }),
+    {
+      info: 0,
+      warning: 0,
+      critical: 0,
+    } satisfies Record<QAFinding['severity'], number>,
+  );
+}
+
+function countFindingsByCategory(findings: QAFinding[]): Map<QAFinding['category'], number> {
+  return findings.reduce((counts, finding) => {
+    counts.set(finding.category, (counts.get(finding.category) ?? 0) + 1);
+
+    return counts;
+  }, new Map<QAFinding['category'], number>());
+}
+
+function formatFindingSummary(finding: QAFinding): string {
+  const sourceExcerpt = finding.sourceExcerpt ? ` Source: ${finding.sourceExcerpt}` : '';
+  const targetExcerpt = finding.targetExcerpt ? ` Target: ${finding.targetExcerpt}` : '';
+  const suggestion = finding.suggestion ? ` Suggestion: ${finding.suggestion}` : '';
+
+  return `- [${finding.severity}] ${finding.category}: ${finding.issue}${sourceExcerpt}${targetExcerpt}${suggestion}`;
+}
+
 function formatSegmentMarkdown(segment: StudioShellProject['segments'][number]): string {
   const findingBlock =
     segment.qaFindings.length > 0
@@ -219,4 +258,65 @@ export function exportProjectMarkdown(project: StudioShellProject): string {
     '## Project QA',
     qaSummary,
   ].join('\n');
+}
+
+export function exportProjectQaReportMarkdown(project: StudioShellProject): string {
+  const openFindings = buildOpenFindings(project);
+  const severityCounts = countFindingsBySeverity(openFindings);
+  const categoryCounts = countFindingsByCategory(openFindings);
+  const categorySummary =
+    categoryCounts.size > 0
+      ? Array.from(categoryCounts.entries())
+          .map(([category, count]) => `- ${category}: ${count}`)
+          .join('\n')
+      : '- No open findings.';
+  const findingsSummary =
+    openFindings.length > 0
+      ? openFindings.map(formatFindingSummary).join('\n')
+      : '- No unresolved QA findings.';
+
+  return [
+    `# QA Report: ${project.title}`,
+    '',
+    `- Content type: ${project.contentType}`,
+    `- Target language: ${project.targetLanguage.label}`,
+    `- Progress: ${project.progress}%`,
+    `- Open findings: ${openFindings.length}`,
+    `- Critical: ${severityCounts.critical}`,
+    `- Warning: ${severityCounts.warning}`,
+    `- Info: ${severityCounts.info}`,
+    '',
+    '## Findings by Category',
+    categorySummary,
+    '',
+    '## Open Findings',
+    findingsSummary,
+  ].join('\n');
+}
+
+export function exportProjectJson(project: StudioShellProject): string {
+  const payload = {
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    project: {
+      title: project.title,
+      contentType: project.contentType,
+      targetLanguage: project.targetLanguage,
+      progress: project.progress,
+      sourceText: buildSourceText(project),
+      sourceSegments: project.segments.map((segment) => segment.sourceText),
+      glossary: project.glossary,
+      qaFindings: project.qaFindings,
+      segments: project.segments,
+      styleProfile: {
+        title: redTwinReference.title,
+        stylePrinciples: redTwinReference.stylePrinciples,
+        qaPrinciples: redTwinReference.qaPrinciples,
+        lockedTerms: redTwinReference.lockedTerms,
+        translationMemory: redTwinReference.translationMemory,
+      },
+    },
+  };
+
+  return JSON.stringify(payload, null, 2);
 }

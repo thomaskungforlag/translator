@@ -20,6 +20,8 @@ export function StudioShell({
   project,
   onRunPipeline,
   onExportMarkdown,
+  onExportQaReport,
+  onExportProjectJson,
   onCopyFinalText,
   onCopyQaSummary,
   onQaFindingResolvedChange,
@@ -55,6 +57,8 @@ export function StudioShell({
           activeRuntimeModelLabel={activeRuntimeModelLabel}
           onRunPipeline={onRunPipeline}
           onExportMarkdown={onExportMarkdown}
+          onExportQaReport={onExportQaReport}
+          onExportProjectJson={onExportProjectJson}
           isRunning={isRunning}
         />
 
@@ -99,6 +103,8 @@ export function StudioShell({
               <QuickActionsPanel
                 onRunPipeline={onRunPipeline}
                 onExportMarkdown={onExportMarkdown}
+                onExportQaReport={onExportQaReport}
+                onExportProjectJson={onExportProjectJson}
                 onCopyFinalText={onCopyFinalText}
                 onCopyQaSummary={onCopyQaSummary}
                 isRunning={isRunning}

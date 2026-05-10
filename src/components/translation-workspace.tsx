@@ -9,7 +9,9 @@ import { StudioShell } from '@/components/studio-shell';
 import {
   buildSegmentQaFindings,
   buildStudioShellProject,
+  exportProjectJson,
   exportProjectMarkdown,
+  exportProjectQaReportMarkdown,
   splitSourceText,
 } from '@/lib/pipeline';
 import type { DocumentSegment, GlossaryEntry } from '@/lib/domain';
@@ -67,6 +69,8 @@ type TranslationWorkspaceViewProps = {
   onImportText: (value: string, fileName: string) => void;
   onRunPipeline: () => void;
   onExportMarkdown: () => void;
+  onExportQaReport: () => void;
+  onExportProjectJson: () => void;
   onCopyFinalText: () => void;
   onCopyQaSummary: () => void;
   onQaFindingResolvedChange: (findingId: string, resolved: boolean) => void;
@@ -428,14 +432,17 @@ function persistWorkspaceState(state: PersistedWorkspaceState): void {
   }
 }
 
-function downloadMarkdown(project: StudioShellProject): void {
-  const markdown = exportProjectMarkdown(project);
-  const blob = new Blob([markdown], { type: 'text/markdown;charset=utf-8' });
+function sanitizeFileBaseName(title: string): string {
+  return title.replace(/\s+/g, '-').toLowerCase();
+}
+
+function downloadTextFile(content: string, fileName: string, mimeType: string): void {
+  const blob = new Blob([content], { type: `${mimeType};charset=utf-8` });
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement('a');
 
   anchor.href = url;
-  anchor.download = `${project.title.replace(/\s+/g, '-').toLowerCase()}.md`;
+  anchor.download = fileName;
   anchor.click();
   URL.revokeObjectURL(url);
 }
@@ -461,6 +468,8 @@ function TranslationWorkspaceView({
   onImportText,
   onRunPipeline,
   onExportMarkdown,
+  onExportQaReport,
+  onExportProjectJson,
   onCopyFinalText,
   onCopyQaSummary,
   onQaFindingResolvedChange,
@@ -499,6 +508,8 @@ function TranslationWorkspaceView({
         isRunning={isRunning}
         onRunPipeline={onRunPipeline}
         onExportMarkdown={onExportMarkdown}
+        onExportQaReport={onExportQaReport}
+        onExportProjectJson={onExportProjectJson}
         onCopyFinalText={onCopyFinalText}
         onCopyQaSummary={onCopyQaSummary}
         onQaFindingResolvedChange={onQaFindingResolvedChange}
@@ -699,7 +710,27 @@ export function TranslationWorkspace({
   };
 
   const handleExportMarkdown = (): void => {
-    downloadMarkdown(project);
+    downloadTextFile(
+      exportProjectMarkdown(project),
+      `${sanitizeFileBaseName(project.title)}.md`,
+      'text/markdown',
+    );
+  };
+
+  const handleExportQaReport = (): void => {
+    downloadTextFile(
+      exportProjectQaReportMarkdown(project),
+      `${sanitizeFileBaseName(project.title)}.qa-report.md`,
+      'text/markdown',
+    );
+  };
+
+  const handleExportProjectJson = (): void => {
+    downloadTextFile(
+      exportProjectJson(project),
+      `${sanitizeFileBaseName(project.title)}.json`,
+      'application/json',
+    );
   };
 
   const copyToClipboard = async (text: string, onSuccessMessage: string): Promise<void> => {
@@ -849,6 +880,8 @@ export function TranslationWorkspace({
       onImportText={handleImportText}
       onRunPipeline={triggerRunPipeline}
       onExportMarkdown={handleExportMarkdown}
+      onExportQaReport={handleExportQaReport}
+      onExportProjectJson={handleExportProjectJson}
       onCopyFinalText={handleCopyFinalText}
       onCopyQaSummary={handleCopyQaSummary}
       onQaFindingResolvedChange={handleQaFindingResolvedChange}
