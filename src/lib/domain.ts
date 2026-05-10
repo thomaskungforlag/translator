@@ -67,6 +67,7 @@ export type DocumentSegment = {
   voiceAdaptedDraft?: string;
   polishedDraft?: string;
   finalText?: string;
+  finalTextLocked?: boolean;
   qaFindings: QAFinding[];
   status: SegmentStatus;
 };
@@ -144,6 +145,7 @@ export const documentSegmentSchema = z.object({
   voiceAdaptedDraft: z.string().optional(),
   polishedDraft: z.string().optional(),
   finalText: z.string().optional(),
+  finalTextLocked: z.boolean().optional(),
   qaFindings: z.array(qafindingSchema),
   status: z.enum(segmentStatusValues),
 });

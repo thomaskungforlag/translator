@@ -6,7 +6,12 @@ import type { AlertColor } from '@mui/material';
 import { Stack } from '@mui/material';
 
 import { StudioShell } from '@/components/studio-shell';
-import { buildStudioShellProject, exportProjectMarkdown } from '@/lib/pipeline';
+import {
+  buildSegmentQaFindings,
+  buildStudioShellProject,
+  exportProjectMarkdown,
+} from '@/lib/pipeline';
+import type { DocumentSegment } from '@/lib/domain';
 import type { StudioShellProject, TranslationWorkspaceSeed } from '@/lib/workspace';
 
 import { WorkspaceControls } from './workspace-controls';
@@ -38,7 +43,101 @@ type TranslationWorkspaceViewProps = {
   onImportText: (value: string, fileName: string) => void;
   onRunPipeline: () => void;
   onExportMarkdown: () => void;
+  onSegmentFinalTextChange: (segmentId: string, value: string) => void;
+  onSegmentFinalTextLockChange: (segmentId: string, locked: boolean) => void;
 };
+
+function stageStatus(hasValues: boolean, hasIssues: boolean): DocumentSegment['status'] {
+  if (!hasValues) {
+    return 'pending';
+  }
+
+  return hasIssues ? 'reviewed' : 'approved';
+}
+
+function updateProjectFromSegments(
+  project: StudioShellProject,
+  segments: DocumentSegment[],
+): StudioShellProject {
+  const qaFindings = segments.flatMap((segment) => segment.qaFindings);
+  const approvedSegments = segments.filter((segment) => segment.qaFindings.length === 0).length;
+  const progress =
+    segments.length === 0 ? 0 : Math.round((approvedSegments / segments.length) * 100);
+  const hasQaFindings = segments.some((segment) => segment.qaFindings.length > 0);
+
+  return {
+    ...project,
+    segments,
+    qaFindings,
+    progress,
+    pipelineStages: project.pipelineStages.map((stage) =>
+      stage.label === 'QA'
+        ? { ...stage, status: stageStatus(segments.length > 0, hasQaFindings) }
+        : stage,
+    ),
+  };
+}
+
+function updateSegmentQa(segment: DocumentSegment, finalText: string): DocumentSegment {
+  const qaFindings = buildSegmentQaFindings(segment.sourceText, finalText, segment.index);
+
+  return {
+    ...segment,
+    finalText,
+    qaFindings,
+    status: qaFindings.length > 0 ? 'reviewed' : 'approved',
+  };
+}
+
+function getMatchingSegment(
+  currentProject: StudioShellProject,
+  nextSegment: DocumentSegment,
+): DocumentSegment | undefined {
+  return currentProject.segments.find(
+    (segment) =>
+      segment.index === nextSegment.index && segment.sourceText === nextSegment.sourceText,
+  );
+}
+
+function mergeLockedSegments(
+  currentProject: StudioShellProject,
+  nextProject: StudioShellProject,
+): StudioShellProject {
+  const mergedSegments = nextProject.segments.map((nextSegment) => {
+    const currentSegment = getMatchingSegment(currentProject, nextSegment);
+
+    if (!currentSegment?.finalTextLocked) {
+      return nextSegment;
+    }
+
+    const lockedFinalText = currentSegment.finalText ?? '';
+
+    return {
+      ...updateSegmentQa(nextSegment, lockedFinalText),
+      finalTextLocked: true,
+    };
+  });
+
+  return updateProjectFromSegments(nextProject, mergedSegments);
+}
+
+function findLockedConflicts(
+  currentProject: StudioShellProject,
+  nextProject: StudioShellProject,
+): number {
+  return nextProject.segments.reduce((count, nextSegment) => {
+    const currentSegment = getMatchingSegment(currentProject, nextSegment);
+
+    if (!currentSegment?.finalTextLocked) {
+      return count;
+    }
+
+    const lockedFinalText = currentSegment.finalText ?? '';
+    const nextFinalText = nextSegment.finalText ?? '';
+
+    return lockedFinalText !== nextFinalText ? count + 1 : count;
+  }, 0);
+}
 
 function deriveImportedTitle(fileName: string, fallbackTitle: string): string {
   const baseName = fileName
@@ -102,6 +201,8 @@ function TranslationWorkspaceView({
   onImportText,
   onRunPipeline,
   onExportMarkdown,
+  onSegmentFinalTextChange,
+  onSegmentFinalTextLockChange,
 }: TranslationWorkspaceViewProps): ReactElement {
   return (
     <Stack spacing={3}>
@@ -122,6 +223,8 @@ function TranslationWorkspaceView({
         isRunning={isRunning}
         onRunPipeline={onRunPipeline}
         onExportMarkdown={onExportMarkdown}
+        onSegmentFinalTextChange={onSegmentFinalTextChange}
+        onSegmentFinalTextLockChange={onSegmentFinalTextLockChange}
       />
     </Stack>
   );
@@ -162,12 +265,33 @@ export function TranslationWorkspace({
       }
 
       const result = (await response.json()) as TranslationWorkspaceResponse;
-      setProject(result.project);
-      setStatusNotice(
+      const lockedConflictCount = findLockedConflicts(project, result.project);
+      const canConfirmOverwrite =
+        typeof window !== 'undefined' && typeof window.confirm === 'function';
+      const shouldOverwriteLockedSegments =
+        lockedConflictCount > 0 && canConfirmOverwrite
+          ? window.confirm(
+              `${lockedConflictCount} locked segment${lockedConflictCount > 1 ? 's have' : ' has'} new model output. Overwrite the locked final text?`,
+            )
+          : false;
+      const nextProject =
+        lockedConflictCount > 0 && !shouldOverwriteLockedSegments
+          ? mergeLockedSegments(project, result.project)
+          : result.project;
+      const baseStatus =
         result.mode === 'openai'
-          ? { message: 'Translation completed with OpenAI.', severity: 'success' }
-          : buildFallbackStatus(result.message),
-      );
+          ? { message: 'Translation completed with OpenAI.', severity: 'success' as const }
+          : buildFallbackStatus(result.message);
+      const lockStatus =
+        lockedConflictCount > 0 && !shouldOverwriteLockedSegments
+          ? {
+              message: `${lockedConflictCount} locked segment${lockedConflictCount > 1 ? 's were' : ' was'} preserved during re-run.`,
+              severity: 'info' as const,
+            }
+          : undefined;
+
+      setProject(nextProject);
+      setStatusNotice(lockStatus ?? baseStatus);
     } catch (error) {
       setProject(buildStudioShellProject({ ...initialSeed, title: project.title, sourceText }));
       setStatusNotice(
@@ -199,6 +323,29 @@ export function TranslationWorkspace({
     downloadMarkdown(project);
   };
 
+  const handleSegmentFinalTextChange = (segmentId: string, value: string): void => {
+    setProject((currentProject) => {
+      const segments = currentProject.segments.map((segment) =>
+        segment.id === segmentId ? updateSegmentQa(segment, value) : segment,
+      );
+
+      return updateProjectFromSegments(currentProject, segments);
+    });
+  };
+
+  const handleSegmentFinalTextLockChange = (segmentId: string, locked: boolean): void => {
+    setProject((currentProject) => {
+      const segments = currentProject.segments.map((segment) =>
+        segment.id === segmentId ? { ...segment, finalTextLocked: locked } : segment,
+      );
+
+      return {
+        ...currentProject,
+        segments,
+      };
+    });
+  };
+
   return (
     <TranslationWorkspaceView
       apiKeyConfigured={apiKeyConfigured}
@@ -211,6 +358,8 @@ export function TranslationWorkspace({
       onImportText={handleImportText}
       onRunPipeline={triggerRunPipeline}
       onExportMarkdown={handleExportMarkdown}
+      onSegmentFinalTextChange={handleSegmentFinalTextChange}
+      onSegmentFinalTextLockChange={handleSegmentFinalTextLockChange}
     />
   );
 }

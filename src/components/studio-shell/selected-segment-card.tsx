@@ -1,6 +1,16 @@
 import type { ReactElement } from 'react';
 
-import { Divider, IconButton, Paper, Stack, Tooltip, Typography } from '@mui/material';
+import {
+  Divider,
+  FormControlLabel,
+  IconButton,
+  Paper,
+  Stack,
+  Switch,
+  TextField,
+  Tooltip,
+  Typography,
+} from '@mui/material';
 import CheckCircleOutlineRoundedIcon from '@mui/icons-material/CheckCircleOutlineRounded';
 import ContentCopyRoundedIcon from '@mui/icons-material/ContentCopyRounded';
 
@@ -17,13 +27,18 @@ const passCopy: Array<string | ((segment: DocumentSegment) => string)> = [
 type SelectedSegmentCardProps = {
   activePass: number;
   selectedSegment: DocumentSegment;
+  onFinalTextChange?: (value: string) => void;
+  onFinalTextLockChange?: (locked: boolean) => void;
 };
 
 export function SelectedSegmentCard({
   activePass,
   selectedSegment,
+  onFinalTextChange,
+  onFinalTextLockChange,
 }: SelectedSegmentCardProps): ReactElement {
   const passText = passCopy[activePass];
+  const isFinalPass = activePass === 4;
 
   return (
     <Paper variant="outlined" sx={{ p: 2.25, minWidth: 0 }}>
@@ -50,9 +65,35 @@ export function SelectedSegmentCard({
           {selectedSegment.sourceText}
         </Typography>
         <Divider />
-        <Typography variant="body1" color="text.secondary">
-          {typeof passText === 'function' ? passText(selectedSegment) : passText}
-        </Typography>
+        {isFinalPass ? (
+          <Stack spacing={1.25}>
+            <TextField
+              label="Final text"
+              value={selectedSegment.finalText ?? ''}
+              onChange={(event) => {
+                onFinalTextChange?.(event.target.value);
+              }}
+              multiline
+              minRows={4}
+              fullWidth
+            />
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={Boolean(selectedSegment.finalTextLocked)}
+                  onChange={(_, checked) => {
+                    onFinalTextLockChange?.(checked);
+                  }}
+                />
+              }
+              label="Lock this final text on re-run"
+            />
+          </Stack>
+        ) : (
+          <Typography variant="body1" color="text.secondary">
+            {typeof passText === 'function' ? passText(selectedSegment) : passText}
+          </Typography>
+        )}
       </Stack>
     </Paper>
   );

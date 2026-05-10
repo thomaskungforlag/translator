@@ -12,9 +12,15 @@ const passLabels = ['Source prep', 'Faithful', 'Voice', 'Polish', 'QA'] as const
 
 type SegmentReviewPanelProps = {
   segments: DocumentSegment[];
+  onSegmentFinalTextChange?: (segmentId: string, value: string) => void;
+  onSegmentFinalTextLockChange?: (segmentId: string, locked: boolean) => void;
 };
 
-export function SegmentReviewPanel({ segments }: SegmentReviewPanelProps): ReactElement {
+export function SegmentReviewPanel({
+  segments,
+  onSegmentFinalTextChange,
+  onSegmentFinalTextLockChange,
+}: SegmentReviewPanelProps): ReactElement {
   const [activePass, setActivePass] = useState(0);
   const [selectedSegmentId, setSelectedSegmentId] = useState(segments[0]?.id ?? '');
 
@@ -74,7 +80,16 @@ export function SegmentReviewPanel({ segments }: SegmentReviewPanelProps): React
           />
 
           <Stack spacing={2} sx={{ minWidth: 0 }}>
-            <SelectedSegmentCard activePass={activePass} selectedSegment={selectedSegment} />
+            <SelectedSegmentCard
+              activePass={activePass}
+              selectedSegment={selectedSegment}
+              onFinalTextChange={(value) => {
+                onSegmentFinalTextChange?.(selectedSegment.id, value);
+              }}
+              onFinalTextLockChange={(locked) => {
+                onSegmentFinalTextLockChange?.(selectedSegment.id, locked);
+              }}
+            />
             <StageNotesCard />
           </Stack>
         </Box>

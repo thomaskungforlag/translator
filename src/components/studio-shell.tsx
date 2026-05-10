@@ -19,6 +19,8 @@ export function StudioShell({
   project,
   onRunPipeline,
   onExportMarkdown,
+  onSegmentFinalTextChange,
+  onSegmentFinalTextLockChange,
   isRunning = false,
 }: StudioShellProps): ReactElement {
   const shellRef = useRef<HTMLDivElement>(null);
@@ -68,7 +70,11 @@ export function StudioShell({
           </Box>
 
           <Box sx={{ minWidth: 0 }}>
-            <SegmentReviewPanel segments={project.segments} />
+            <SegmentReviewPanel
+              segments={project.segments}
+              onSegmentFinalTextChange={onSegmentFinalTextChange}
+              onSegmentFinalTextLockChange={onSegmentFinalTextLockChange}
+            />
           </Box>
 
           <Box sx={{ minWidth: 0 }}>

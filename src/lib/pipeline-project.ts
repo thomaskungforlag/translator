@@ -56,6 +56,7 @@ function buildDocumentSegment(projectId: string, index: number, draft: SegmentDr
     voiceAdaptedDraft: draft.voiceAdaptedDraft,
     polishedDraft: draft.polishedDraft,
     finalText: draft.finalText,
+    finalTextLocked: false,
     qaFindings: draft.qaFindings,
     status: draft.qaFindings.length > 0 ? 'reviewed' : 'approved',
   } as const;
