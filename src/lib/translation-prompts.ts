@@ -80,7 +80,9 @@ export function buildQaPrompt(
       instructions: [
         'Review the final texts against the Swedish source and the reference material.',
         'Return only actionable QA findings.',
-        'Be strict about locked terminology, voice drift, and formatting issues.',
+        'Be strict about locked terminology, voice drift, translation stiffness, and formatting issues.',
+        'Use category translation_stiffness when English feels translated rather than native literary prose (literal syntax transfer, awkward collocations, weak literal diction, awkward article/pronoun handling, or accidental melodrama).',
+        'Do not file translation_stiffness when phrasing is intentionally stark, ambiguous, or emotionally restrained.',
       ],
     },
     null,

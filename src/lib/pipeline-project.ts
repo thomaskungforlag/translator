@@ -25,12 +25,16 @@ function buildPipelineStages(segments: SegmentDraft[]) {
   const hasSourceAnalysis = segments.every((segment) => segment.sourceAnalysis.length > 0);
   const hasFaithfulDraft = segments.every((segment) => segment.translationDraft.length > 0);
   const hasVoiceDraft = segments.every((segment) => segment.voiceAdaptedDraft.length > 0);
+  const hasNaturalnessDraft = segments.every(
+    (segment) => segment.literaryNaturalnessDraft.length > 0,
+  );
   const hasPolishedDraft = segments.every((segment) => segment.polishedDraft.length > 0);
   const hasQaFindings = segments.some((segment) => hasUnresolvedFindings(segment.qaFindings));
   const pipelineStages: StudioShellProject['pipelineStages'] = [
     { label: 'Source prep', status: stageStatus(hasSegments && hasSourceAnalysis, false) },
     { label: 'Faithful', status: stageStatus(hasSegments && hasFaithfulDraft, false) },
     { label: 'Voice', status: stageStatus(hasSegments && hasVoiceDraft, false) },
+    { label: 'Naturalness', status: stageStatus(hasSegments && hasNaturalnessDraft, false) },
     { label: 'Polish', status: stageStatus(hasSegments && hasPolishedDraft, false) },
     { label: 'QA', status: stageStatus(hasSegments, hasQaFindings) },
   ];
@@ -62,6 +66,7 @@ function buildDocumentSegment(projectId: string, index: number, draft: SegmentDr
     sourceNotes: undefined,
     translationDraft: draft.translationDraft,
     voiceAdaptedDraft: draft.voiceAdaptedDraft,
+    literaryNaturalnessDraft: draft.literaryNaturalnessDraft,
     polishedDraft: draft.polishedDraft,
     finalText: draft.finalText,
     finalTextLocked: false,
@@ -92,6 +97,8 @@ function formatSegmentMarkdown(segment: StudioShellProject['segments'][number]):
     `Faithful draft: ${segment.translationDraft ?? 'N/A'}`,
     '',
     `Voice draft: ${segment.voiceAdaptedDraft ?? 'N/A'}`,
+    '',
+    `Naturalness draft: ${segment.literaryNaturalnessDraft ?? 'N/A'}`,
     '',
     `Polished draft: ${segment.polishedDraft ?? 'N/A'}`,
     '',

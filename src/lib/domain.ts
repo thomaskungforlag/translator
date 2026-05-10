@@ -21,6 +21,7 @@ export const qafindingCategoryValues = [
   'grammar',
   'spelling',
   'style_drift',
+  'translation_stiffness',
   'terminology',
   'character_voice',
   'market_quality',
@@ -65,6 +66,7 @@ export type DocumentSegment = {
   sourceNotes?: string;
   translationDraft?: string;
   voiceAdaptedDraft?: string;
+  literaryNaturalnessDraft?: string;
   polishedDraft?: string;
   finalText?: string;
   finalTextLocked?: boolean;
@@ -143,6 +145,7 @@ export const documentSegmentSchema = z.object({
   sourceNotes: z.string().optional(),
   translationDraft: z.string().optional(),
   voiceAdaptedDraft: z.string().optional(),
+  literaryNaturalnessDraft: z.string().optional(),
   polishedDraft: z.string().optional(),
   finalText: z.string().optional(),
   finalTextLocked: z.boolean().optional(),

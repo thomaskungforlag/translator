@@ -2,6 +2,7 @@ export type { SegmentDraft } from './pipeline-core';
 
 export {
   buildFaithfulDraft,
+  buildLiteraryNaturalnessDraft,
   buildPolishedDraft,
   buildSegmentQaFindings,
   buildSourceAnalysis,

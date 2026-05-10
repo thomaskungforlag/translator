@@ -8,7 +8,7 @@ import { SegmentList } from './segment-list';
 import { SelectedSegmentCard } from './selected-segment-card';
 import { StageNotesCard } from './stage-notes-card';
 
-const passLabels = ['Source prep', 'Faithful', 'Voice', 'Polish', 'QA'] as const;
+const passLabels = ['Source prep', 'Faithful', 'Voice', 'Naturalness', 'Polish', 'QA'] as const;
 
 type SegmentReviewPanelProps = {
   segments: DocumentSegment[];

@@ -429,6 +429,43 @@ describe('translation-provider-utils (provider adapters)', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
+  it('maps literalness-style categories to translation_stiffness', async () => {
+    process.env.AI_PROVIDER = 'poe';
+    process.env.POE_API_KEY = 'test-poe-key';
+
+    const fetchMock = jest.mocked(globalThis.fetch);
+
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () =>
+        mockPoeResponse(
+          JSON.stringify({
+            findings: [
+              {
+                segmentIndex: 0,
+                severity: 'warning',
+                category: 'literalness',
+                issue: 'The syntax tracks Swedish too closely in English.',
+              },
+            ],
+          }),
+        ),
+    } as Response);
+
+    const utils = await loadUtilsModule();
+    const findings = await utils.parseQaResponse('qa prompt');
+
+    expect(findings).toEqual([
+      {
+        segmentIndex: 0,
+        severity: 'warning',
+        category: 'translation_stiffness',
+        issue: 'The syntax tracks Swedish too closely in English.',
+      },
+    ]);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
   it('flags unchanged faithful output as untranslated', async () => {
     process.env.AI_PROVIDER = 'poe';
     process.env.POE_API_KEY = 'test-poe-key';

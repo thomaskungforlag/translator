@@ -1,6 +1,7 @@
 import { demoWorkspaceSeed, demoGlossary, demoSourceText } from './demo-workspace';
 import {
   buildFaithfulDraft,
+  buildLiteraryNaturalnessDraft,
   buildPolishedDraft,
   buildSourceAnalysis,
   buildStudioShellProject,
@@ -48,9 +49,15 @@ describe('buildStudioShellProject', () => {
       ),
     ).toBe('Snow was beginning to fall when she saw the light again.');
     expect(
-      buildPolishedDraft(
+      buildLiteraryNaturalnessDraft(
         sourceSegments[0] ?? '',
         'Snow was beginning to fall when she saw the light again.',
+      ),
+    ).toBe('Snow had started to fall when she saw the light again.');
+    expect(
+      buildPolishedDraft(
+        sourceSegments[0] ?? '',
+        'Snow had started to fall when she saw the light again.',
       ),
     ).toBe('Snow had begun to fall when she saw the light again.');
   });
@@ -67,6 +74,7 @@ describe('buildStudioShellProject', () => {
           sourceAnalysis: 'Source prep: one short sentence.',
           translationDraft: 'A single line.',
           voiceAdaptedDraft: 'A single, measured line.',
+          literaryNaturalnessDraft: 'A measured line.',
           polishedDraft: 'A single, measured line.',
           finalText: 'A single, measured line.',
           qaFindings: [],
@@ -90,6 +98,7 @@ describe('buildStudioShellProject', () => {
           sourceAnalysis: 'Source prep: one short sentence.',
           translationDraft: 'A single line.',
           voiceAdaptedDraft: 'A single, measured line.',
+          literaryNaturalnessDraft: 'A measured line.',
           polishedDraft: 'A single, measured line.',
           finalText: 'A single, measured line.',
           qaFindings: [
@@ -122,6 +131,7 @@ describe('buildStudioShellProject', () => {
           sourceAnalysis: 'Source prep: one short sentence.',
           translationDraft: 'A single line.',
           voiceAdaptedDraft: 'A single, measured line.',
+          literaryNaturalnessDraft: 'A measured line.',
           polishedDraft: 'A single, measured line.',
           finalText: 'A single, measured line.',
           qaFindings: [

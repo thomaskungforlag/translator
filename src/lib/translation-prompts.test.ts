@@ -46,4 +46,18 @@ describe('translation-prompts', () => {
     expect(payload.project.targetLanguageCode).toBe('en');
     expect(payload.project.targetLanguageLabel).toBe('English');
   });
+
+  it('includes translation stiffness guidance in QA prompts', () => {
+    const prompt = buildQaPrompt(demoWorkspaceSeed, [
+      {
+        index: 0,
+        sourceText: 'En mening.',
+        sourceAnalysis: 'Kort test.',
+        finalText: 'One sentence.',
+      },
+    ]);
+
+    expect(prompt).toContain('translation_stiffness');
+    expect(prompt).toContain('literal syntax transfer');
+  });
 });

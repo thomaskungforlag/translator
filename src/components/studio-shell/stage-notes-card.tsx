@@ -19,7 +19,8 @@ export function StageNotesCard(): ReactElement {
         </Stack>
         <Typography variant="body2" color="text.secondary">
           The MVP keeps each pass inspectable so Thomas can compare source meaning, literal
-          translation, voice alignment, polish, and QA findings without losing earlier drafts.
+          translation, voice alignment, literary naturalness, polish, and QA findings without losing
+          earlier drafts.
         </Typography>
       </Stack>
     </Paper>

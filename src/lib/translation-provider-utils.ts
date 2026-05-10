@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { env } from './env';
 import {
   buildFaithfulDraft,
+  buildLiteraryNaturalnessDraft,
   buildPolishedDraft,
   buildSourceAnalysis,
   buildVoiceDraft,
@@ -323,6 +324,10 @@ function toQaResponseShape(candidate: unknown): unknown {
       style_drift: 'style_drift',
       voice_drift: 'style_drift',
       style: 'style_drift',
+      translation_stiffness: 'translation_stiffness',
+      stiffness: 'translation_stiffness',
+      literalism: 'translation_stiffness',
+      literalness: 'translation_stiffness',
       terminology: 'terminology',
       locked_terminology: 'terminology',
       terminology_and_voice: 'terminology',
@@ -771,7 +776,7 @@ function looksLikeEnglish(value: string): boolean {
 }
 
 export function ensureStageLooksTranslated(
-  stageName: 'faithful_translation' | 'voice_adaptation' | 'polish_pass',
+  stageName: 'faithful_translation' | 'voice_adaptation' | 'literary_naturalness' | 'polish_pass',
   sourceSegments: string[],
   stageSegments: StageSegment[],
 ): void {
@@ -804,6 +809,7 @@ type DraftStageSet = {
   analysisSegments: StageSegment[];
   faithfulSegments: StageSegment[];
   voiceSegments: StageSegment[];
+  naturalnessSegments: StageSegment[];
   polishedSegments: StageSegment[];
 };
 
@@ -816,6 +822,7 @@ export function toDrafts({
   analysisSegments,
   faithfulSegments,
   voiceSegments,
+  naturalnessSegments,
   polishedSegments,
 }: DraftStageSet): SegmentDraft[] {
   return sourceSegments.map((sourceText, index) => {
@@ -829,10 +836,15 @@ export function toDrafts({
       index,
       buildVoiceDraft(sourceText, translationDraft),
     );
+    const literaryNaturalnessDraft = resolveStageText(
+      naturalnessSegments,
+      index,
+      buildLiteraryNaturalnessDraft(sourceText, voiceAdaptedDraft),
+    );
     const polishedDraft = resolveStageText(
       polishedSegments,
       index,
-      buildPolishedDraft(sourceText, voiceAdaptedDraft),
+      buildPolishedDraft(sourceText, literaryNaturalnessDraft),
     );
 
     return {
@@ -840,6 +852,7 @@ export function toDrafts({
       sourceAnalysis: resolveStageText(analysisSegments, index, buildSourceAnalysis(sourceText)),
       translationDraft,
       voiceAdaptedDraft,
+      literaryNaturalnessDraft,
       polishedDraft,
       finalText: polishedDraft,
       qaFindings: [],

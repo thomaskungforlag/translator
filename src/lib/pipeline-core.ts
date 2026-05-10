@@ -11,6 +11,7 @@ export type SegmentDraft = {
   sourceAnalysis: string;
   translationDraft: string;
   voiceAdaptedDraft: string;
+  literaryNaturalnessDraft: string;
   polishedDraft: string;
   finalText: string;
   qaFindings: QAFinding[];
@@ -52,12 +53,31 @@ const polishedPhraseMap = new Map<string, string>([
     'Snow had begun to fall when she saw the light again.',
   ],
   [
+    'Snow had started to fall when she saw the light again.',
+    'Snow had begun to fall when she saw the light again.',
+  ],
+  [
     'He knew it was already too late to call back.',
     'He knew it was already too late to call back.',
   ],
   [
     'Somewhere farther away, The Shadow Ship answered from the dark.',
     'Somewhere farther away, The Shadow Ship answered from the dark.',
+  ],
+]);
+
+const naturalnessPhraseMap = new Map<string, string>([
+  [
+    'Snow was beginning to fall when she saw the light again.',
+    'Snow had started to fall when she saw the light again.',
+  ],
+  [
+    'He knew it was already too late to call back.',
+    'He knew it was already too late to call back.',
+  ],
+  [
+    'Somewhere farther away, The Shadow Ship answered from the dark.',
+    'Somewhere farther away, The Shadow Ship answered out of the dark.',
   ],
 ]);
 
@@ -104,6 +124,10 @@ function buildFallbackVoiceDraft(faithfulDraft: string): string {
 
 function buildFallbackPolishedDraft(voiceDraft: string): string {
   return replaceExactPhrase(voiceDraft, polishedPhraseMap);
+}
+
+function buildFallbackLiteraryNaturalnessDraft(voiceDraft: string): string {
+  return replaceExactPhrase(voiceDraft, naturalnessPhraseMap);
 }
 
 export function splitSourceText(sourceText: string): string[] {
@@ -157,14 +181,24 @@ export function buildVoiceDraft(sourceText: string, faithfulDraft: string): stri
   return buildFallbackVoiceDraft(faithfulDraft);
 }
 
-export function buildPolishedDraft(sourceText: string, voiceDraft: string): string {
+export function buildLiteraryNaturalnessDraft(sourceText: string, voiceDraft: string): string {
   const memoryExample = findMemoryExample(sourceText);
 
   if (memoryExample?.englishText === voiceDraft) {
-    return replaceExactPhrase(voiceDraft, polishedPhraseMap);
+    return replaceExactPhrase(voiceDraft, naturalnessPhraseMap);
   }
 
-  return buildFallbackPolishedDraft(voiceDraft);
+  return buildFallbackLiteraryNaturalnessDraft(voiceDraft);
+}
+
+export function buildPolishedDraft(sourceText: string, naturalnessDraft: string): string {
+  const memoryExample = findMemoryExample(sourceText);
+
+  if (memoryExample?.englishText === naturalnessDraft) {
+    return replaceExactPhrase(naturalnessDraft, polishedPhraseMap);
+  }
+
+  return buildFallbackPolishedDraft(naturalnessDraft);
 }
 
 export function buildSegmentQaFindings(
@@ -179,7 +213,8 @@ function buildSegmentDraft(sourceText: string, segmentIndex: number): SegmentDra
   const sourceAnalysis = buildSourceAnalysis(sourceText);
   const translationDraft = buildFaithfulDraft(sourceText);
   const voiceAdaptedDraft = buildVoiceDraft(sourceText, translationDraft);
-  const polishedDraft = buildPolishedDraft(sourceText, voiceAdaptedDraft);
+  const literaryNaturalnessDraft = buildLiteraryNaturalnessDraft(sourceText, voiceAdaptedDraft);
+  const polishedDraft = buildPolishedDraft(sourceText, literaryNaturalnessDraft);
   const finalText = polishedDraft;
   const qaFindings = buildSegmentQaFindings(sourceText, finalText, segmentIndex);
 
@@ -188,6 +223,7 @@ function buildSegmentDraft(sourceText: string, segmentIndex: number): SegmentDra
     sourceAnalysis,
     translationDraft,
     voiceAdaptedDraft,
+    literaryNaturalnessDraft,
     polishedDraft,
     finalText,
     qaFindings,

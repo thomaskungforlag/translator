@@ -54,6 +54,7 @@ export const qaFindingSchema = z.object({
     'grammar',
     'spelling',
     'style_drift',
+    'translation_stiffness',
     'terminology',
     'character_voice',
     'market_quality',

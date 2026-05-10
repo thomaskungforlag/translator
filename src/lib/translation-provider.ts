@@ -73,12 +73,39 @@ function buildVoicePrompt(
   });
 }
 
+function buildLiteraryNaturalnessPrompt(prompt: {
+  seed: TranslationWorkspaceSeed;
+  sourceSegments: string[];
+  analysisSegments: Array<{ index: number; text: string }>;
+  faithfulSegments: Array<{ index: number; text: string }>;
+  voiceSegments: Array<{ index: number; text: string }>;
+}): string {
+  return buildStageInput({
+    seed: prompt.seed,
+    sourceSegments: prompt.sourceSegments,
+    stageName: 'literary_naturalness',
+    instructions: [
+      'Revise each voice-adapted segment into natural literary English while preserving source meaning and paragraph structure.',
+      'Preserve emotional restraint, Scandinavian tonal quality, sci-fi atmosphere, character perspective, and intentional rhythm, ambiguity, and subtext.',
+      'Improve stiffness from literal transfer: Swedish-like syntax, awkward articles/pronouns, unnatural collocations, flat literal choices, weak verbs, and accidental melodrama.',
+      'Do not add meaning, explain subtext, genericize voice, or smooth away intentional starkness.',
+      'Return one JSON object per source segment, in source order, with the index and naturalness-revised text.',
+    ],
+    previousStages: {
+      source_analysis: prompt.analysisSegments,
+      faithful_translation: prompt.faithfulSegments,
+      voice_adaptation: prompt.voiceSegments,
+    },
+  });
+}
+
 function buildPolishPrompt(prompt: {
   seed: TranslationWorkspaceSeed;
   sourceSegments: string[];
   analysisSegments: Array<{ index: number; text: string }>;
   faithfulSegments: Array<{ index: number; text: string }>;
   voiceSegments: Array<{ index: number; text: string }>;
+  naturalnessSegments: Array<{ index: number; text: string }>;
 }): string {
   return buildStageInput({
     seed: prompt.seed,
@@ -93,6 +120,7 @@ function buildPolishPrompt(prompt: {
       source_analysis: prompt.analysisSegments,
       faithful_translation: prompt.faithfulSegments,
       voice_adaptation: prompt.voiceSegments,
+      literary_naturalness: prompt.naturalnessSegments,
     },
   });
 }
@@ -119,6 +147,19 @@ async function translateWithProvider(seed: TranslationWorkspaceSeed): Promise<Se
   ensureStageCoverage('voice_adaptation', sourceSegments, voiceSegments);
   ensureStageLooksTranslated('voice_adaptation', sourceSegments, voiceSegments);
 
+  const naturalnessSegments = await parseStageResponse(
+    'literary_naturalness',
+    buildLiteraryNaturalnessPrompt({
+      seed,
+      sourceSegments,
+      analysisSegments,
+      faithfulSegments,
+      voiceSegments,
+    }),
+  );
+  ensureStageCoverage('literary_naturalness', sourceSegments, naturalnessSegments);
+  ensureStageLooksTranslated('literary_naturalness', sourceSegments, naturalnessSegments);
+
   const polishedSegments = await parseStageResponse(
     'polish_pass',
     buildPolishPrompt({
@@ -127,6 +168,7 @@ async function translateWithProvider(seed: TranslationWorkspaceSeed): Promise<Se
       analysisSegments,
       faithfulSegments,
       voiceSegments,
+      naturalnessSegments,
     }),
   );
   ensureStageCoverage('polish_pass', sourceSegments, polishedSegments);
@@ -137,6 +179,7 @@ async function translateWithProvider(seed: TranslationWorkspaceSeed): Promise<Se
     analysisSegments,
     faithfulSegments,
     voiceSegments,
+    naturalnessSegments,
     polishedSegments,
   });
 }
