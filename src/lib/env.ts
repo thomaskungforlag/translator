@@ -15,6 +15,7 @@ const envSchema = z.object({
   POE_API_KEY: z.string().min(1).optional(),
   POE_BOT: z.string().min(1).optional(),
   POE_API_URL: z.string().url().optional(),
+  WORDPRESS_TRANSLATION_API_KEY: z.string().min(1).optional(),
 });
 
 export const env = envSchema.parse({
@@ -24,4 +25,5 @@ export const env = envSchema.parse({
   POE_API_KEY: blankToUndefined(process.env.POE_API_KEY),
   POE_BOT: blankToUndefined(process.env.POE_BOT),
   POE_API_URL: blankToUndefined(process.env.POE_API_URL),
+  WORDPRESS_TRANSLATION_API_KEY: blankToUndefined(process.env.WORDPRESS_TRANSLATION_API_KEY),
 });

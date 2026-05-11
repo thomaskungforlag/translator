@@ -24,8 +24,9 @@
 1. Write or adjust the failing test.
 2. Implement the smallest change that passes.
 3. Run `npm run test:unit` for focused feedback.
-4. Run `npm run test:e2e` when the change affects browser behavior.
-5. Run `npm run verify` before handing work back.
+4. Run `npm run test:wordpress` when the WordPress plugin package changes.
+5. Run `npm run test:e2e` when the change affects browser behavior.
+6. Run `npm run verify` before handing work back.
 
 ## What To Test
 
@@ -33,3 +34,4 @@
 - User interactions that change state.
 - Edge cases around empty data and missing drafts.
 - Business rules that should not regress.
+- WordPress block extraction/rehydration and Polylang draft-creation rules when the plugin package changes.
