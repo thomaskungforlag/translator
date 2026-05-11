@@ -61,13 +61,14 @@ async function runChunkedStage(args: {
     | 'polish_pass'
     | 'professional_literary_copyedit';
   sourceSegments: string[];
-  buildChunkPrompt: (chunk: ChunkDescriptor) => string;
+  buildChunkPrompt: (chunk: ChunkDescriptor) => Promise<string>;
   ensureTranslated?: boolean;
 }): Promise<IndexedTextSegment[]> {
   const chunks = splitIntoChunks(args.sourceSegments);
   const chunkedResults = await Promise.all(
     chunks.map(async (chunk) => {
-      const stageSegments = await parseStageResponse(args.stageName, args.buildChunkPrompt(chunk));
+      const prompt = await args.buildChunkPrompt(chunk);
+      const stageSegments = await parseStageResponse(args.stageName, prompt);
 
       ensureStageCoverage(args.stageName, chunk.segments, stageSegments);
 
@@ -95,7 +96,10 @@ async function runChunkedStage(args: {
     }));
 }
 
-function buildAnalysisPrompt(seed: TranslationWorkspaceSeed, sourceSegments: string[]): string {
+function buildAnalysisPrompt(
+  seed: TranslationWorkspaceSeed,
+  sourceSegments: string[],
+): Promise<string> {
   return buildStageInput({
     seed,
     sourceSegments,
@@ -113,7 +117,7 @@ function buildFaithfulPrompt(
   seed: TranslationWorkspaceSeed,
   sourceSegments: string[],
   analysisSegments: Array<{ index: number; text: string }>,
-): string {
+): Promise<string> {
   return buildStageInput({
     seed,
     sourceSegments,
@@ -132,7 +136,7 @@ function buildVoicePrompt(
   sourceSegments: string[],
   analysisSegments: Array<{ index: number; text: string }>,
   faithfulSegments: Array<{ index: number; text: string }>,
-): string {
+): Promise<string> {
   return buildStageInput({
     seed,
     sourceSegments,
@@ -155,7 +159,7 @@ function buildLiteraryNaturalnessPrompt(prompt: {
   analysisSegments: Array<{ index: number; text: string }>;
   faithfulSegments: Array<{ index: number; text: string }>;
   voiceSegments: Array<{ index: number; text: string }>;
-}): string {
+}): Promise<string> {
   return buildStageInput({
     seed: prompt.seed,
     sourceSegments: prompt.sourceSegments,
@@ -183,7 +187,7 @@ function buildPolishPrompt(prompt: {
   faithfulSegments: Array<{ index: number; text: string }>;
   voiceSegments: Array<{ index: number; text: string }>;
   naturalnessSegments: Array<{ index: number; text: string }>;
-}): string {
+}): Promise<string> {
   return buildStageInput({
     seed: prompt.seed,
     sourceSegments: prompt.sourceSegments,
@@ -210,7 +214,7 @@ function buildProfessionalCopyeditPrompt(prompt: {
   voiceSegments: Array<{ index: number; text: string }>;
   naturalnessSegments: Array<{ index: number; text: string }>;
   polishedSegments: Array<{ index: number; text: string }>;
-}): string {
+}): Promise<string> {
   return buildStageInput({
     seed: prompt.seed,
     sourceSegments: prompt.sourceSegments,
@@ -366,21 +370,20 @@ async function finalizeWithQa(
   const findings = (
     await Promise.all(
       qaChunks.map(async (chunk) => {
-        const chunkFindings = await parseQaResponse(
-          buildQaPrompt(
-            seed,
-            chunk.segments.map((segment, localIndex) => {
-              const index = chunk.start + localIndex;
+        const prompt = await buildQaPrompt(
+          seed,
+          chunk.segments.map((segment, localIndex) => {
+            const index = chunk.start + localIndex;
 
-              return {
-                index: localIndex,
-                sourceText: segment,
-                sourceAnalysis: drafts[index]?.sourceAnalysis ?? buildSourceAnalysis(segment),
-                finalText: drafts[index]?.finalText ?? '',
-              };
-            }),
-          ),
+            return {
+              index: localIndex,
+              sourceText: segment,
+              sourceAnalysis: drafts[index]?.sourceAnalysis ?? buildSourceAnalysis(segment),
+              finalText: drafts[index]?.finalText ?? '',
+            };
+          }),
         );
+        const chunkFindings = await parseQaResponse(prompt);
 
         return chunkFindings.map((finding) => ({
           ...finding,

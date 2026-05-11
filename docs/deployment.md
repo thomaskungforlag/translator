@@ -26,6 +26,10 @@ Set these in Vercel Project Settings for the environments you use:
   - optional when `AI_PROVIDER=poe`
 - `POE_API_URL`
   - optional when `AI_PROVIDER=poe`
+- `REFERENCE_SOURCE_PDF_URL`
+  - optional runtime URL for the Swedish source/style reference PDF
+- `REFERENCE_DRAFT_PDF_URL`
+  - optional runtime URL for the English draft/reference PDF
 - `WORDPRESS_TRANSLATION_API_KEY`
   - required if the WordPress plugin will call this deployment
 
@@ -33,6 +37,16 @@ You can use different values for Preview and Production. In practice:
 
 - Preview usually uses non-production provider keys or a safer test bot
 - Production uses the real provider keys and the real WordPress translation key
+- If you want the deployed app to use your book PDFs for prompt enrichment, set the two `REFERENCE_*_PDF_URL` vars in Vercel instead of committing the PDFs into the repo.
+
+## Reference PDF Runtime Loading
+
+- The app can fetch remote reference PDFs at runtime and extract prompt excerpts server-side.
+- Public Google Drive file links work for this because the app rewrites `drive.google.com/file/d/.../view` URLs into direct download URLs automatically.
+- Example acceptable value:
+  - `https://drive.google.com/file/d/17II_a5abZ9Ocgw6iB-5FwWXVVaucaml_/view?usp=sharing`
+- The app still works without these vars; it falls back to the checked-in placeholder reference seed.
+- Keep in mind that if the Drive links are publicly accessible, anyone with the link can fetch the files. That is fine only if that matches your risk tolerance.
 
 ## Vercel Scripts
 

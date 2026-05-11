@@ -37,8 +37,20 @@ Do not use a public CDN for material that is not already intentionally public.
 ## Current Repo Behavior
 
 - [reference-material.ts](../src/lib/reference-material.ts) contains a public-safe placeholder corpus.
+- [reference-material-runtime.ts](../src/lib/reference-material-runtime.ts) can optionally fetch real reference PDFs at runtime from env-configured URLs.
 - The app and plugin are built to work without embedding real manuscripts in the repository.
 - Real author/reference content should be injected separately at runtime or maintained in private storage.
+
+## Vercel + Runtime PDFs
+
+If you want a public repo and a hosted Vercel deployment while still using real reference PDFs:
+
+- keep the PDFs out of git
+- set `REFERENCE_SOURCE_PDF_URL` in Vercel to the Swedish PDF URL
+- optionally set `REFERENCE_DRAFT_PDF_URL` in Vercel to the English draft PDF URL
+- let the server fetch and extract those PDFs at runtime
+
+This keeps the code public while still allowing prompt enrichment from your reference documents.
 
 ## Suggested Local Pattern
 

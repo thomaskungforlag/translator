@@ -48,8 +48,10 @@ If you are new to the repo, read these in order:
    starting point for the explicit multi-pass translation pipeline. Use
    `gpt-5.1` if you want to spend more for maximum output quality, or
    `gpt-4.1` if you want a non-reasoning alternative.
-6. Set `WORDPRESS_TRANSLATION_API_KEY` if you want to enable the WordPress plugin route.
-7. Run `npm run dev`.
+6. Optionally set `REFERENCE_SOURCE_PDF_URL` to a runtime-accessible Swedish reference PDF.
+7. Optionally set `REFERENCE_DRAFT_PDF_URL` to a runtime-accessible English draft/reference PDF.
+8. Set `WORDPRESS_TRANSLATION_API_KEY` if you want to enable the WordPress plugin route.
+9. Run `npm run dev`.
 
 If you are using the WordPress plugin:
 
@@ -65,6 +67,7 @@ If you are deploying on Vercel:
 
 - follow [docs/deployment.md](docs/deployment.md)
 - set the required environment variables in Vercel Project Settings
+- if you want runtime reference enrichment, set `REFERENCE_SOURCE_PDF_URL` and optionally `REFERENCE_DRAFT_PDF_URL`
 - use `npm run vercel:link`, `npm run vercel:pull`, `npm run vercel:deploy`, and `npm run vercel:deploy:prod`
 
 ## Code Map
@@ -77,6 +80,7 @@ If you are deploying on Vercel:
 - [src/app/api/translate/route.ts](src/app/api/translate/route.ts) exposes the translation pipeline endpoint.
 - [src/app/api/wordpress/translate-page/route.ts](src/app/api/wordpress/translate-page/route.ts) exposes the shared WordPress translation endpoint with service-key auth.
 - [src/lib/wordpress-translation.ts](src/lib/wordpress-translation.ts) maps WordPress content units into the existing multi-pass translation pipeline.
+- [src/lib/reference-material-runtime.ts](src/lib/reference-material-runtime.ts) optionally fetches remote PDF references at runtime and injects relevant excerpts into the prompt context.
 - [packages/wordpress-plugin/](packages/wordpress-plugin) contains the Polylang-backed WordPress plugin package.
 - [packages/wordpress-plugin/README.md](packages/wordpress-plugin/README.md) documents the WordPress settings page, endpoint configuration, editor flow, and current limitations.
 - [docs/reference-material.md](docs/reference-material.md) explains the public-safe placeholder corpus and where private reference material should live instead.

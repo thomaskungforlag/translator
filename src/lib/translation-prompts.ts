@@ -1,5 +1,6 @@
 import type { StyleProfile } from './domain';
 import { buildReferencePromptContext } from './reference-material';
+import { buildRuntimeReferencePromptContext } from './reference-material-runtime';
 import type { TranslationWorkspaceSeed } from './workspace';
 
 type StageSegment = {
@@ -31,15 +32,22 @@ type BuildStageInputArgs = {
   previousStages: Record<string, StageSegment[]>;
 };
 
-export function buildStageInput({
+export async function buildStageInput({
   seed,
   sourceSegments,
   stageName,
   instructions,
   previousStages,
-}: BuildStageInputArgs): string {
+}: BuildStageInputArgs): Promise<string> {
+  const runtimeReferenceBlock = await buildRuntimeReferencePromptContext(
+    sourceSegments.join('\n\n'),
+  );
+  const reference =
+    runtimeReferenceBlock.length > 0
+      ? `${buildReferencePromptContext(seed.styleProfile)}\nRuntime document excerpts:\n${runtimeReferenceBlock}`
+      : buildReferencePromptContext(seed.styleProfile);
   const payload: StagePromptInput = {
-    reference: buildReferencePromptContext(seed.styleProfile),
+    reference,
     project: {
       title: seed.title,
       contentType: seed.contentType,
@@ -60,7 +68,7 @@ export function buildStageInput({
   return JSON.stringify(payload, null, 2);
 }
 
-export function buildQaPrompt(
+export async function buildQaPrompt(
   seed: TranslationWorkspaceSeed,
   sourceSegments: Array<{
     index: number;
@@ -68,10 +76,17 @@ export function buildQaPrompt(
     sourceAnalysis: string;
     finalText: string;
   }>,
-): string {
+): Promise<string> {
+  const runtimeReferenceBlock = await buildRuntimeReferencePromptContext(
+    sourceSegments.map((segment) => segment.sourceText).join('\n\n'),
+  );
+  const reference =
+    runtimeReferenceBlock.length > 0
+      ? `${buildReferencePromptContext(seed.styleProfile)}\nRuntime document excerpts:\n${runtimeReferenceBlock}`
+      : buildReferencePromptContext(seed.styleProfile);
   return JSON.stringify(
     {
-      reference: buildReferencePromptContext(seed.styleProfile),
+      reference,
       project: {
         title: seed.title,
         contentType: seed.contentType,

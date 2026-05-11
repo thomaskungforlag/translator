@@ -2,8 +2,8 @@ import { demoWorkspaceSeed } from './demo-workspace';
 import { buildQaPrompt, buildStageInput } from './translation-prompts';
 
 describe('translation-prompts', () => {
-  it('includes explicit source and target language parameters in stage prompts', () => {
-    const prompt = buildStageInput({
+  it('includes explicit source and target language parameters in stage prompts', async () => {
+    const prompt = await buildStageInput({
       seed: demoWorkspaceSeed,
       sourceSegments: ['En mening.'],
       stageName: 'faithful_translation',
@@ -28,8 +28,8 @@ describe('translation-prompts', () => {
     expect(payload.styleProfile.name).toBe('Private Author Corpus');
   });
 
-  it('includes explicit source and target language parameters in QA prompts', () => {
-    const prompt = buildQaPrompt(demoWorkspaceSeed, [
+  it('includes explicit source and target language parameters in QA prompts', async () => {
+    const prompt = await buildQaPrompt(demoWorkspaceSeed, [
       {
         index: 0,
         sourceText: 'En mening.',
@@ -53,8 +53,8 @@ describe('translation-prompts', () => {
     expect(payload.reference).toContain('Style profile: Private Author Corpus');
   });
 
-  it('includes translation stiffness guidance in QA prompts', () => {
-    const prompt = buildQaPrompt(demoWorkspaceSeed, [
+  it('includes translation stiffness guidance in QA prompts', async () => {
+    const prompt = await buildQaPrompt(demoWorkspaceSeed, [
       {
         index: 0,
         sourceText: 'En mening.',
