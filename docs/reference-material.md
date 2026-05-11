@@ -1,39 +1,54 @@
 # Reference Material
 
-## Table of Contents
+## Public Repo Rule
 
-- [`RodTvilling.6x9.Hardcover.pdf`](#rodtvilling6x9hardcoverpdf)
-- [`RodTvilling.English.pdf`](#rodtvillingenglishpdf)
-- [Recommendation](#recommendation)
-- [Practical Use In MVP](#practical-use-in-mvp)
+This public repository must not contain:
 
-## `RodTvilling.6x9.Hardcover.pdf`
+- unpublished manuscripts
+- book PDFs
+- private translation drafts
+- derived translation-memory excerpts from private works
+- private glossary exports or style notes that expose protected text
 
-- Use this as the canonical style guide and source-of-truth corpus.
-- It is the full Swedish book, so it should drive:
-  - voice analysis,
-  - terminology extraction,
-  - character and place-name consistency,
-  - QA rules for rhythm, tone, and idiom.
-- This is the file to consult when deciding whether the English output preserves the original author voice.
+The checked-in reference layer is intentionally public-safe and uses placeholder material only.
 
-## `RodTvilling.English.pdf`
+## What Stays In Git
 
-- Use this as a starting translation draft and translation-memory reference.
-- It is much shorter than the Swedish source, so it appears to cover only the opening parts.
-- It should not be treated as a gold-standard translation.
-- It should be QA reviewed against the Swedish source before being reused in the app.
+Safe to keep in the public repo:
+
+- generic style-profile structure
+- generic QA rules
+- placeholder glossary terms
+- placeholder translation-memory examples created for demos and tests
+- code that loads or formats private reference material
+
+## What Must Live Outside Git
+
+Keep private source/reference material in one of these places instead:
+
+- authenticated WordPress endpoint
+- private object storage
+- private database
+- private local files ignored by git
+- separate private repository
+
+Do not use a public CDN for material that is not already intentionally public.
+
+## Current Repo Behavior
+
+- [reference-material.ts](../src/lib/reference-material.ts) contains a public-safe placeholder corpus.
+- The app and plugin are built to work without embedding real manuscripts in the repository.
+- Real author/reference content should be injected separately at runtime or maintained in private storage.
+
+## Suggested Local Pattern
+
+If you still want local private notes or corpora on your machine:
+
+- keep them in a gitignored directory such as `private/`
+- or copy [private-reference-material.template.md](private-reference-material.template.md) to a private local file and fill it in outside version control
 
 ## Recommendation
 
-- Build the app's default style profile from the Swedish PDF.
-- Use the English PDF as a seed for draft reuse where segments overlap.
-- Run QA on the English draft before trusting it in the pipeline.
-- Prefer the Swedish PDF whenever there is a disagreement between the two.
-- Treat the current repo integration as a style and terminology seed, not a full corpus-backed QA system yet.
-
-## Practical Use In MVP
-
-- Extract style cues from the Swedish corpus into the project's style guidance.
-- Treat the English PDF as optional pretranslated content for early passes.
-- Surface any reused English text as reviewable, not accepted.
+- Treat the checked-in corpus as a placeholder only.
+- Move real author/source material to authenticated private storage.
+- Keep the public repo focused on product code, tests, deployment, and plugin logic.

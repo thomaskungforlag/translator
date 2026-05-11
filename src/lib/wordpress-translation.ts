@@ -49,7 +49,7 @@ function buildStyleProfileSummary(styleProfile: StyleProfile) {
     referenceTitle: redTwinReference.title,
     lockedTerms: redTwinReference.lockedTerms.map((entry) => entry.targetTerm),
     translationMemoryPolicy:
-      'Röd Tvilling English samples are seed references only and must always be QA reviewed.',
+      'Checked-in examples are placeholders only; keep real corpus material outside the public repo.',
   };
 }
 

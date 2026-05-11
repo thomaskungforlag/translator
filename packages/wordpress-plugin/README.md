@@ -206,7 +206,7 @@ It relies on the service for:
 
 - model selection
 - multi-pass orchestration
-- `Röd Tvilling` style seed usage
+- checked-in public-safe style seed usage
 - glossary and locked-term handling
 - QA rules
 - degraded fallback semantics
@@ -219,7 +219,7 @@ It relies on the service for:
 - SEO field translation is not implemented.
 - Media localization is not implemented.
 - Unsupported/custom blocks are preserved, not translated.
-- The current `Röd Tvilling` integration is a style seed, not a full corpus-backed website QA engine.
+- The current checked-in reference integration is a public-safe style seed, not a private corpus-backed website QA engine.
 
 ## Package Layout
 

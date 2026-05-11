@@ -84,10 +84,10 @@ describe('POST /api/wordpress/translate-page', () => {
         segmentReports: [],
         warnings: [],
         styleProfileSummary: {
-          name: 'Röd Tvilling',
+          name: 'Private Author Corpus',
           description: 'Default profile',
-          referenceTitle: 'Röd Tvilling',
-          lockedTerms: ['The Shadow Ship'],
+          referenceTitle: 'Private Author Corpus',
+          lockedTerms: ['Aurora Gate'],
           translationMemoryPolicy: 'Seed only.',
         },
       }),
@@ -123,10 +123,10 @@ describe('POST /api/wordpress/translate-page', () => {
       segmentReports: [],
       warnings: [],
       styleProfileSummary: {
-        name: 'Röd Tvilling',
+        name: 'Private Author Corpus',
         description: 'Default profile',
-        referenceTitle: 'Röd Tvilling',
-        lockedTerms: ['The Shadow Ship'],
+        referenceTitle: 'Private Author Corpus',
+        lockedTerms: ['Aurora Gate'],
         translationMemoryPolicy: 'Seed only.',
       },
     });

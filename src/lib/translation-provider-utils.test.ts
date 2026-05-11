@@ -322,7 +322,7 @@ describe('translation-provider-utils (provider adapters)', () => {
                 category: 'locked_terminology',
                 finding: 'Locked term mismatch.',
                 recommendation: 'Use canonical term.',
-                evidence: 'Skuggskeppet',
+                evidence: 'Auroraporten',
               },
             ],
           }),
@@ -339,7 +339,7 @@ describe('translation-provider-utils (provider adapters)', () => {
         category: 'terminology',
         issue: 'Locked term mismatch.',
         suggestion: 'Use canonical term.',
-        sourceExcerpt: 'Skuggskeppet',
+        sourceExcerpt: 'Auroraporten',
       },
     ]);
     expect(fetchMock).toHaveBeenCalledTimes(1);

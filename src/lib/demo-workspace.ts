@@ -22,37 +22,37 @@ export const demoContentType: ContentType = 'novel_chapter';
 export const demoGlossary: GlossaryEntry[] = [
   {
     id: 'gl_1',
-    sourceTerm: 'Skuggskeppet',
-    targetTerm: 'The Shadow Ship',
+    sourceTerm: 'Auroraporten',
+    targetTerm: 'Aurora Gate',
     category: 'worldbuilding',
-    notes: 'Locked series term.',
+    notes: 'Locked placeholder term for the public demo corpus.',
     locked: true,
   },
   {
     id: 'gl_2',
-    sourceTerm: 'Norrhamn',
-    targetTerm: 'North Harbor',
+    sourceTerm: 'Södra kajen',
+    targetTerm: 'South Quay',
     category: 'place',
     locked: true,
   },
   {
     id: 'gl_3',
-    sourceTerm: 'vågkam',
-    targetTerm: 'wave crest',
+    sourceTerm: 'dimbank',
+    targetTerm: 'fog bank',
     category: 'phrase',
     locked: false,
   },
 ];
 
 export const demoSourceText = [
-  'Det hade börjat snöa när hon såg ljuset igen.',
-  'Han visste att det var för sent att ringa tillbaka.',
-  'Någonstans längre bort svarade Skuggskeppet i mörkret.',
+  'Morgonljuset låg kallt över kajen.',
+  'Hon väntade vid räcket tills dimman lättade.',
+  'Långt ute blinkade Auroraporten en gång.',
 ].join('\n\n');
 
 export const demoWorkspaceSeed: TranslationWorkspaceSeed = {
   projectId: 'proj_001',
-  title: 'Chapter 03 - The Signal in the Ice',
+  title: 'Sample Project - Harbor Signal',
   contentType: demoContentType,
   sourceLanguageCode: 'sv',
   segmentationStrategy: 'paragraph',

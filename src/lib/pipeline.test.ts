@@ -17,9 +17,7 @@ describe('buildStudioShellProject', () => {
 
     expect(project.segments).toHaveLength(3);
     expect(project.segments[0]?.sourceAnalysis).toContain('Source prep: 1 paragraph');
-    expect(project.segments[0]?.finalText).toBe(
-      'Snow had begun to fall when she saw the light again.',
-    );
+    expect(project.segments[0]?.finalText).toBe('Cold morning light rested over the quay.');
     expect(project.qaFindings).toHaveLength(1);
     expect(project.glossary).toHaveLength(demoGlossary.length);
     expect(project.targetLanguage.label).toBe('English');
@@ -31,7 +29,7 @@ describe('buildStudioShellProject', () => {
       sourceText: demoSourceText,
     });
 
-    expect(exportProjectMarkdown(project)).toContain('# Chapter 03 - The Signal in the Ice');
+    expect(exportProjectMarkdown(project)).toContain('# Sample Project - Harbor Signal');
     expect(exportProjectMarkdown(project)).toContain('## Segments');
     expect(exportProjectMarkdown(project)).toContain('Source analysis:');
   });
@@ -41,32 +39,26 @@ describe('buildStudioShellProject', () => {
 
     expect(buildSourceAnalysis(sourceSegments[0] ?? '')).toContain('Reviewed translation memory');
     expect(buildFaithfulDraft(sourceSegments[0] ?? '')).toBe(
-      'It had started to snow when she saw the light again.',
+      'Morning light lay cold over the quay.',
     );
-    expect(
-      buildVoiceDraft(
-        sourceSegments[0] ?? '',
-        'It had started to snow when she saw the light again.',
-      ),
-    ).toBe('Snow was beginning to fall when she saw the light again.');
+    expect(buildVoiceDraft(sourceSegments[0] ?? '', 'Morning light lay cold over the quay.')).toBe(
+      'Cold morning light lay over the quay.',
+    );
     expect(
       buildLiteraryNaturalnessDraft(
         sourceSegments[0] ?? '',
-        'Snow was beginning to fall when she saw the light again.',
+        'Cold morning light lay over the quay.',
       ),
-    ).toBe('Snow had started to fall when she saw the light again.');
+    ).toBe('Cold morning light settled over the quay.');
     expect(
-      buildPolishedDraft(
-        sourceSegments[0] ?? '',
-        'Snow had started to fall when she saw the light again.',
-      ),
-    ).toBe('Snow had begun to fall when she saw the light again.');
+      buildPolishedDraft(sourceSegments[0] ?? '', 'Cold morning light settled over the quay.'),
+    ).toBe('Cold morning light rested over the quay.');
     expect(
       buildProfessionalLiteraryCopyeditDraft(
         sourceSegments[0] ?? '',
-        'Snow had begun to fall when she saw the light again.',
+        'Cold morning light rested over the quay.',
       ),
-    ).toBe('Snow had begun to fall when she saw the light again.');
+    ).toBe('Cold morning light rested over the quay.');
   });
 
   it('uses supplied drafts when the pipeline is already generated', () => {

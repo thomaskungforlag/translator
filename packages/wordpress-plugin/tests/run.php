@@ -282,7 +282,7 @@ $serviceResponse = [
     ]],
     'warnings' => [],
     'styleProfileSummary' => [
-        'name' => 'Röd Tvilling',
+        'name' => 'Private Author Corpus',
     ],
 ];
 

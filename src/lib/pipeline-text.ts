@@ -9,60 +9,48 @@ const knownTranslationMemory = new Map(
 );
 
 const faithfulPhraseMap = new Map<string, string>([
+  ['Morgonljuset låg kallt över kajen.', 'Morning light lay cold over the quay.'],
   [
-    'Det hade börjat snöa när hon såg ljuset igen.',
-    'It had started to snow when she saw the light again.',
+    'Hon väntade vid räcket tills dimman lättade.',
+    'She waited by the railing until the fog lifted.',
   ],
-  ['Han visste att det var för sent att ringa tillbaka.', 'He knew it was too late to call back.'],
-  [
-    'Någonstans längre bort svarade Skuggskeppet i mörkret.',
-    'Somewhere farther away, The Shadow Ship answered in the dark.',
-  ],
+  ['Långt ute blinkade Auroraporten en gång.', 'Far offshore, the Aurora Gate flashed once.'],
 ]);
 
 const voicePhraseMap = new Map<string, string>([
+  ['Morning light lay cold over the quay.', 'Cold morning light lay over the quay.'],
   [
-    'It had started to snow when she saw the light again.',
-    'Snow was beginning to fall when she saw the light again.',
+    'She waited by the railing until the fog lifted.',
+    'She stayed by the railing until the fog lifted.',
   ],
-  ['He knew it was too late to call back.', 'He knew it was already too late to call back.'],
   [
-    'Somewhere farther away, The Shadow Ship answered in the dark.',
-    'Somewhere farther away, The Shadow Ship answered from the dark.',
+    'Far offshore, the Aurora Gate flashed once.',
+    'Far offshore, the Aurora Gate flashed once in the mist.',
   ],
 ]);
 
 const polishedPhraseMap = new Map<string, string>([
+  ['Cold morning light lay over the quay.', 'Cold morning light rested over the quay.'],
+  ['Cold morning light settled over the quay.', 'Cold morning light rested over the quay.'],
   [
-    'Snow was beginning to fall when she saw the light again.',
-    'Snow had begun to fall when she saw the light again.',
+    'She stayed by the railing until the fog lifted.',
+    'She stayed by the railing until the fog lifted.',
   ],
   [
-    'Snow had started to fall when she saw the light again.',
-    'Snow had begun to fall when she saw the light again.',
-  ],
-  [
-    'He knew it was already too late to call back.',
-    'He knew it was already too late to call back.',
-  ],
-  [
-    'Somewhere farther away, The Shadow Ship answered from the dark.',
-    'Somewhere farther away, The Shadow Ship answered from the dark.',
+    'Far offshore, the Aurora Gate flashed once in the mist.',
+    'Far offshore, the Aurora Gate flashed once through the mist.',
   ],
 ]);
 
 const naturalnessPhraseMap = new Map<string, string>([
+  ['Cold morning light lay over the quay.', 'Cold morning light settled over the quay.'],
   [
-    'Snow was beginning to fall when she saw the light again.',
-    'Snow had started to fall when she saw the light again.',
+    'She stayed by the railing until the fog lifted.',
+    'She stayed by the railing until the fog lifted.',
   ],
   [
-    'He knew it was already too late to call back.',
-    'He knew it was already too late to call back.',
-  ],
-  [
-    'Somewhere farther away, The Shadow Ship answered from the dark.',
-    'Somewhere farther away, The Shadow Ship answered out of the dark.',
+    'Far offshore, the Aurora Gate flashed once in the mist.',
+    'Far offshore, the Aurora Gate flashed once through the mist.',
   ],
 ]);
 

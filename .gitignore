@@ -13,3 +13,5 @@ test-results
 .playwright-mcp
 dist
 .tmp
+private/
+docs/private-reference-material.md

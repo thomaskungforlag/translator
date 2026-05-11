@@ -18,62 +18,62 @@ export type ReferenceMaterial = {
 };
 
 export const redTwinReference: ReferenceMaterial = {
-  title: 'Röd Tvilling',
+  title: 'Private Author Corpus',
   stylePrinciples: [
     'Keep the prose grounded, concrete, and emotionally direct.',
-    'Preserve the tension between domestic realism and speculative imagery.',
-    'Maintain terse dialogue and avoid smoothing away friction or class conflict.',
-    'Use terminology consistently, especially named entities and recurring sci-fi motifs.',
+    'Preserve atmospheric specificity without inflating the prose.',
+    'Maintain restrained dialogue and avoid smoothing away tension or contrast.',
+    'Use terminology consistently, especially named entities and recurring motifs.',
   ],
   qaPrinciples: [
     'Flag lowercase or variant spellings of locked terminology.',
-    'Flag voice drift that softens anger, urgency, or social tension.',
+    'Flag voice drift that softens urgency, atmosphere, or narrative tension.',
     'Flag translations that collapse paragraph rhythm or remove scene beats.',
-    'Treat the English PDF as a partial draft, not as an authoritative final translation.',
+    'Treat checked-in examples as placeholders; keep real corpus material outside the public repo.',
   ],
   lockedTerms: [
     {
-      id: 'ref-shadow-ship',
-      sourceTerm: 'Skuggskeppet',
-      targetTerm: 'The Shadow Ship',
+      id: 'ref-aurora-gate',
+      sourceTerm: 'Auroraporten',
+      targetTerm: 'Aurora Gate',
       category: 'worldbuilding',
-      notes: 'Canonical recurring term from the Swedish corpus.',
+      notes: 'Placeholder locked term for public-safe demos and tests.',
       locked: true,
     },
   ],
   translationMemory: [
     {
-      sourceText: 'Det hade börjat snöa när hon såg ljuset igen.',
-      englishText: 'It had started to snow when she saw the light again.',
+      sourceText: 'Morgonljuset låg kallt över kajen.',
+      englishText: 'Morning light lay cold over the quay.',
       status: 'reviewed',
-      note: 'Opening chapter line; good candidate for reuse.',
+      note: 'Public-safe placeholder example for fallback reuse.',
     },
     {
-      sourceText: 'Han visste att det var för sent att ringa tillbaka.',
-      englishText: 'He knew it was too late to call back.',
+      sourceText: 'Hon väntade vid räcket tills dimman lättade.',
+      englishText: 'She waited by the railing until the fog lifted.',
       status: 'reviewed',
-      note: 'Short, direct line that keeps the pacing intact.',
+      note: 'Public-safe placeholder example for fallback reuse.',
     },
     {
-      sourceText: 'Någonstans längre bort svarade Skuggskeppet i mörkret.',
-      englishText: 'Somewhere farther away, The Shadow Ship answered in the dark.',
+      sourceText: 'Långt ute blinkade Auroraporten en gång.',
+      englishText: 'Far offshore, the Aurora Gate flashed once.',
       status: 'needs_qa',
-      note: 'Useful seed translation, but it should still be QA reviewed against the Swedish source.',
+      note: 'Example placeholder seed that should still be QA reviewed before reuse.',
     },
   ],
 };
 
 export function buildDefaultStyleProfile(): StyleProfile {
   return {
-    id: 'style-red-twin-default',
-    name: 'Röd Tvilling',
+    id: 'style-private-author-default',
+    name: 'Private Author Corpus',
     description:
-      'Default Thomas Kung author voice profile for grounded, emotionally direct speculative fiction.',
+      'Default public-safe author voice profile for grounded, emotionally direct speculative fiction.',
     voicePrinciples: [
       'Keep the prose grounded, concrete, and emotionally direct.',
-      'Preserve the tension between domestic realism and speculative imagery.',
-      'Maintain terse dialogue and avoid smoothing away friction or class conflict.',
-      'Use terminology consistently, especially named entities and recurring sci-fi motifs.',
+      'Preserve atmospheric specificity without inflating the prose.',
+      'Maintain restrained dialogue and avoid smoothing away tension or contrast.',
+      'Use terminology consistently, especially named entities and recurring motifs.',
     ],
     preferredTone: ['Grounded', 'Direct', 'Taut', 'Emotionally restrained'],
     avoidPatterns: [

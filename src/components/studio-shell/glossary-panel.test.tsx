@@ -8,8 +8,8 @@ import { GlossaryPanel } from './glossary-panel';
 const entries: GlossaryEntry[] = [
   {
     id: 'gl-1',
-    sourceTerm: 'Skuggskeppet',
-    targetTerm: 'The Shadow Ship',
+    sourceTerm: 'Auroraporten',
+    targetTerm: 'Aurora Gate',
     category: 'worldbuilding',
     locked: true,
   },
@@ -40,7 +40,7 @@ describe('GlossaryPanel', () => {
 
     const sourceField = screen.getByRole('textbox', { name: /source/i });
     await user.clear(sourceField);
-    await user.type(sourceField, 'Norrhamn');
+    await user.type(sourceField, 'Sodra kajen');
 
     const lockSwitch = screen.getByRole('switch', { name: /locked/i });
     await user.click(lockSwitch);

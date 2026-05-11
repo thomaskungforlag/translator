@@ -24,8 +24,8 @@ function buildProject(
         marketQualityNotes: [],
       },
       styleProfile: {
-        id: 'style-red-twin-default',
-        name: 'Röd Tvilling',
+        id: 'style-private-author-default',
+        name: 'Private Author Corpus',
         description: 'Default profile',
         voicePrinciples: ['Grounded'],
         preferredTone: ['Direct'],

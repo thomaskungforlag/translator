@@ -7,7 +7,9 @@ Next.js + TypeScript + MUI workbench for an inspectable multi-pass literary tran
 ### Documentation
 
 - [architecture](/docs/architecture.md)
+- [deployment](/docs/deployment.md)
 - [packages-wordpress-plugin](/packages/wordpress-plugin/README.md)
+- [public-repo-checklist](/docs/public-repo-checklist.md)
 - [reference-material](/docs/reference-material.md)
 - [standards](/docs/standards.md)
 - [testing](/docs/testing.md)
@@ -29,9 +31,11 @@ If you are new to the repo, read these in order:
 1. [docs/architecture.md](docs/architecture.md) for the codebase shape and boundaries.
 2. [docs/standards.md](docs/standards.md) for the TypeScript, ESLint, Prettier, and SOC rules.
 3. [docs/testing.md](docs/testing.md) for the TDD and browser-testing workflow.
-4. [docs/reference-material.md](docs/reference-material.md) for how the Röd Tvilling PDFs should be used.
-5. [docs/thomas_kung_translation_app_plan.md](docs/thomas_kung_translation_app_plan.md) for the product plan.
-6. [packages/wordpress-plugin/README.md](packages/wordpress-plugin/README.md) for the WordPress + Polylang integration package.
+4. [docs/deployment.md](docs/deployment.md) for Vercel deployment and environment setup.
+5. [docs/reference-material.md](docs/reference-material.md) for how private reference material should be handled outside the public repo.
+6. [docs/public-repo-checklist.md](docs/public-repo-checklist.md) before making the repository public.
+7. [docs/thomas_kung_translation_app_plan.md](docs/thomas_kung_translation_app_plan.md) for the product plan.
+8. [packages/wordpress-plugin/README.md](packages/wordpress-plugin/README.md) for the WordPress + Polylang integration package.
 
 ## Setup
 
@@ -57,6 +61,12 @@ If you are using the WordPress plugin:
 - Build the installable plugin ZIP with `npm run plugin:wordpress:package`.
 - Run the full release-prep flow with `npm run plugin:wordpress:release`.
 
+If you are deploying on Vercel:
+
+- follow [docs/deployment.md](docs/deployment.md)
+- set the required environment variables in Vercel Project Settings
+- use `npm run vercel:link`, `npm run vercel:pull`, `npm run vercel:deploy`, and `npm run vercel:deploy:prod`
+
 ## Code Map
 
 - [src/app/layout.tsx](src/app/layout.tsx) sets up the App Router shell, fonts, metadata, and MUI cache.
@@ -69,10 +79,11 @@ If you are using the WordPress plugin:
 - [src/lib/wordpress-translation.ts](src/lib/wordpress-translation.ts) maps WordPress content units into the existing multi-pass translation pipeline.
 - [packages/wordpress-plugin/](packages/wordpress-plugin) contains the Polylang-backed WordPress plugin package.
 - [packages/wordpress-plugin/README.md](packages/wordpress-plugin/README.md) documents the WordPress settings page, endpoint configuration, editor flow, and current limitations.
-- [docs/reference-material.md](docs/reference-material.md) explains the Swedish source and English draft PDFs in `docs/`.
+- [docs/reference-material.md](docs/reference-material.md) explains the public-safe placeholder corpus and where private reference material should live instead.
 - [eslint.config.mjs](eslint.config.mjs) defines the enforced code-quality rules.
 - [jest.config.ts](jest.config.ts) configures unit tests.
 - [playwright.config.ts](playwright.config.ts) configures browser tests.
+- [vercel.json](vercel.json) configures Vercel function durations for the translation routes.
 
 ## Standards
 
@@ -88,7 +99,7 @@ This repo is intentionally strict so new code stays readable and testable:
 - Playwright covers browser flows and smoke tests.
 - The translation endpoint can fall back to a local demo pipeline if OpenAI is unavailable.
 - Demo fallback output is for degraded-mode inspection only, not production translation use.
-- The current `Röd Tvilling` integration is a style and terminology seed, not yet a full corpus-backed QA system.
+- The current checked-in reference integration is a public-safe style and terminology seed, not a private corpus-backed QA system.
 
 ## Scripts
 
@@ -101,5 +112,10 @@ This repo is intentionally strict so new code stays readable and testable:
 - `npm run test:unit` - run Jest unit tests
 - `npm run test:wordpress` - run the WordPress plugin PHP tests
 - `npm run test:e2e` - run Playwright browser tests
+- `npm run repo:public-check` - audit tracked files and git history for known private-source paths before making the repo public
+- `npm run vercel:link` - link the repo to a Vercel project
+- `npm run vercel:pull` - pull Vercel environment variables into `.env.local`
+- `npm run vercel:deploy` - create a Vercel preview deployment
+- `npm run vercel:deploy:prod` - create a Vercel production deployment
 - `npm run build` - build for production
 - `npm run verify` - run lint, typecheck, format check, unit tests, and build

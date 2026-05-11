@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "",
   "private": true,
+  "engines": {
+    "node": "22.x"
+  },
   "scripts": {
     "dev": "next dev",
     "docs:toc": "node scripts/update-tocs.mjs && git add **/*.md",
@@ -18,6 +21,11 @@
     "test:wordpress": "php packages/wordpress-plugin/tests/run.php",
     "test:e2e": "npm run build && playwright test",
     "typecheck": "tsc --noEmit",
+    "repo:public-check": "node scripts/public-repo-check.mjs",
+    "vercel:link": "npx vercel@latest link",
+    "vercel:pull": "npx vercel@latest env pull .env.local",
+    "vercel:deploy": "npx vercel@latest",
+    "vercel:deploy:prod": "npx vercel@latest --prod",
     "format": "prettier . --write",
     "format:check": "prettier . --check",
     "verify": "npm run lint && npm run typecheck && npm run format:check && npm run test:unit && npm run test:wordpress && npm run build"

@@ -1,0 +1,11 @@
+node_modules
+.next
+out
+dist
+.tmp
+.env*
+coverage
+playwright-report
+test-results
+.playwright-mcp
+packages/wordpress-plugin/tests

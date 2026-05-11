@@ -42,12 +42,10 @@ describe('pipeline project exports', () => {
     expect(parsed.version).toBe(1);
     expect(parsed.exportedAt).toEqual(expect.any(String));
     expect(parsed.project.title).toBe(demoWorkspaceSeed.title);
-    expect(parsed.project.sourceText).toContain('Det hade börjat snöa');
+    expect(parsed.project.sourceText).toContain('Morgonljuset låg kallt över kajen.');
     expect(parsed.project.sourceSegments).toHaveLength(project.segments.length);
-    expect(parsed.project.segments[0]?.finalText).toBe(
-      'Snow had begun to fall when she saw the light again.',
-    );
-    expect(parsed.project.styleProfile.name).toBe('Röd Tvilling');
+    expect(parsed.project.segments[0]?.finalText).toBe('Cold morning light rested over the quay.');
+    expect(parsed.project.styleProfile.name).toBe('Private Author Corpus');
     expect(parsed.project.styleProfile.voicePrinciples).toContain(
       'Keep the prose grounded, concrete, and emotionally direct.',
     );

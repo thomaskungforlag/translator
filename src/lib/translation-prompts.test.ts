@@ -25,7 +25,7 @@ describe('translation-prompts', () => {
     expect(payload.project.sourceLanguageCode).toBe('sv');
     expect(payload.project.targetLanguageCode).toBe('en');
     expect(payload.project.targetLanguageLabel).toBe('English');
-    expect(payload.styleProfile.name).toBe('Röd Tvilling');
+    expect(payload.styleProfile.name).toBe('Private Author Corpus');
   });
 
   it('includes explicit source and target language parameters in QA prompts', () => {
@@ -50,7 +50,7 @@ describe('translation-prompts', () => {
     expect(payload.project.sourceLanguageCode).toBe('sv');
     expect(payload.project.targetLanguageCode).toBe('en');
     expect(payload.project.targetLanguageLabel).toBe('English');
-    expect(payload.reference).toContain('Style profile: Röd Tvilling');
+    expect(payload.reference).toContain('Style profile: Private Author Corpus');
   });
 
   it('includes translation stiffness guidance in QA prompts', () => {
