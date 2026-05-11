@@ -47,6 +47,16 @@ If you are new to the repo, read these in order:
 6. Set `WORDPRESS_TRANSLATION_API_KEY` if you want to enable the WordPress plugin route.
 7. Run `npm run dev`.
 
+If you are using the WordPress plugin:
+
+- In WordPress, configure `Settings -> Thomas Kung Translator`.
+- Set `Service Base URL` to the base host of this app, not the full route.
+- The plugin appends `/api/wordpress/translate-page` automatically.
+- Set `Service API Key` to the same value as `WORDPRESS_TRANSLATION_API_KEY`.
+- `Default Source Language` is used if the source page has not yet been assigned a Polylang language.
+- Build the installable plugin ZIP with `npm run plugin:wordpress:package`.
+- Run the full release-prep flow with `npm run plugin:wordpress:release`.
+
 ## Code Map
 
 - [src/app/layout.tsx](src/app/layout.tsx) sets up the App Router shell, fonts, metadata, and MUI cache.
@@ -58,6 +68,7 @@ If you are new to the repo, read these in order:
 - [src/app/api/wordpress/translate-page/route.ts](src/app/api/wordpress/translate-page/route.ts) exposes the shared WordPress translation endpoint with service-key auth.
 - [src/lib/wordpress-translation.ts](src/lib/wordpress-translation.ts) maps WordPress content units into the existing multi-pass translation pipeline.
 - [packages/wordpress-plugin/](packages/wordpress-plugin) contains the Polylang-backed WordPress plugin package.
+- [packages/wordpress-plugin/README.md](packages/wordpress-plugin/README.md) documents the WordPress settings page, endpoint configuration, editor flow, and current limitations.
 - [docs/reference-material.md](docs/reference-material.md) explains the Swedish source and English draft PDFs in `docs/`.
 - [eslint.config.mjs](eslint.config.mjs) defines the enforced code-quality rules.
 - [jest.config.ts](jest.config.ts) configures unit tests.
@@ -84,6 +95,9 @@ This repo is intentionally strict so new code stays readable and testable:
 - `npm run dev` - start the development server
 - `npm run lint` - run ESLint
 - `npm run typecheck` - run the TypeScript compiler
+- `npm run plugin:wordpress:php-lint` - run PHP syntax checks for the WordPress plugin
+- `npm run plugin:wordpress:package` - build the WordPress plugin ZIP and SHA256 checksum
+- `npm run plugin:wordpress:release` - run verification and then build the WordPress plugin release ZIP
 - `npm run test:unit` - run Jest unit tests
 - `npm run test:wordpress` - run the WordPress plugin PHP tests
 - `npm run test:e2e` - run Playwright browser tests

@@ -21,6 +21,7 @@
 - Keep shared domain types and validation in `src/lib`.
 - Keep data access, mutation, and future OpenAI integration out of leaf components.
 - Keep WordPress admin and Polylang glue in `packages/wordpress-plugin/`; do not duplicate prompt or QA logic there.
+- Keep the WordPress plugin configured against a service base URL; the route path stays fixed in the service layer.
 - Prefer small coordinator components that compose focused children.
 
 ## Current Entry Points
@@ -31,3 +32,4 @@
 - [src/lib/domain.ts](../src/lib/domain.ts) defines the project, segment, glossary, and QA types.
 - [src/app/api/wordpress/translate-page/route.ts](../src/app/api/wordpress/translate-page/route.ts) is the authenticated WordPress-facing translation route.
 - [packages/wordpress-plugin/thomas-kung-polylang-translator.php](../packages/wordpress-plugin/thomas-kung-polylang-translator.php) registers the WordPress plugin entry point.
+- [packages/wordpress-plugin/README.md](../packages/wordpress-plugin/README.md) documents WordPress settings, the fixed route path, and the editor workflow.

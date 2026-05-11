@@ -37,6 +37,11 @@ function assertTrueValue(bool $value, string $message): void
 final class FakeServiceClient implements TranslationServiceClientInterface
 {
     /**
+     * @var array<string, mixed>
+     */
+    public array $lastPayload = [];
+
+    /**
      * @param array<string, mixed> $response
      */
     public function __construct(private readonly array $response)
@@ -45,6 +50,8 @@ final class FakeServiceClient implements TranslationServiceClientInterface
 
     public function translatePage(array $payload): array
     {
+        $this->lastPayload = $payload;
+
         return $this->response;
     }
 }
@@ -61,9 +68,18 @@ final class FakePageRepository implements PageRepositoryInterface
      */
     public array $savedReport = [];
 
+    /**
+     * @var array<int, array<string, mixed>>
+     */
+    public array $savedReportsByPostId = [];
+
     public int $createCalls = 0;
 
     public bool $linked = false;
+
+    public int $setLanguageCalls = 0;
+
+    public bool $throwMissingSourceLanguage = false;
 
     /**
      * @param array<string, mixed>|null $existingTarget
@@ -91,7 +107,16 @@ final class FakePageRepository implements PageRepositoryInterface
 
     public function getPostLanguage(int $postId): string
     {
+        if ($this->throwMissingSourceLanguage) {
+            throw new RuntimeException('Missing source language.');
+        }
+
         return 'sv';
+    }
+
+    public function setPostLanguage(int $postId, string $languageCode): void
+    {
+        $this->setLanguageCalls += 1;
     }
 
     public function getTargetPost(int $sourcePostId, string $targetLanguageCode): ?array
@@ -133,6 +158,7 @@ final class FakePageRepository implements PageRepositoryInterface
     public function saveTranslationReport(int $postId, array $report): void
     {
         $this->savedReport = $report;
+        $this->savedReportsByPostId[$postId] = $report;
     }
 
     public function getTranslationReport(int $postId): ?array
@@ -260,15 +286,27 @@ $serviceResponse = [
     ],
 ];
 
+$serviceClientWithNewTarget = new FakeServiceClient($serviceResponse);
 $translatorWithNewTarget = new PageTranslator(
     new ContentParser(),
-    new FakeServiceClient($serviceResponse),
-    new FakePageRepository()
+    $serviceClientWithNewTarget,
+    new FakePageRepository(),
+    'sv'
 );
 $translatedNewTarget = $translatorWithNewTarget->translatePage(42, 'en');
 
 assertTrueValue($translatedNewTarget['created'], 'A missing target translation should be created.');
 assertSameValue(501, $translatedNewTarget['targetPostId'], 'The created target draft should be returned.');
+assertSameValue(
+    'English',
+    $serviceClientWithNewTarget->lastPayload['targetVariantLabel'],
+    'The payload should include the target language label.'
+);
+assertSameValue(
+    false,
+    array_key_exists('existingTargetPostId', $serviceClientWithNewTarget->lastPayload['pageContext']),
+    'The payload should omit the target page id when no target draft exists yet.'
+);
 
 $existingTargetRepository = new FakePageRepository([
     'ID' => 777,
@@ -279,10 +317,12 @@ $existingTargetRepository = new FakePageRepository([
     'post_parent' => 0,
     'menu_order' => 0,
 ]);
+$serviceClientWithExistingTarget = new FakeServiceClient(array_merge($serviceResponse, ['mode' => 'fallback']));
 $translatorWithExistingTarget = new PageTranslator(
     new ContentParser(),
-    new FakeServiceClient(array_merge($serviceResponse, ['mode' => 'fallback'])),
-    $existingTargetRepository
+    $serviceClientWithExistingTarget,
+    $existingTargetRepository,
+    'sv'
 );
 $translatedExistingTarget = $translatorWithExistingTarget->translatePage(42, 'en');
 
@@ -291,10 +331,42 @@ assertSameValue(0, $existingTargetRepository->createCalls, 'Updating an existing
 assertSameValue('draft', $existingTargetRepository->updatedPage['post_status'], 'Translated targets must remain drafts.');
 assertSameValue('fallback', $translatedExistingTarget['mode'], 'Fallback mode should surface in the translation result.');
 assertSameValue(1, $existingTargetRepository->savedReport['unresolvedQaCount'], 'The report should count unresolved QA findings.');
+assertTrueValue(
+    isset($existingTargetRepository->savedReportsByPostId[42], $existingTargetRepository->savedReportsByPostId[777]),
+    'The translation report should be saved on both the source and target pages.'
+);
+assertSameValue(
+    777,
+    $serviceClientWithExistingTarget->lastPayload['pageContext']['existingTargetPostId'],
+    'The payload should include the existing target page id.'
+);
 assertSameValue(
     'Hello world.',
     wp_strip_all_tags((string) $existingTargetRepository->updatedPage['post_content']),
     'The translated content should be written back into the target draft.'
+);
+
+$fallbackLanguageRepository = new FakePageRepository([
+    'ID' => 778,
+    'post_title' => 'Old title',
+    'post_content' => '',
+    'post_name' => 'about-us',
+    'page_template' => '',
+    'post_parent' => 0,
+    'menu_order' => 0,
+]);
+$fallbackLanguageRepository->throwMissingSourceLanguage = true;
+$translatorWithFallbackSourceLanguage = new PageTranslator(
+    new ContentParser(),
+    new FakeServiceClient($serviceResponse),
+    $fallbackLanguageRepository,
+    'sv'
+);
+$translatorWithFallbackSourceLanguage->translatePage(42, 'en');
+assertSameValue(
+    1,
+    $fallbackLanguageRepository->setLanguageCalls,
+    'The translator should apply the default source language when Polylang has not set one.'
 );
 
 echo "WordPress plugin tests passed.\n";

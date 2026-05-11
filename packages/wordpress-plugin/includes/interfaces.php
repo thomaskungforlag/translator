@@ -22,6 +22,8 @@ interface PageRepositoryInterface
 
     public function getPostLanguage(int $postId): string;
 
+    public function setPostLanguage(int $postId, string $languageCode): void;
+
     /**
      * @return array<string, mixed>|null
      */

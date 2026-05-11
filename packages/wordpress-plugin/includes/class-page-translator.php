@@ -9,7 +9,8 @@ final class PageTranslator
     public function __construct(
         private readonly ContentParser $contentParser,
         private readonly TranslationServiceClientInterface $serviceClient,
-        private readonly PageRepositoryInterface $pageRepository
+        private readonly PageRepositoryInterface $pageRepository,
+        private readonly string $defaultSourceLanguage = 'sv'
     ) {
     }
 
@@ -19,14 +20,16 @@ final class PageTranslator
     public function translatePage(int $sourcePostId, string $targetLanguageCode): array
     {
         $sourcePage = $this->pageRepository->getPage($sourcePostId);
-        $sourceLanguageCode = $this->pageRepository->getPostLanguage($sourcePostId);
+        $sourceLanguageCode = $this->resolveSourceLanguageCode($sourcePostId);
         $sourceBlocks = $this->pageRepository->parseBlocks((string) $sourcePage['post_content']);
         $extracted = $this->contentParser->extractUnits($sourceBlocks);
+        $targetPage = $this->pageRepository->getTargetPost($sourcePostId, $targetLanguageCode);
         $payload = $this->buildPayload(
             $sourcePage,
             $sourceLanguageCode,
             $targetLanguageCode,
-            $extracted['units']
+            $extracted['units'],
+            $targetPage
         );
         $response = $this->serviceClient->translatePage($payload);
         $rehydrated = $this->contentParser->rehydrateBlocks(
@@ -35,7 +38,6 @@ final class PageTranslator
                 ? $response['translatedContentPayload']
                 : []
         );
-        $targetPage = $this->pageRepository->getTargetPost($sourcePostId, $targetLanguageCode);
         $created = false;
 
         if ($targetPage === null) {
@@ -58,12 +60,16 @@ final class PageTranslator
         );
         $report = $this->buildReport(
             $sourcePostId,
+            (int) $updatedTargetPage['ID'],
+            (string) $sourcePage['post_title'],
+            (string) ($response['title'] ?? $sourcePage['post_title']),
             $targetLanguageCode,
             $response,
             $extracted['warnings'],
             $rehydrated['warnings']
         );
 
+        $this->pageRepository->saveTranslationReport($sourcePostId, $report);
         $this->pageRepository->saveTranslationReport((int) $updatedTargetPage['ID'], $report);
 
         return [
@@ -77,26 +83,35 @@ final class PageTranslator
     /**
      * @param array<string, mixed> $sourcePage
      * @param array<int, array<string, mixed>> $contentUnits
+     * @param array<string, mixed>|null $targetPage
      * @return array<string, mixed>
      */
     private function buildPayload(
         array $sourcePage,
         string $sourceLanguageCode,
         string $targetLanguageCode,
-        array $contentUnits
+        array $contentUnits,
+        ?array $targetPage
     ): array {
+        $pageContext = [
+            'slug' => (string) ($sourcePage['post_name'] ?? ''),
+            'templateName' => (string) ($sourcePage['page_template'] ?? ''),
+            'path' => $this->buildPagePath((string) ($sourcePage['post_name'] ?? '')),
+        ];
+
+        if ($targetPage !== null) {
+            $pageContext['existingTargetPostId'] = (int) $targetPage['ID'];
+        }
+
         return [
             'sourcePostId' => (int) $sourcePage['ID'],
             'sourceLanguageCode' => $sourceLanguageCode,
             'targetLanguageCode' => $targetLanguageCode,
+            'targetVariantLabel' => $this->labelForLanguageCode($targetLanguageCode),
             'title' => (string) $sourcePage['post_title'],
             'contentType' => 'website_copy',
             'contentPayload' => $contentUnits,
-            'pageContext' => [
-                'slug' => (string) ($sourcePage['post_name'] ?? ''),
-                'templateName' => (string) ($sourcePage['page_template'] ?? ''),
-                'path' => (string) ($sourcePage['post_name'] ?? ''),
-            ],
+            'pageContext' => $pageContext,
         ];
     }
 
@@ -108,6 +123,9 @@ final class PageTranslator
      */
     private function buildReport(
         int $sourcePostId,
+        int $targetPostId,
+        string $sourceTitle,
+        string $targetTitle,
         string $targetLanguageCode,
         array $response,
         array $extractionWarnings,
@@ -118,6 +136,9 @@ final class PageTranslator
 
         return [
             'sourcePostId' => $sourcePostId,
+            'targetPostId' => $targetPostId,
+            'sourceTitle' => $sourceTitle,
+            'targetTitle' => $targetTitle,
             'targetLanguageCode' => $targetLanguageCode,
             'mode' => (string) ($response['mode'] ?? 'fallback'),
             'message' => isset($response['message']) ? (string) $response['message'] : '',
@@ -132,5 +153,32 @@ final class PageTranslator
                 ? $response['styleProfileSummary']
                 : [],
         ];
+    }
+
+    private function resolveSourceLanguageCode(int $sourcePostId): string
+    {
+        try {
+            return $this->pageRepository->getPostLanguage($sourcePostId);
+        } catch (\RuntimeException) {
+            $this->pageRepository->setPostLanguage($sourcePostId, $this->defaultSourceLanguage);
+
+            return $this->defaultSourceLanguage;
+        }
+    }
+
+    private function buildPagePath(string $slug): string
+    {
+        return $slug === '' ? '/' : '/' . ltrim($slug, '/');
+    }
+
+    private function labelForLanguageCode(string $languageCode): string
+    {
+        return match ($languageCode) {
+            'sv' => 'Swedish',
+            'en' => 'English',
+            'en-GB' => 'English (UK)',
+            'en-US' => 'English (US)',
+            default => strtoupper($languageCode),
+        };
     }
 }

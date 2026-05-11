@@ -44,6 +44,12 @@ final class WordPressPageRepository implements PageRepositoryInterface
         return $language;
     }
 
+    public function setPostLanguage(int $postId, string $languageCode): void
+    {
+        $this->assertPolylangAvailable();
+        pll_set_post_language($postId, $languageCode);
+    }
+
     /**
      * @return array<string, mixed>|null
      */

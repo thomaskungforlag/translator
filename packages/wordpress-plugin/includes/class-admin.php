@@ -172,10 +172,29 @@ final class Admin
         }
 
         $warnings = is_array($report['warnings'] ?? null) ? $report['warnings'] : [];
+        $sourcePostId = isset($report['sourcePostId']) ? (int) $report['sourcePostId'] : 0;
+        $targetPostId = isset($report['targetPostId']) ? (int) $report['targetPostId'] : 0;
+        $message = isset($report['message']) ? trim((string) $report['message']) : '';
         ?>
         <p><strong>Last run:</strong> <?php echo esc_html((string) ($report['lastRunAt'] ?? '')); ?></p>
         <p><strong>Mode:</strong> <?php echo esc_html((string) ($report['mode'] ?? '')); ?></p>
+        <p><strong>Target language:</strong> <?php echo esc_html((string) ($report['targetLanguageCode'] ?? '')); ?></p>
         <p><strong>Unresolved QA:</strong> <?php echo esc_html((string) ($report['unresolvedQaCount'] ?? '0')); ?></p>
+        <?php if ($sourcePostId > 0 && $sourcePostId !== (int) $post->ID) : ?>
+            <p>
+                <strong>Source page:</strong>
+                <a href="<?php echo esc_url(get_edit_post_link($sourcePostId)); ?>">Open source page</a>
+            </p>
+        <?php endif; ?>
+        <?php if ($targetPostId > 0 && $targetPostId !== (int) $post->ID) : ?>
+            <p>
+                <strong>Target page:</strong>
+                <a href="<?php echo esc_url(get_edit_post_link($targetPostId)); ?>">Open target draft</a>
+            </p>
+        <?php endif; ?>
+        <?php if ($message !== '') : ?>
+            <p><strong>Provider message:</strong> <?php echo esc_html($message); ?></p>
+        <?php endif; ?>
         <?php if ($warnings !== []) : ?>
             <p><strong>Warnings:</strong></p>
             <ul>
@@ -256,6 +275,8 @@ final class Admin
 
     private function renderTranslationForm(WP_Post $post): void
     {
+        $settings = Settings::get();
+
         try {
             $sourceLanguage = $this->pageRepository->getPostLanguage((int) $post->ID);
             $targetLanguages = array_values(array_filter(
@@ -264,6 +285,17 @@ final class Admin
             ));
         } catch (RuntimeException $exception) {
             printf('<p>%s</p>', esc_html($exception->getMessage()));
+            return;
+        }
+
+        if ($settings['service_base_url'] === '' || $settings['service_api_key'] === '') {
+            printf(
+                '<p>%s</p>',
+                esc_html(
+                    'Configure the service base URL and shared API key in Settings -> Thomas Kung Translator before translating.'
+                )
+            );
+
             return;
         }
 
@@ -285,8 +317,15 @@ final class Admin
                     name="target_language_code"
                 >
                     <?php foreach ($targetLanguages as $language) : ?>
+                        <?php $existingTarget = $this->pageRepository->getTargetPost((int) $post->ID, $language['slug']); ?>
                         <option value="<?php echo esc_attr($language['slug']); ?>">
-                            <?php echo esc_html($language['label']); ?>
+                            <?php
+                            echo esc_html(
+                                $existingTarget === null
+                                    ? $language['label'] . ' - create draft'
+                                    : $language['label'] . ' - update draft'
+                            );
+                            ?>
                         </option>
                     <?php endforeach; ?>
                 </select>
@@ -310,7 +349,8 @@ final class Admin
                 $settings['service_base_url'],
                 $settings['service_api_key']
             ),
-            $this->pageRepository
+            $this->pageRepository,
+            $settings['default_source_language']
         );
     }
 
