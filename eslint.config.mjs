@@ -6,7 +6,14 @@ import tseslint from 'typescript-eslint';
 
 export default defineConfig(
   {
-    ignores: ['**/.next/**', '**/coverage/**', '**/node_modules/**', '**/out/**'],
+    ignores: [
+      '**/.next/**',
+      '**/CHANGELOG.md',
+      '**/coverage/**',
+      '**/node_modules/**',
+      '**/out/**',
+      '**/*.d.ts',
+    ],
   },
   js.configs.recommended,
   ...nextVitals,

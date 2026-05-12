@@ -83,6 +83,14 @@ function syncPluginVersion(version) {
   return true;
 }
 
+function formatGeneratedChangelog() {
+  if (!existsSync(rootChangelogMd)) {
+    return;
+  }
+
+  run(`npx prettier --write "${rootChangelogMd}"`);
+}
+
 const type = process.argv[2];
 if (!['patch', 'minor', 'major'].includes(type)) {
   console.error('Usage: release-bump.cjs <patch|minor|major>');
@@ -102,6 +110,7 @@ const newVersion = readJson(rootPackageJson).version;
 
 console.log('📝 Generating changelog...');
 run('npm run changelog:generate');
+formatGeneratedChangelog();
 
 if (!existsSync(rootChangelogMd)) {
   console.warn('⚠️ CHANGELOG.md missing after generation; verify conventional-changelog setup.');

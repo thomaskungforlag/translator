@@ -6,6 +6,7 @@ out
 package-lock.json
 tsconfig.tsbuildinfo
 .docs/thomas_kung_translation_app_plan.md
+CHANGELOG.md
 next-env.d.ts
 *.log
 *.tsbuildinfo
