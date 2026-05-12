@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Thomas Kung Polylang Translator
  * Description: Translate WordPress pages into Polylang-linked drafts using the Thomas Kung translation service.
- * Version: 0.1.0
+ * Version: 1.0.1
  * Author: Thomas Kung Förlag
  */
 
