@@ -5,6 +5,7 @@ import {
   cpSync,
   existsSync,
   mkdirSync,
+  readdirSync,
   readFileSync,
   rmSync,
   writeFileSync,
@@ -21,6 +22,7 @@ const pluginSlug = basename(pluginEntryFile, '.php');
 const distDir = join(repoRoot, 'dist', 'wordpress-plugin');
 const tempDir = join(repoRoot, '.tmp', 'wordpress-plugin-package');
 const tempPluginDir = join(tempDir, pluginSlug);
+const pluginArtifactPattern = new RegExp(`^${pluginSlug}-.*\\.(zip|sha256)$`);
 
 function requireFile(path) {
   if (!existsSync(path)) {
@@ -76,12 +78,25 @@ function buildZip(version) {
   return { zipPath, checksumPath };
 }
 
+function cleanExistingArtifacts() {
+  if (!existsSync(distDir)) {
+    return;
+  }
+
+  for (const entry of readdirSync(distDir)) {
+    if (pluginArtifactPattern.test(entry)) {
+      rmSync(join(distDir, entry), { force: true });
+    }
+  }
+}
+
 function main() {
   requireFile(pluginEntryFile);
   requireFile(pluginReadmeFile);
   ensureZipAvailable();
 
   const version = readPluginVersion();
+  cleanExistingArtifacts();
   stagePluginFiles();
   const { zipPath, checksumPath } = buildZip(version);
 
