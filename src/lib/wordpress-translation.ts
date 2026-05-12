@@ -1,4 +1,9 @@
-import type { LanguageConfig, StyleProfile } from './domain';
+import {
+  getLanguageLabel,
+  getLanguageLocale,
+  type LanguageConfig,
+  type StyleProfile,
+} from './domain';
 import { buildDefaultStyleProfile, redTwinReference } from './reference-material';
 import { runTranslationWorkspace } from './translation';
 import type { TranslationWorkspaceSeed } from './workspace';
@@ -21,11 +26,8 @@ function buildWebsiteCopyTargetLanguage(
   code: WordPressTranslatePageRequest['targetLanguageCode'],
   targetVariantLabel?: string,
 ): LanguageConfig {
-  const isBritish = code === 'en-GB';
-  const isAmerican = code === 'en-US';
-  const label =
-    targetVariantLabel ?? (isBritish ? 'English (UK)' : isAmerican ? 'English (US)' : 'English');
-  const locale = isBritish ? 'en-GB' : isAmerican ? 'en-US' : 'en';
+  const label = targetVariantLabel ?? getLanguageLabel(code);
+  const locale = getLanguageLocale(code);
 
   return {
     code,
@@ -36,7 +38,9 @@ function buildWebsiteCopyTargetLanguage(
       'Keep headings, CTAs, and marketing phrasing clear and idiomatic.',
       'Preserve locked terminology and author-brand voice from the reference material.',
     ],
-    dialogueRules: ['Preserve the requested English variant across headings, buttons, and body.'],
+    dialogueRules: [
+      'Preserve the requested target-language variant across headings, buttons, and body.',
+    ],
     punctuationRules: ['Keep structural breaks stable so content units can be rehydrated safely.'],
     marketQualityNotes: ['Aim for publishable website copy that still respects the source tone.'],
   };

@@ -37,6 +37,7 @@ That runs repo verification and then creates the distributable ZIP.
 - Creates a linked Polylang target draft when the target-language page does not exist.
 - Updates the target page `post_title` and `post_content` as a draft.
 - Preserves unsupported blocks unchanged and surfaces warnings in the translation report.
+- Recognizes common target-language codes for English, German, French, and Spanish in both WordPress and the translation service.
 
 ## WordPress Settings
 
@@ -93,6 +94,7 @@ The route that validates this key is:
 7. Enter the same shared API key.
 8. Save settings.
 9. Confirm Polylang languages are configured for the site.
+10. Add the target languages you want to use in Polylang, for example English, German, French, or Spanish.
 
 ## Package the Plugin
 

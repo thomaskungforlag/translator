@@ -283,6 +283,7 @@ final class Admin
                 $this->pageRepository->getAvailableLanguages(),
                 static fn(array $language): bool => $language['slug'] !== $sourceLanguage
             ));
+            $selectedTargetLanguage = $this->preferredTargetLanguageCode($targetLanguages);
         } catch (RuntimeException $exception) {
             printf('<p>%s</p>', esc_html($exception->getMessage()));
             return;
@@ -318,7 +319,7 @@ final class Admin
                 >
                     <?php foreach ($targetLanguages as $language) : ?>
                         <?php $existingTarget = $this->pageRepository->getTargetPost((int) $post->ID, $language['slug']); ?>
-                        <option value="<?php echo esc_attr($language['slug']); ?>">
+                        <option value="<?php echo esc_attr($language['slug']); ?>"<?php echo $language['slug'] === $selectedTargetLanguage ? ' selected' : ''; ?>>
                             <?php
                             echo esc_html(
                                 $existingTarget === null
@@ -365,5 +366,23 @@ final class Admin
             'tkpt_message' => $message,
         ], $redirectUrl));
         exit;
+    }
+
+    /**
+     * @param array<int, array{slug: string, label: string}> $targetLanguages
+     */
+    private function preferredTargetLanguageCode(array $targetLanguages): string
+    {
+        $preferredLanguageOrder = ['en', 'en-GB', 'en-US', 'de', 'fr', 'es'];
+
+        foreach ($preferredLanguageOrder as $preferredLanguageCode) {
+            foreach ($targetLanguages as $language) {
+                if ($language['slug'] === $preferredLanguageCode) {
+                    return $preferredLanguageCode;
+                }
+            }
+        }
+
+        return $targetLanguages[0]['slug'] ?? '';
     }
 }

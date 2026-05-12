@@ -6,6 +6,7 @@ require_once __DIR__ . '/../includes/interfaces.php';
 require_once __DIR__ . '/../includes/class-settings.php';
 require_once __DIR__ . '/../includes/class-content-parser.php';
 require_once __DIR__ . '/../includes/class-page-translator.php';
+require_once __DIR__ . '/../includes/class-admin.php';
 
 if (! function_exists('wp_strip_all_tags')) {
     function wp_strip_all_tags(string $text): string
@@ -211,6 +212,16 @@ $loadedSettings = Settings::get(static fn(string $key, mixed $fallback = null): 
 assertSameValue('https://translator.example.com', $loadedSettings['service_base_url'], 'Settings::get should merge stored values.');
 assertSameValue('sv', $loadedSettings['default_source_language'], 'Settings::get should apply defaults when values are missing.');
 
+$admin = new \ThomasKung\TranslatorPlugin\Admin(new ContentParser(), new FakePageRepository());
+$preferredTargetLanguageMethod = new ReflectionMethod($admin, 'preferredTargetLanguageCode');
+$preferredTargetLanguage = $preferredTargetLanguageMethod->invoke($admin, [
+    ['slug' => 'sv', 'label' => 'Swedish'],
+    ['slug' => 'de', 'label' => 'German'],
+    ['slug' => 'en', 'label' => 'English'],
+]);
+
+assertSameValue('en', $preferredTargetLanguage, 'English should be preferred when available as a target language.');
+
 $parser = new ContentParser();
 $parsed = $parser->extractUnits([
     [
@@ -306,6 +317,21 @@ assertSameValue(
     false,
     array_key_exists('existingTargetPostId', $serviceClientWithNewTarget->lastPayload['pageContext']),
     'The payload should omit the target page id when no target draft exists yet.'
+);
+
+$serviceClientWithFrenchTarget = new FakeServiceClient($serviceResponse);
+$translatorWithFrenchTarget = new PageTranslator(
+    new ContentParser(),
+    $serviceClientWithFrenchTarget,
+    new FakePageRepository(),
+    'sv'
+);
+$translatorWithFrenchTarget->translatePage(42, 'fr');
+
+assertSameValue(
+    'French',
+    $serviceClientWithFrenchTarget->lastPayload['targetVariantLabel'],
+    'The payload should include the French target language label.'
 );
 
 $existingTargetRepository = new FakePageRepository([

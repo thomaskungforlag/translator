@@ -223,6 +223,9 @@ final class WordPressPageRepository implements PageRepositoryInterface
             'en' => 'English',
             'en-GB' => 'English (UK)',
             'en-US' => 'English (US)',
+            'de' => 'German',
+            'fr' => 'French',
+            'es' => 'Spanish',
             default => strtoupper($slug),
         };
     }

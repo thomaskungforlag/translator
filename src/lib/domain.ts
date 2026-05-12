@@ -9,7 +9,7 @@ export const contentTypeValues = [
   'social_post',
 ] as const;
 
-export const languageCodeValues = ['sv', 'en', 'en-GB', 'en-US'] as const;
+export const languageCodeValues = ['sv', 'en', 'en-GB', 'en-US', 'de', 'fr', 'es'] as const;
 
 export const segmentStatusValues = ['pending', 'translated', 'reviewed', 'approved'] as const;
 
@@ -42,6 +42,34 @@ export type LanguageCode = (typeof languageCodeValues)[number];
 export type SegmentStatus = (typeof segmentStatusValues)[number];
 export type QAFindingSeverity = (typeof qafindingSeverityValues)[number];
 export type QAFindingCategory = (typeof qafindingCategoryValues)[number];
+
+const languageLabels: Record<LanguageCode, string> = {
+  sv: 'Swedish',
+  en: 'English',
+  'en-GB': 'English (UK)',
+  'en-US': 'English (US)',
+  de: 'German',
+  fr: 'French',
+  es: 'Spanish',
+};
+
+const languageLocales: Record<LanguageCode, string> = {
+  sv: 'sv',
+  en: 'en',
+  'en-GB': 'en-GB',
+  'en-US': 'en-US',
+  de: 'de',
+  fr: 'fr',
+  es: 'es',
+};
+
+export function getLanguageLabel(languageCode: LanguageCode): string {
+  return languageLabels[languageCode];
+}
+
+export function getLanguageLocale(languageCode: LanguageCode): string {
+  return languageLocales[languageCode];
+}
 
 export type Project = {
   id: string;

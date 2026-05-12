@@ -150,4 +150,26 @@ describe('translateWordPressPage', () => {
       ]),
     );
   });
+
+  it('passes major language targets through to the workspace seed', async () => {
+    const germanRequest: WordPressTranslatePageRequest = {
+      ...request,
+      targetLanguageCode: 'de',
+    };
+    let capturedTargetLanguageCode = '';
+    let capturedTargetLanguageLabel = '';
+    let capturedTargetLanguageLocale = '';
+
+    await translateWordPressPage(germanRequest, (seed) => {
+      capturedTargetLanguageCode = seed.targetLanguage.code;
+      capturedTargetLanguageLabel = seed.targetLanguage.label;
+      capturedTargetLanguageLocale = seed.targetLanguage.locale;
+
+      return Promise.resolve(buildProject(['Über uns', 'Hallo Welt.'], 'openai'));
+    });
+
+    expect(capturedTargetLanguageCode).toBe('de');
+    expect(capturedTargetLanguageLabel).toBe('German');
+    expect(capturedTargetLanguageLocale).toBe('de');
+  });
 });
