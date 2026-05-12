@@ -8,13 +8,12 @@ const { dirname, join, resolve } = require('node:path');
 /*
 Unified release bump script.
 Usage:
-  CU_ID=CU-123abc node scripts/release-bump.cjs patch
-  CU_ID=CU-123abc node scripts/release-bump.cjs minor
-  CU_ID=CU-123abc node scripts/release-bump.cjs major
+  node scripts/release-bump.cjs patch
+  node scripts/release-bump.cjs minor
+  node scripts/release-bump.cjs major
 
 Behavior:
   - Ensures a clean working tree
-  - Requires CU_ID (unless ALLOW_PLACEHOLDER=1)
   - Bumps the root npm version without creating npm's own commit/tag
   - Regenerates the root CHANGELOG.md
   - Syncs the WordPress plugin header version
@@ -90,19 +89,6 @@ if (!['patch', 'minor', 'major'].includes(type)) {
   process.exit(1);
 }
 
-const cuId = process.env.CU_ID || '';
-if (!cuId && !process.env.ALLOW_PLACEHOLDER) {
-  console.error(
-    '✖ CU_ID env var required (e.g. CU_ID=CU-123abc). Set ALLOW_PLACEHOLDER=1 to bypass (discouraged).',
-  );
-  process.exit(1);
-}
-
-if (cuId && !/^CU-[A-Za-z0-9]+$/.test(cuId)) {
-  console.error('✖ CU_ID must match pattern CU-<alphanum>.');
-  process.exit(1);
-}
-
 const status = get('git status --porcelain');
 if (status) {
   console.error('✖ Working tree not clean. Commit or stash changes first.');
@@ -130,7 +116,7 @@ if (pluginVersionUpdated) {
 }
 run(`git add ${filesToStage.map((file) => `"${file}"`).join(' ')}`);
 
-const commitMsg = `chore(release): ${newVersion} ${cuId || 'CU-placeholder'}`;
+const commitMsg = `chore(release): ${newVersion}`;
 console.log(`✅ Committing: ${commitMsg}`);
 run(`git commit -m "${commitMsg}"`);
 
