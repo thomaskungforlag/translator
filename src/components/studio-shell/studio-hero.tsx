@@ -1,5 +1,6 @@
 import type { ReactElement } from 'react';
 
+import ViewSidebarRoundedIcon from '@mui/icons-material/ViewSidebarRounded';
 import DownloadRoundedIcon from '@mui/icons-material/DownloadRounded';
 import PlayArrowRoundedIcon from '@mui/icons-material/PlayArrowRounded';
 import { Box, Button, Chip, Paper, Stack, Typography } from '@mui/material';
@@ -8,20 +9,24 @@ type StudioHeroProps = {
   apiKeyConfigured: boolean;
   activeRuntimeModelLabel: string;
   onRunPipeline?: () => void;
+  onOpenWorkspacePanels?: () => void;
   onExportMarkdown?: () => void;
   onExportQaReport?: () => void;
   onExportProjectJson?: () => void;
   isRunning?: boolean;
+  showWorkspacePanelsButton?: boolean;
 };
 
 export function StudioHero({
   apiKeyConfigured,
   activeRuntimeModelLabel,
   onRunPipeline,
+  onOpenWorkspacePanels,
   onExportMarkdown,
   onExportQaReport,
   onExportProjectJson,
   isRunning = false,
+  showWorkspacePanelsButton = false,
 }: StudioHeroProps): ReactElement {
   return (
     <Paper
@@ -64,6 +69,15 @@ export function StudioHero({
         </Box>
 
         <Stack direction="row" spacing={1.5} sx={{ flexWrap: 'wrap' }}>
+          {showWorkspacePanelsButton ? (
+            <Button
+              variant="outlined"
+              startIcon={<ViewSidebarRoundedIcon />}
+              onClick={onOpenWorkspacePanels}
+            >
+              Workspace panels
+            </Button>
+          ) : null}
           <Button
             variant="contained"
             startIcon={<PlayArrowRoundedIcon />}

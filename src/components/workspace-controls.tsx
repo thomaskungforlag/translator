@@ -1,11 +1,14 @@
-import { type ChangeEvent, type ReactElement } from 'react';
+import { type ChangeEvent, type MouseEvent, useRef, useState, type ReactElement } from 'react';
 
 import type { AlertColor } from '@mui/material';
 import {
   Alert,
   Button,
+  Divider,
+  Box,
   IconButton,
   LinearProgress,
+  Menu,
   MenuItem,
   Paper,
   Stack,
@@ -14,6 +17,7 @@ import {
 } from '@mui/material';
 import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded';
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
+import MoreHorizRoundedIcon from '@mui/icons-material/MoreHorizRounded';
 
 import type { ContentType, LanguageConfig } from '@/lib/domain';
 import type { SegmentationStrategy } from '@/lib/workspace';
@@ -59,6 +63,36 @@ export function WorkspaceControls({
   onImportText,
   onRunPipeline,
 }: WorkspaceControlsProps): ReactElement {
+  const importInputRef = useRef<HTMLInputElement>(null);
+  const [sceneActionsAnchorEl, setSceneActionsAnchorEl] = useState<HTMLElement | null>(null);
+
+  const handleSceneActionsClick = (event: MouseEvent<HTMLButtonElement>): void => {
+    setSceneActionsAnchorEl(event.currentTarget);
+  };
+
+  const handleSceneActionsClose = (): void => {
+    setSceneActionsAnchorEl(null);
+  };
+
+  const handleImportClick = (): void => {
+    importInputRef.current?.click();
+  };
+
+  const handleSplitByLineBreaks = (): void => {
+    onSplitSourceByLineBreaks();
+    handleSceneActionsClose();
+  };
+
+  const handleAddSegment = (): void => {
+    onEditableSegmentAdd();
+    handleSceneActionsClose();
+  };
+
+  const handleRunPipelineClick = (): void => {
+    onRunPipeline();
+    handleSceneActionsClose();
+  };
+
   const handleImportChange = async (event: ChangeEvent<HTMLInputElement>): Promise<void> => {
     const input = event.currentTarget;
     const file = input.files?.[0];
@@ -103,35 +137,90 @@ export function WorkspaceControls({
           Segment preview: {segmentPreviewCount}{' '}
           {segmentPreviewCount === 1 ? 'segment' : 'segments'}
         </Typography>
-        <Stack spacing={1}>
+        <Paper
+          variant="outlined"
+          data-testid="workspace-actions-toolbar"
+          sx={{
+            position: 'sticky',
+            top: 16,
+            zIndex: 2,
+            px: 1.5,
+            py: 1.25,
+            backdropFilter: 'blur(18px)',
+            backgroundImage: 'none',
+          }}
+        >
           <Stack
-            direction={{ xs: 'column', sm: 'row' }}
-            spacing={1}
-            sx={{ justifyContent: 'space-between', alignItems: { xs: 'flex-start', sm: 'center' } }}
+            direction={{ xs: 'column', md: 'row' }}
+            spacing={1.25}
+            sx={{
+              justifyContent: 'space-between',
+              alignItems: { xs: 'flex-start', md: 'center' },
+            }}
           >
-            <Typography variant="body2" sx={{ fontWeight: 650 }}>
-              Scene-by-scene editor (before pipeline)
-            </Typography>
-            <Stack direction="row" spacing={1}>
+            <Box>
+              <Typography variant="body2" sx={{ fontWeight: 650 }}>
+                Scene-by-scene editor
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                Keep scene actions visible while the source list gets long.
+              </Typography>
+            </Box>
+
+            <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}>
               <Button
                 size="small"
                 variant="outlined"
-                onClick={onSplitSourceByLineBreaks}
-                disabled={!sourceText.trim()}
+                startIcon={<MoreHorizRoundedIcon />}
+                onClick={handleSceneActionsClick}
+                aria-controls={sceneActionsAnchorEl ? 'scene-actions-menu' : undefined}
+                aria-haspopup="true"
+                aria-expanded={sceneActionsAnchorEl ? 'true' : undefined}
               >
-                Split by line breaks
+                Scene actions
+              </Button>
+              <Button size="small" variant="outlined" onClick={handleImportClick}>
+                Import text/Markdown
               </Button>
               <Button
                 size="small"
-                variant="outlined"
-                startIcon={<AddRoundedIcon />}
-                onClick={onEditableSegmentAdd}
+                variant="contained"
+                onClick={handleRunPipelineClick}
+                disabled={isRunning}
               >
-                Add segment
+                {isRunning ? 'Running pipeline…' : 'Run pipeline'}
               </Button>
             </Stack>
           </Stack>
+          <Menu
+            id="scene-actions-menu"
+            anchorEl={sceneActionsAnchorEl}
+            open={Boolean(sceneActionsAnchorEl)}
+            onClose={handleSceneActionsClose}
+          >
+            <MenuItem onClick={handleSplitByLineBreaks} disabled={!sourceText.trim()}>
+              Split by line breaks
+            </MenuItem>
+            <MenuItem onClick={handleAddSegment}>
+              <AddRoundedIcon fontSize="small" />
+              Add segment
+            </MenuItem>
+            <Divider />
+            <MenuItem
+              onClick={() => {
+                handleSceneActionsClose();
+                handleImportClick();
+              }}
+            >
+              Import text/Markdown
+            </MenuItem>
+            <MenuItem onClick={handleRunPipelineClick} disabled={isRunning}>
+              {isRunning ? 'Running pipeline…' : 'Run pipeline'}
+            </MenuItem>
+          </Menu>
+        </Paper>
 
+        <Stack spacing={1}>
           {editableSegments.length === 0 ? (
             <Typography variant="caption" color="text.secondary">
               Add a segment or paste source text to prepare scenes before running the pipeline.
@@ -178,22 +267,15 @@ export function WorkspaceControls({
           minRows={6}
           fullWidth
         />
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
-          <Button variant="outlined" component="label">
-            Import text/Markdown
-            <input
-              hidden
-              type="file"
-              accept=".txt,.md,text/plain,text/markdown"
-              onChange={(event) => {
-                void handleImportChange(event);
-              }}
-            />
-          </Button>
-          <Button variant="contained" onClick={onRunPipeline} disabled={isRunning}>
-            {isRunning ? 'Running pipeline…' : 'Run pipeline'}
-          </Button>
-        </Stack>
+        <input
+          ref={importInputRef}
+          hidden
+          type="file"
+          accept=".txt,.md,text/plain,text/markdown"
+          onChange={(event) => {
+            void handleImportChange(event);
+          }}
+        />
         {isRunning ? (
           <Stack spacing={1}>
             <Typography variant="caption" color="text.secondary">

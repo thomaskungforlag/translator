@@ -59,12 +59,64 @@ export const theme = createTheme({
         },
       },
     },
+    MuiAccordion: {
+      styleOverrides: {
+        root: {
+          backgroundImage: 'none',
+        },
+      },
+    },
+    MuiAccordionSummary: {
+      styleOverrides: {
+        root: {
+          minHeight: 56,
+        },
+        content: {
+          margin: '12px 0',
+        },
+      },
+    },
+    MuiAccordionDetails: {
+      styleOverrides: {
+        root: {
+          paddingTop: 0,
+        },
+      },
+    },
+    MuiDrawer: {
+      styleOverrides: {
+        paper: {
+          backgroundImage: 'none',
+          border: '1px solid rgba(148, 163, 184, 0.14)',
+          backdropFilter: 'blur(18px)',
+        },
+      },
+    },
+    MuiDialog: {
+      styleOverrides: {
+        paper: {
+          backgroundImage: 'none',
+          border: '1px solid rgba(148, 163, 184, 0.14)',
+          backdropFilter: 'blur(18px)',
+        },
+      },
+    },
     MuiPaper: {
       styleOverrides: {
         root: {
           backgroundImage: 'none',
           border: '1px solid rgba(148, 163, 184, 0.14)',
           backdropFilter: 'blur(18px)',
+        },
+      },
+    },
+    MuiListItemButton: {
+      styleOverrides: {
+        root: {
+          borderRadius: 12,
+          '&.Mui-selected': {
+            borderColor: 'var(--mui-palette-primary-main)',
+          },
         },
       },
     },

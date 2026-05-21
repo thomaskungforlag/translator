@@ -2,6 +2,27 @@ import '@testing-library/jest-dom';
 
 const originalFetch = globalThis.fetch;
 
+function createMatchMedia(matches: boolean): Window['matchMedia'] {
+  return (query: string): MediaQueryList => ({
+    matches,
+    media: query,
+    onchange: null,
+    addListener: jest.fn(),
+    removeListener: jest.fn(),
+    addEventListener: jest.fn(),
+    removeEventListener: jest.fn(),
+    dispatchEvent: jest.fn(),
+  });
+}
+
+if (typeof window !== 'undefined') {
+  Object.defineProperty(window, 'matchMedia', {
+    configurable: true,
+    writable: true,
+    value: createMatchMedia(false),
+  });
+}
+
 declare global {
   // Allow explicit per-test opt-in for real network usage.
   var __ALLOW_NETWORK_IN_TESTS__: boolean | undefined;

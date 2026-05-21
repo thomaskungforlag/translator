@@ -1,19 +1,15 @@
 'use client';
 
-import { useEffect, useRef, type ReactElement } from 'react';
+import { useEffect, useRef, useState, type ReactElement } from 'react';
 
-import { Box, Stack } from '@mui/material';
+import { Box, Stack, useMediaQuery, useTheme } from '@mui/material';
 
 import type { StudioShellProps } from '@/components/studio-shell/types';
 
-import { GlossaryPanel } from './studio-shell/glossary-panel';
-import { PipelineStagesPanel } from './studio-shell/pipeline-stages-panel';
-import { ProjectOverview } from './studio-shell/project-overview';
-import { QAFindingsPanel } from './studio-shell/qa-findings-panel';
-import { QuickActionsPanel } from './studio-shell/quick-actions-panel';
-import { SegmentReviewPanel } from './studio-shell/segment-review-panel';
-import { StyleProfilePanel } from './studio-shell/style-profile-panel';
 import { StudioHero } from './studio-shell/studio-hero';
+import { SegmentReviewPanel } from './studio-shell/segment-review-panel';
+import { WorkspacePanelsDrawer } from './studio-shell/workspace-panels-drawer';
+import { WorkspaceUtilityRail } from './studio-shell/workspace-utility-rail';
 
 export function StudioShell({
   apiKeyConfigured,
@@ -35,6 +31,9 @@ export function StudioShell({
   isRunning = false,
 }: StudioShellProps): ReactElement {
   const shellRef = useRef<HTMLDivElement>(null);
+  const theme = useTheme();
+  const isDesktop = useMediaQuery(theme.breakpoints.up('lg'), { noSsr: true });
+  const [isWorkspaceDrawerOpen, setIsWorkspaceDrawerOpen] = useState(false);
 
   useEffect(() => {
     shellRef.current?.setAttribute('data-hydrated', 'true');
@@ -53,60 +52,59 @@ export function StudioShell({
         overflowX: 'clip',
       }}
     >
-      <Stack spacing={3}>
-        <StudioHero
-          apiKeyConfigured={apiKeyConfigured}
-          activeRuntimeModelLabel={activeRuntimeModelLabel}
-          onRunPipeline={onRunPipeline}
-          onExportMarkdown={onExportMarkdown}
-          onExportQaReport={onExportQaReport}
-          onExportProjectJson={onExportProjectJson}
-          isRunning={isRunning}
-        />
+      <Stack
+        direction={{ xs: 'column', lg: 'row' }}
+        spacing={3}
+        sx={{ alignItems: 'flex-start', minHeight: 0 }}
+      >
+        {isDesktop ? (
+          <WorkspacePanelsDrawer
+            project={project}
+            open
+            variant="permanent"
+            onStyleProfileUpdate={onStyleProfileUpdate}
+            onGlossaryEntryAdd={onGlossaryEntryAdd}
+            onGlossaryEntryUpdate={onGlossaryEntryUpdate}
+            onGlossaryEntryRemove={onGlossaryEntryRemove}
+          />
+        ) : null}
 
-        <Box
-          sx={{
-            width: '100%',
-            display: 'grid',
-            gap: 3,
-            gridTemplateColumns: {
-              xs: '1fr',
-              xl: 'minmax(0, 320px) minmax(0, 1fr) minmax(0, 320px)',
-            },
-          }}
-        >
-          <Box sx={{ minWidth: 0 }}>
-            <Stack spacing={3}>
-              <ProjectOverview project={project} />
-              <StyleProfilePanel
-                profile={project.styleProfile}
-                onUpdateProfile={onStyleProfileUpdate}
-              />
-              <PipelineStagesPanel stages={project.pipelineStages} />
-              <GlossaryPanel
-                entries={project.glossary}
-                onAddEntry={onGlossaryEntryAdd}
-                onUpdateEntry={onGlossaryEntryUpdate}
-                onRemoveEntry={onGlossaryEntryRemove}
-              />
-            </Stack>
-          </Box>
-
-          <Box sx={{ minWidth: 0 }}>
-            <SegmentReviewPanel
-              segments={project.segments}
-              onSegmentFinalTextChange={onSegmentFinalTextChange}
-              onSegmentFinalTextLockChange={onSegmentFinalTextLockChange}
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Stack spacing={3} sx={{ minHeight: 0 }}>
+            <StudioHero
+              apiKeyConfigured={apiKeyConfigured}
+              activeRuntimeModelLabel={activeRuntimeModelLabel}
+              onRunPipeline={onRunPipeline}
+              onOpenWorkspacePanels={() => {
+                setIsWorkspaceDrawerOpen(true);
+              }}
+              onExportMarkdown={onExportMarkdown}
+              onExportQaReport={onExportQaReport}
+              onExportProjectJson={onExportProjectJson}
+              isRunning={isRunning}
+              showWorkspacePanelsButton={!isDesktop}
             />
-          </Box>
 
-          <Box sx={{ minWidth: 0 }}>
-            <Stack spacing={3}>
-              <QAFindingsPanel
+            <Box
+              sx={{
+                width: '100%',
+                display: 'grid',
+                gap: 3,
+                gridTemplateColumns: { xs: '1fr', xl: 'minmax(0, 1fr) 340px' },
+                minHeight: 0,
+              }}
+            >
+              <Box sx={{ minWidth: 0 }}>
+                <SegmentReviewPanel
+                  segments={project.segments}
+                  onSegmentFinalTextChange={onSegmentFinalTextChange}
+                  onSegmentFinalTextLockChange={onSegmentFinalTextLockChange}
+                />
+              </Box>
+
+              <WorkspaceUtilityRail
                 findings={project.qaFindings}
                 onResolvedChange={onQaFindingResolvedChange}
-              />
-              <QuickActionsPanel
                 onRunPipeline={onRunPipeline}
                 onExportMarkdown={onExportMarkdown}
                 onExportQaReport={onExportQaReport}
@@ -115,10 +113,25 @@ export function StudioShell({
                 onCopyQaSummary={onCopyQaSummary}
                 isRunning={isRunning}
               />
-            </Stack>
-          </Box>
+            </Box>
+          </Stack>
         </Box>
       </Stack>
+
+      {!isDesktop ? (
+        <WorkspacePanelsDrawer
+          project={project}
+          open={isWorkspaceDrawerOpen}
+          variant="temporary"
+          onClose={() => {
+            setIsWorkspaceDrawerOpen(false);
+          }}
+          onStyleProfileUpdate={onStyleProfileUpdate}
+          onGlossaryEntryAdd={onGlossaryEntryAdd}
+          onGlossaryEntryUpdate={onGlossaryEntryUpdate}
+          onGlossaryEntryRemove={onGlossaryEntryRemove}
+        />
+      ) : null}
     </Box>
   );
 }
