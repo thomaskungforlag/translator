@@ -34,6 +34,7 @@ type TranslationWorkspaceResponse = {
   project: StudioShellProject;
   mode: 'openai' | 'poe' | 'fallback';
   message?: string;
+  warnings: string[];
 };
 
 type StatusNotice = {
@@ -61,6 +62,7 @@ type TranslationWorkspaceViewProps = {
   runElapsedSeconds: number;
   statusMessage?: string;
   statusSeverity?: AlertColor;
+  pipelineWarnings: string[];
   onSourceTextChange: (value: string) => void;
   onSegmentationStrategyChange: (value: SegmentationStrategy) => void;
   onEditableSegmentChange: (index: number, value: string) => void;
@@ -471,6 +473,7 @@ function TranslationWorkspaceView({
   runElapsedSeconds,
   statusMessage,
   statusSeverity,
+  pipelineWarnings,
   onSourceTextChange,
   onSegmentationStrategyChange,
   onEditableSegmentChange,
@@ -505,6 +508,7 @@ function TranslationWorkspaceView({
         runElapsedSeconds={runElapsedSeconds}
         statusMessage={statusMessage}
         statusSeverity={statusSeverity}
+        pipelineWarnings={pipelineWarnings}
         onSourceTextChange={onSourceTextChange}
         onSegmentationStrategyChange={onSegmentationStrategyChange}
         onEditableSegmentChange={onEditableSegmentChange}
@@ -569,6 +573,7 @@ export function TranslationWorkspace({
   const [isRunning, setIsRunning] = useState(false);
   const [runStartedAt, setRunStartedAt] = useState<number | null>(null);
   const [now, setNow] = useState(() => Date.now());
+  const [pipelineWarnings, setPipelineWarnings] = useState<string[]>([]);
   const [statusNotice, setStatusNotice] = useState<StatusNotice | undefined>(
     persistedWorkspace
       ? {
@@ -602,6 +607,7 @@ export function TranslationWorkspace({
     setIsRunning(true);
     setRunStartedAt(Date.now());
     setStatusNotice(undefined);
+    setPipelineWarnings([]);
 
     try {
       const response = await fetch('/api/translate', {
@@ -664,6 +670,7 @@ export function TranslationWorkspace({
 
       setProject(nextProject);
       setStatusNotice(lockStatus ?? baseStatus);
+      setPipelineWarnings(result.warnings ?? []);
     } catch (error) {
       setProject(
         buildStudioShellProject({
@@ -682,10 +689,21 @@ export function TranslationWorkspace({
           ? buildFallbackStatus(`${error.message} Demo fallback only.`)
           : buildFallbackStatus(),
       );
+      setPipelineWarnings([]);
     } finally {
       setIsRunning(false);
       setRunStartedAt(null);
     }
+  };
+
+  const handleSourceTextChange = (value: string): void => {
+    setPipelineWarnings([]);
+    setSourceText(value);
+  };
+
+  const handleSegmentationStrategyChange = (value: SegmentationStrategy): void => {
+    setPipelineWarnings([]);
+    setSegmentationStrategy(value);
   };
 
   const handleImportText = (importedText: string, fileName: string): void => {
@@ -697,6 +715,7 @@ export function TranslationWorkspace({
       segmentationStrategy,
     });
 
+    setPipelineWarnings([]);
     setSourceText(importedText);
     setProject(buildStudioShellProject(nextSeed));
     setStatusNotice({
@@ -717,24 +736,28 @@ export function TranslationWorkspace({
       segmentIndex === index ? value : segment,
     );
 
+    setPipelineWarnings([]);
     setSourceText(joinSegmentsAsSourceText(nextSegments, segmentationStrategy));
   };
 
   const handleEditableSegmentAdd = (): void => {
     const nextSegments = [...editableSegments, '(new segment)'];
 
+    setPipelineWarnings([]);
     setSourceText(joinSegmentsAsSourceText(nextSegments, segmentationStrategy));
   };
 
   const handleEditableSegmentRemove = (index: number): void => {
     const nextSegments = editableSegments.filter((_, segmentIndex) => segmentIndex !== index);
 
+    setPipelineWarnings([]);
     setSourceText(joinSegmentsAsSourceText(nextSegments, segmentationStrategy));
   };
 
   const handleSplitSourceByLineBreaks = (): void => {
     const lineBreakSegments = splitBySingleLineBreaks(sourceText);
 
+    setPipelineWarnings([]);
     setSourceText(joinSegmentsAsSourceText(lineBreakSegments, segmentationStrategy));
     setStatusNotice({
       message: `Split source into ${lineBreakSegments.length} segment${lineBreakSegments.length === 1 ? '' : 's'} by line breaks.`,
@@ -914,8 +937,9 @@ export function TranslationWorkspace({
       runElapsedSeconds={runElapsedSeconds}
       statusMessage={statusNotice?.message}
       statusSeverity={statusNotice?.severity}
-      onSourceTextChange={setSourceText}
-      onSegmentationStrategyChange={setSegmentationStrategy}
+      pipelineWarnings={pipelineWarnings}
+      onSourceTextChange={handleSourceTextChange}
+      onSegmentationStrategyChange={handleSegmentationStrategyChange}
       onEditableSegmentChange={handleEditableSegmentChange}
       onEditableSegmentAdd={handleEditableSegmentAdd}
       onEditableSegmentRemove={handleEditableSegmentRemove}

@@ -23,6 +23,7 @@ export type TranslationWorkspaceResponse = {
   project: import('./workspace').StudioShellProject;
   mode: 'openai' | 'poe' | 'fallback';
   message?: string;
+  warnings: string[];
 };
 
 export type TranslationProvider = Exclude<TranslationWorkspaceResponse['mode'], 'fallback'>;

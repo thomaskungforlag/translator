@@ -3,6 +3,7 @@ import { type ChangeEvent, type MouseEvent, useRef, useState, type ReactElement 
 import type { AlertColor } from '@mui/material';
 import {
   Alert,
+  Chip,
   Button,
   Divider,
   Box,
@@ -33,6 +34,7 @@ type WorkspaceControlsProps = {
   runElapsedSeconds: number;
   statusMessage?: string;
   statusSeverity?: AlertColor;
+  pipelineWarnings: string[];
   onSourceTextChange: (value: string) => void;
   onSegmentationStrategyChange: (value: SegmentationStrategy) => void;
   onEditableSegmentChange: (index: number, value: string) => void;
@@ -54,6 +56,7 @@ export function WorkspaceControls({
   runElapsedSeconds,
   statusMessage,
   statusSeverity = 'info',
+  pipelineWarnings,
   onSourceTextChange,
   onSegmentationStrategyChange,
   onEditableSegmentChange,
@@ -105,6 +108,8 @@ export function WorkspaceControls({
     onImportText(importedText, file.name);
     input.value = '';
   };
+
+  const recoveryWarnings = pipelineWarnings.map((warning) => parsePipelineWarning(warning));
 
   return (
     <Paper sx={{ p: 2.5 }}>
@@ -285,7 +290,132 @@ export function WorkspaceControls({
           </Stack>
         ) : null}
         {statusMessage ? <Alert severity={statusSeverity}>{statusMessage}</Alert> : null}
+        {recoveryWarnings.length > 0 ? (
+          <Paper
+            variant="outlined"
+            data-testid="workspace-recovery-details"
+            sx={{
+              p: 1.5,
+              borderColor: 'warning.main',
+              backgroundColor: 'rgba(255, 179, 0, 0.04)',
+            }}
+          >
+            <Stack spacing={1.25}>
+              <Stack direction="row" spacing={1} sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                  Recovery details
+                </Typography>
+                <Chip
+                  size="small"
+                  color="warning"
+                  variant="outlined"
+                  label={`${recoveryWarnings.length} warning${recoveryWarnings.length === 1 ? '' : 's'}`}
+                />
+              </Stack>
+              <Typography variant="body2" color="text.secondary">
+                The pipeline produced usable text, but one or more segments were recovered locally
+                after the provider returned invalid structured output. Review the affected
+                segment(s) before publishing.
+              </Typography>
+              <Stack spacing={1}>
+                {recoveryWarnings.map((warning, index) => (
+                  <Box
+                    key={`${warning.stageLabel}-${warning.impactedSegmentsLabel}-${index}`}
+                    data-testid={`workspace-recovery-warning-${index}`}
+                    sx={{
+                      p: 1.25,
+                      borderRadius: 2,
+                      border: '1px solid',
+                      borderColor: 'divider',
+                      backgroundColor: 'background.paper',
+                    }}
+                  >
+                    <Stack
+                      direction="row"
+                      spacing={1}
+                      sx={{ mb: 0.75, flexWrap: 'wrap', alignItems: 'center' }}
+                    >
+                      <Chip size="small" label={warning.stageLabel} />
+                      <Chip size="small" variant="outlined" label={warning.impactedSegmentsLabel} />
+                    </Stack>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                      Why this is flagged
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {warning.reason}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {warning.guidance}
+                    </Typography>
+                  </Box>
+                ))}
+              </Stack>
+            </Stack>
+          </Paper>
+        ) : null}
       </Stack>
     </Paper>
   );
+}
+
+type ParsedPipelineWarning = {
+  stageLabel: string;
+  impactedSegmentsLabel: string;
+  reason: string;
+  guidance: string;
+};
+
+const pipelineWarningPattern =
+  /^(?<stage>.+?) recovered (?:with local fallback|without model findings) for source segment index\(es\): (?<range>[^.]+)\. Reason: (?<reason>.+?)(?:\.)?$/;
+
+function formatStageLabel(value: string): string {
+  const preservedWords = new Set(['qa', 'api', 'pdf', 'ui', 'llm', 'json']);
+
+  return value
+    .split('_')
+    .filter((part) => part.length > 0)
+    .map((part) => {
+      const lower = part.toLowerCase();
+
+      if (preservedWords.has(lower)) {
+        return lower.toUpperCase();
+      }
+
+      return lower.charAt(0).toUpperCase() + lower.slice(1);
+    })
+    .join(' ');
+}
+
+function formatSegmentRange(range: string): string {
+  const match = range.match(/^(\d+)-(\d+)$/);
+
+  if (!match) {
+    return range;
+  }
+
+  const start = Number(match[1]) + 1;
+  const end = Number(match[2]) + 1;
+
+  return start === end ? `Segment ${start}` : `Segments ${start}-${end}`;
+}
+
+function parsePipelineWarning(warning: string): ParsedPipelineWarning {
+  const match = warning.match(pipelineWarningPattern);
+
+  if (!match?.groups) {
+    return {
+      stageLabel: 'Pipeline warning',
+      impactedSegmentsLabel: 'Review required',
+      reason: warning,
+      guidance: 'Review the affected segment(s) before publishing.',
+    };
+  }
+
+  return {
+    stageLabel: formatStageLabel(match.groups.stage),
+    impactedSegmentsLabel: formatSegmentRange(match.groups.range),
+    reason: match.groups.reason.trim(),
+    guidance:
+      'The translated text in this segment was rebuilt locally, so compare it against the source and re-run if you want a fresh provider pass.',
+  };
 }

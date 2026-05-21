@@ -621,6 +621,7 @@ export async function runTranslationWorkspace(
         mode: 'fallback',
         message:
           'The configured model provider is unavailable. Showing demo fallback drafts only; do not treat them as production translation.',
+        warnings: [],
       };
     }
 
@@ -631,6 +632,7 @@ export async function runTranslationWorkspace(
       project: buildStudioShellProject(seed, draftsWithQa),
       mode: activeProviderMode,
       message: formatWarningMessage(warnings),
+      warnings,
     };
   } catch (error) {
     console.error('[translation] pipeline failed, returning fallback', {
@@ -651,6 +653,7 @@ export async function runTranslationWorkspace(
       project: buildStudioShellProject(seed),
       mode: 'fallback',
       message: `${message} Showing demo fallback drafts only; review before use.`,
+      warnings: [],
     };
   }
 }

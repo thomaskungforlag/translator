@@ -9,6 +9,7 @@ function buildProject(
   project: StudioShellProject;
   mode: 'openai' | 'fallback';
   message?: string;
+  warnings: string[];
 } {
   return {
     project: {
@@ -76,6 +77,7 @@ function buildProject(
       mode === 'fallback'
         ? 'The configured model provider is unavailable. Showing demo fallback drafts only.'
         : undefined,
+    warnings: [],
   };
 }
 

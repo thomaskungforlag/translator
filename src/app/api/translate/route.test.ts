@@ -30,6 +30,7 @@ describe('POST /api/translate', () => {
         pipelineStages: [],
       },
       mode: 'openai' as const,
+      warnings: [],
     };
 
     mockedRunTranslationWorkspace.mockResolvedValue(result);
