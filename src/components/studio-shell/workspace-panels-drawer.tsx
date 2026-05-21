@@ -34,6 +34,72 @@ export function WorkspacePanelsDrawer({
   onGlossaryEntryUpdate,
   onGlossaryEntryRemove,
 }: WorkspacePanelsDrawerProps): ReactElement {
+  const panelContent = (
+    <Box data-testid="workspace-panels-drawer" sx={{ p: 2.5, height: '100%', overflowY: 'auto' }}>
+      <Stack spacing={2}>
+        <Box>
+          <Typography variant="overline" color="text.secondary">
+            Workspace panels
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Project, style, glossary, and pipeline controls stay in a compact drawer.
+          </Typography>
+        </Box>
+
+        <ProjectOverview project={project} />
+
+        <WorkspaceAccordion
+          title="Style profile"
+          caption="Voice, rhythm, and avoidance rules"
+          defaultExpanded
+        >
+          <StyleProfilePanel
+            profile={project.styleProfile}
+            onUpdateProfile={onStyleProfileUpdate}
+          />
+        </WorkspaceAccordion>
+
+        <WorkspaceAccordion title="Pipeline stages" caption="Current pass status and readiness">
+          <PipelineStagesPanel stages={project.pipelineStages} />
+        </WorkspaceAccordion>
+
+        <WorkspaceAccordion title="Glossary" caption="Locked terms and recurring entities">
+          <GlossaryPanel
+            entries={project.glossary}
+            onAddEntry={onGlossaryEntryAdd}
+            onUpdateEntry={onGlossaryEntryUpdate}
+            onRemoveEntry={onGlossaryEntryRemove}
+          />
+        </WorkspaceAccordion>
+      </Stack>
+    </Box>
+  );
+
+  if (variant === 'permanent') {
+    return (
+      <Box
+        component="aside"
+        sx={{
+          width: 320,
+          flex: '0 0 320px',
+          minWidth: 320,
+          position: 'sticky',
+          top: 24,
+          alignSelf: 'flex-start',
+          maxHeight: 'calc(100vh - 48px)',
+          overflow: 'hidden',
+          borderRadius: 4,
+          border: '1px solid',
+          borderColor: 'divider',
+          backgroundColor: 'background.paper',
+          backdropFilter: 'blur(18px)',
+        }}
+      >
+        {panelContent}
+      </Box>
+    );
+  }
+
   return (
     <Drawer
       variant={variant}
@@ -53,44 +119,7 @@ export function WorkspacePanelsDrawer({
         },
       }}
     >
-      <Box data-testid="workspace-panels-drawer" sx={{ p: 2.5, height: '100%', overflowY: 'auto' }}>
-        <Stack spacing={2}>
-          <Box>
-            <Typography variant="overline" color="text.secondary">
-              Workspace panels
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Project, style, glossary, and pipeline controls stay in a compact drawer.
-            </Typography>
-          </Box>
-
-          <ProjectOverview project={project} />
-
-          <WorkspaceAccordion
-            title="Style profile"
-            caption="Voice, rhythm, and avoidance rules"
-            defaultExpanded
-          >
-            <StyleProfilePanel
-              profile={project.styleProfile}
-              onUpdateProfile={onStyleProfileUpdate}
-            />
-          </WorkspaceAccordion>
-
-          <WorkspaceAccordion title="Pipeline stages" caption="Current pass status and readiness">
-            <PipelineStagesPanel stages={project.pipelineStages} />
-          </WorkspaceAccordion>
-
-          <WorkspaceAccordion title="Glossary" caption="Locked terms and recurring entities">
-            <GlossaryPanel
-              entries={project.glossary}
-              onAddEntry={onGlossaryEntryAdd}
-              onUpdateEntry={onGlossaryEntryUpdate}
-              onRemoveEntry={onGlossaryEntryRemove}
-            />
-          </WorkspaceAccordion>
-        </Stack>
-      </Box>
+      {panelContent}
     </Drawer>
   );
 }

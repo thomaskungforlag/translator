@@ -52,10 +52,14 @@ export function StudioShell({
         overflowX: 'clip',
       }}
     >
-      <Stack
-        direction={{ xs: 'column', lg: 'row' }}
-        spacing={3}
-        sx={{ alignItems: 'flex-start', minHeight: 0 }}
+      <Box
+        sx={{
+          display: 'grid',
+          gap: 3,
+          alignItems: 'start',
+          gridTemplateColumns: { xs: '1fr', lg: 'minmax(0, 320px) minmax(0, 1fr)' },
+          minHeight: 0,
+        }}
       >
         {isDesktop ? (
           <WorkspacePanelsDrawer
@@ -69,7 +73,7 @@ export function StudioShell({
           />
         ) : null}
 
-        <Box sx={{ flex: 1, minWidth: 0 }}>
+        <Box sx={{ minWidth: 0 }}>
           <Stack spacing={3} sx={{ minHeight: 0 }}>
             <StudioHero
               apiKeyConfigured={apiKeyConfigured}
@@ -116,7 +120,7 @@ export function StudioShell({
             </Box>
           </Stack>
         </Box>
-      </Stack>
+      </Box>
 
       {!isDesktop ? (
         <WorkspacePanelsDrawer
