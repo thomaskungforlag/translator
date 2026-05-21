@@ -13,14 +13,16 @@ import {
 import { buildQaPrompt, buildStageInput } from './translation-prompts';
 import { translationWorkspaceRequestSchema } from './translation-schemas';
 import {
-  activeProviderMode,
   ensureStageCoverage,
   getSuspiciousStageIndexes,
-  isLlmConfigured,
+  getDefaultRuntimeProvider,
+  isRuntimeProviderConfigured,
   parseQaResponse,
   parseStageResponse,
+  resolveRuntimeModelSelection,
   toDrafts,
   type TranslationWorkspaceResponse,
+  type RuntimeModelSelection,
 } from './translation-provider-utils';
 import type { TranslationWorkspaceSeed } from './workspace';
 
@@ -68,11 +70,12 @@ function logChunkFallback(args: {
   reason: string;
   recoveredByFallback: boolean;
   suspiciousIndexes?: number[];
+  provider: RuntimeModelSelection['provider'];
 }): void {
   const chunkEnd = args.chunkStart + args.chunkSize - 1;
 
   console.warn('[translation] stage fallback', {
-    provider: activeProviderMode,
+    provider: args.provider,
     stageName: args.stageName,
     chunkRange: `${args.chunkStart}-${chunkEnd}`,
     chunkSize: args.chunkSize,
@@ -114,15 +117,25 @@ async function runChunkedStage(args: {
   fallbackSegmentText: (sourceText: string, absoluteIndex: number) => string;
   onWarning?: (warning: string) => void;
   ensureTranslated?: boolean;
+  runtimeSelection: RuntimeModelSelection;
 }): Promise<IndexedTextSegment[]> {
   const chunks = splitIntoChunks(args.sourceSegments);
   const chunkedResults = await Promise.all(
     chunks.map(async (chunk) => {
       try {
         const prompt = await args.buildChunkPrompt(chunk);
-        const stageSegments = await parseStageResponse(args.stageName, prompt);
+        const stageSegments = await parseStageResponse(
+          args.stageName,
+          prompt,
+          args.runtimeSelection,
+        );
 
-        ensureStageCoverage(args.stageName, activeProviderMode, chunk.segments, stageSegments);
+        ensureStageCoverage(
+          args.stageName,
+          args.runtimeSelection.provider,
+          chunk.segments,
+          stageSegments,
+        );
 
         if (args.ensureTranslated) {
           const suspiciousIndexes = getSuspiciousStageIndexes(chunk.segments, stageSegments);
@@ -139,6 +152,7 @@ async function runChunkedStage(args: {
               reason,
               recoveredByFallback: true,
               suspiciousIndexes,
+              provider: args.runtimeSelection.provider,
             });
 
             args.onWarning?.(
@@ -179,6 +193,7 @@ async function runChunkedStage(args: {
           sourceSegments: chunk.segments,
           reason,
           recoveredByFallback: true,
+          provider: args.runtimeSelection.provider,
         });
 
         args.onWarning?.(
@@ -346,7 +361,10 @@ function buildProfessionalCopyeditPrompt(prompt: {
   });
 }
 
-async function translateWithProvider(seed: TranslationWorkspaceSeed): Promise<{
+async function translateWithProvider(
+  seed: TranslationWorkspaceSeed,
+  runtimeSelection: RuntimeModelSelection,
+): Promise<{
   drafts: SegmentDraft[];
   warnings: string[];
 }> {
@@ -361,6 +379,7 @@ async function translateWithProvider(seed: TranslationWorkspaceSeed): Promise<{
     buildChunkPrompt: (chunk) => buildAnalysisPrompt(seed, chunk.segments),
     fallbackSegmentText: (sourceText) => buildSourceAnalysis(sourceText),
     onWarning: pushWarning,
+    runtimeSelection,
   });
 
   const faithfulSegments = await runChunkedStage({
@@ -375,6 +394,7 @@ async function translateWithProvider(seed: TranslationWorkspaceSeed): Promise<{
     fallbackSegmentText: (sourceText) => buildFaithfulDraft(sourceText),
     onWarning: pushWarning,
     ensureTranslated: true,
+    runtimeSelection,
   });
 
   const voiceSegments = await runChunkedStage({
@@ -394,6 +414,7 @@ async function translateWithProvider(seed: TranslationWorkspaceSeed): Promise<{
       ),
     onWarning: pushWarning,
     ensureTranslated: true,
+    runtimeSelection,
   });
 
   const naturalnessSegments = await runChunkedStage({
@@ -426,6 +447,7 @@ async function translateWithProvider(seed: TranslationWorkspaceSeed): Promise<{
       ),
     onWarning: pushWarning,
     ensureTranslated: true,
+    runtimeSelection,
   });
 
   const polishedSegments = await runChunkedStage({
@@ -467,6 +489,7 @@ async function translateWithProvider(seed: TranslationWorkspaceSeed): Promise<{
       ),
     onWarning: pushWarning,
     ensureTranslated: true,
+    runtimeSelection,
   });
 
   const professionalCopyeditSegments = await runChunkedStage({
@@ -517,6 +540,7 @@ async function translateWithProvider(seed: TranslationWorkspaceSeed): Promise<{
       ),
     onWarning: pushWarning,
     ensureTranslated: true,
+    runtimeSelection,
   });
 
   return {
@@ -537,6 +561,7 @@ async function finalizeWithQa(
   seed: TranslationWorkspaceSeed,
   drafts: SegmentDraft[],
   warnings: string[],
+  runtimeSelection: RuntimeModelSelection,
 ): Promise<SegmentDraft[]> {
   const sourceSegments = splitSourceText(seed.sourceText, seed.segmentationStrategy);
   const qaChunks = splitIntoChunks(sourceSegments);
@@ -556,7 +581,7 @@ async function finalizeWithQa(
             };
           }),
         );
-        const chunkFindings = await parseQaResponse(prompt);
+        const chunkFindings = await parseQaResponse(prompt, runtimeSelection);
 
         return chunkFindings.map((finding) => ({
           ...finding,
@@ -608,14 +633,23 @@ async function finalizeWithQa(
 }
 
 export async function runTranslationWorkspace(
-  seed: TranslationWorkspaceSeed,
+  seed: TranslationWorkspaceSeed & {
+    provider?: RuntimeModelSelection['provider'];
+    model?: string;
+  },
 ): Promise<TranslationWorkspaceResponse> {
   try {
     if (!seed.sourceText.trim()) {
       throw new Error('Source text is required.');
     }
 
-    if (!isLlmConfigured) {
+    const runtimeSelection = resolveRuntimeModelSelection({
+      provider: seed.provider ?? getDefaultRuntimeProvider(),
+      model: seed.model,
+    });
+    const runtimeConfigured = isRuntimeProviderConfigured(runtimeSelection.provider);
+
+    if (!runtimeConfigured) {
       return {
         project: buildStudioShellProject(seed),
         mode: 'fallback',
@@ -625,18 +659,21 @@ export async function runTranslationWorkspace(
       };
     }
 
-    const { drafts, warnings } = await translateWithProvider(seed);
-    const draftsWithQa = await finalizeWithQa(seed, drafts, warnings);
+    const { drafts, warnings } = await translateWithProvider(seed, runtimeSelection);
+    const draftsWithQa = await finalizeWithQa(seed, drafts, warnings, runtimeSelection);
 
     return {
       project: buildStudioShellProject(seed, draftsWithQa),
-      mode: activeProviderMode,
+      mode: runtimeSelection.provider,
       message: formatWarningMessage(warnings),
       warnings,
     };
   } catch (error) {
     console.error('[translation] pipeline failed, returning fallback', {
-      provider: activeProviderMode,
+      provider: resolveRuntimeModelSelection({
+        provider: seed.provider ?? getDefaultRuntimeProvider(),
+        model: seed.model,
+      }).provider,
       projectId: seed.projectId,
       title: seed.title,
       sourceLength: seed.sourceText.length,

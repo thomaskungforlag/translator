@@ -7,6 +7,7 @@ describe('WorkspaceControls', () => {
   it('keeps the scene actions in a sticky toolbar and exposes the overflow menu', async () => {
     const user = userEvent.setup();
     const onEditableSegmentAdd = jest.fn();
+    const onProviderChange = jest.fn();
 
     render(
       <WorkspaceControls
@@ -22,6 +23,25 @@ describe('WorkspaceControls', () => {
           marketQualityNotes: [],
         }}
         segmentationStrategy="hybrid"
+        selectedProvider="openai"
+        selectedModel="gpt-5-mini"
+        providerOptions={{
+          openai: {
+            provider: 'openai',
+            configured: true,
+            defaultModelId: 'gpt-5-mini',
+            models: [
+              { id: 'gpt-5-mini', label: 'GPT-5-mini', source: 'live' },
+              { id: 'gpt-4o', label: 'GPT-4o', source: 'live' },
+            ],
+          },
+          poe: {
+            provider: 'poe',
+            configured: true,
+            defaultModelId: 'Claude-Sonnet-4.5',
+            models: [{ id: 'Claude-Sonnet-4.5', label: 'Claude-Sonnet-4.5', source: 'live' }],
+          },
+        }}
         segmentPreviewCount={12}
         editableSegments={Array.from({ length: 12 }, (_, index) => `Segment ${index + 1}`)}
         isRunning={false}
@@ -29,6 +49,8 @@ describe('WorkspaceControls', () => {
         pipelineWarnings={[]}
         onSourceTextChange={jest.fn()}
         onSegmentationStrategyChange={jest.fn()}
+        onProviderChange={onProviderChange}
+        onModelChange={jest.fn()}
         onEditableSegmentChange={jest.fn()}
         onEditableSegmentAdd={onEditableSegmentAdd}
         onEditableSegmentRemove={jest.fn()}
@@ -40,6 +62,10 @@ describe('WorkspaceControls', () => {
     );
 
     expect(screen.getByTestId('workspace-actions-toolbar')).toHaveStyle({ position: 'sticky' });
+
+    await user.click(screen.getByRole('combobox', { name: /provider/i }));
+    await user.click(screen.getByRole('option', { name: /poe/i }));
+    expect(onProviderChange).toHaveBeenCalledWith('poe');
 
     await user.click(screen.getByRole('button', { name: /scene actions/i }));
 
@@ -66,6 +92,22 @@ describe('WorkspaceControls', () => {
           marketQualityNotes: [],
         }}
         segmentationStrategy="hybrid"
+        selectedProvider="poe"
+        selectedModel="Claude-Sonnet-4.5"
+        providerOptions={{
+          openai: {
+            provider: 'openai',
+            configured: true,
+            defaultModelId: 'gpt-5-mini',
+            models: [{ id: 'gpt-5-mini', label: 'GPT-5-mini', source: 'live' }],
+          },
+          poe: {
+            provider: 'poe',
+            configured: true,
+            defaultModelId: 'Claude-Sonnet-4.5',
+            models: [{ id: 'Claude-Sonnet-4.5', label: 'Claude-Sonnet-4.5', source: 'live' }],
+          },
+        }}
         segmentPreviewCount={2}
         editableSegments={['Alpha', 'Beta']}
         isRunning={false}
@@ -75,6 +117,8 @@ describe('WorkspaceControls', () => {
         ]}
         onSourceTextChange={jest.fn()}
         onSegmentationStrategyChange={jest.fn()}
+        onProviderChange={jest.fn()}
+        onModelChange={jest.fn()}
         onEditableSegmentChange={jest.fn()}
         onEditableSegmentAdd={jest.fn()}
         onEditableSegmentRemove={jest.fn()}

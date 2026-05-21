@@ -38,13 +38,21 @@ describe('POST /api/translate', () => {
     const response = await POST(
       new Request('http://localhost/api/translate', {
         method: 'POST',
-        body: JSON.stringify(demoWorkspaceSeed),
+        body: JSON.stringify({
+          ...demoWorkspaceSeed,
+          provider: 'poe',
+          model: 'Claude-Sonnet-4.5',
+        }),
       }),
     );
 
     expect(response.status).toBe(200);
     const body: unknown = await response.json();
     expect(body).toEqual(result);
-    expect(mockedRunTranslationWorkspace).toHaveBeenCalledWith(demoWorkspaceSeed);
+    expect(mockedRunTranslationWorkspace).toHaveBeenCalledWith({
+      ...demoWorkspaceSeed,
+      provider: 'poe',
+      model: 'Claude-Sonnet-4.5',
+    });
   });
 });

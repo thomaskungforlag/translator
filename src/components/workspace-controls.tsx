@@ -21,6 +21,7 @@ import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import MoreHorizRoundedIcon from '@mui/icons-material/MoreHorizRounded';
 
 import type { ContentType, LanguageConfig } from '@/lib/domain';
+import type { ModelOption, ModelProvider, ProviderModelOptions } from '@/lib/model-options';
 import type { SegmentationStrategy } from '@/lib/workspace';
 import { parsePipelineWarning } from './studio-shell/recovery-warning-utils';
 
@@ -29,6 +30,9 @@ type WorkspaceControlsProps = {
   contentType: ContentType;
   targetLanguage: LanguageConfig;
   segmentationStrategy: SegmentationStrategy;
+  selectedProvider: ModelProvider;
+  selectedModel: string;
+  providerOptions: Record<ModelProvider, ProviderModelOptions | null>;
   segmentPreviewCount: number;
   editableSegments: string[];
   isRunning: boolean;
@@ -38,6 +42,8 @@ type WorkspaceControlsProps = {
   pipelineWarnings: string[];
   onSourceTextChange: (value: string) => void;
   onSegmentationStrategyChange: (value: SegmentationStrategy) => void;
+  onProviderChange: (value: ModelProvider) => void;
+  onModelChange: (value: string) => void;
   onEditableSegmentChange: (index: number, value: string) => void;
   onEditableSegmentAdd: () => void;
   onEditableSegmentRemove: (index: number) => void;
@@ -47,11 +53,89 @@ type WorkspaceControlsProps = {
   onReviewSegment?: (segmentIndex: number) => void;
 };
 
+type WorkspaceModelControlsProps = {
+  segmentationStrategy: SegmentationStrategy;
+  selectedProvider: ModelProvider;
+  selectedModel: string;
+  providerOptions: Record<ModelProvider, ProviderModelOptions | null>;
+  onSegmentationStrategyChange: (value: SegmentationStrategy) => void;
+  onProviderChange: (value: ModelProvider) => void;
+  onModelChange: (value: string) => void;
+};
+
+function WorkspaceModelControls({
+  segmentationStrategy,
+  selectedProvider,
+  selectedModel,
+  providerOptions,
+  onSegmentationStrategyChange,
+  onProviderChange,
+  onModelChange,
+}: WorkspaceModelControlsProps): ReactElement {
+  const providerModelOptions = providerOptions[selectedProvider];
+  const availableModels = providerModelOptions?.models ?? [];
+  const selectedModelOption = availableModels.find((option) => option.id === selectedModel);
+  const modelSelectDisabled = availableModels.length === 0;
+
+  return (
+    <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
+      <TextField
+        select
+        fullWidth
+        label="Provider"
+        value={selectedProvider}
+        onChange={(event) => {
+          onProviderChange(event.target.value as ModelProvider);
+        }}
+      >
+        <MenuItem value="openai">OpenAI</MenuItem>
+        <MenuItem value="poe">Poe</MenuItem>
+      </TextField>
+      <TextField
+        select
+        fullWidth
+        label="Model"
+        value={selectedModel}
+        onChange={(event) => {
+          onModelChange(event.target.value);
+        }}
+        disabled={modelSelectDisabled}
+        helperText={
+          providerModelOptions?.note ??
+          (modelSelectDisabled ? 'Loading live models...' : (selectedModelOption?.label ?? ''))
+        }
+      >
+        {availableModels.map((option: ModelOption) => (
+          <MenuItem key={option.id} value={option.id}>
+            {option.label}
+          </MenuItem>
+        ))}
+      </TextField>
+      <TextField
+        select
+        fullWidth
+        label="Segmentation"
+        value={segmentationStrategy}
+        onChange={(event) => {
+          onSegmentationStrategyChange(event.target.value as SegmentationStrategy);
+        }}
+      >
+        <MenuItem value="paragraph">Paragraph</MenuItem>
+        <MenuItem value="scene_markers">Scene markers</MenuItem>
+        <MenuItem value="hybrid">Hybrid</MenuItem>
+      </TextField>
+    </Stack>
+  );
+}
+
 export function WorkspaceControls({
   sourceText,
   contentType,
   targetLanguage,
   segmentationStrategy,
+  selectedProvider,
+  selectedModel,
+  providerOptions,
   segmentPreviewCount,
   editableSegments,
   isRunning,
@@ -61,6 +145,8 @@ export function WorkspaceControls({
   pipelineWarnings,
   onSourceTextChange,
   onSegmentationStrategyChange,
+  onProviderChange,
+  onModelChange,
   onEditableSegmentChange,
   onEditableSegmentAdd,
   onEditableSegmentRemove,
@@ -127,20 +213,19 @@ export function WorkspaceControls({
           <TextField select fullWidth label="Target language" value={targetLanguage.label} disabled>
             <MenuItem value={targetLanguage.label}>{targetLanguage.label}</MenuItem>
           </TextField>
-          <TextField
-            select
-            fullWidth
-            label="Segmentation"
-            value={segmentationStrategy}
-            onChange={(event) => {
-              onSegmentationStrategyChange(event.target.value as SegmentationStrategy);
-            }}
-          >
-            <MenuItem value="paragraph">Paragraph</MenuItem>
-            <MenuItem value="scene_markers">Scene markers</MenuItem>
-            <MenuItem value="hybrid">Hybrid</MenuItem>
-          </TextField>
         </Stack>
+        <WorkspaceModelControls
+          segmentationStrategy={segmentationStrategy}
+          selectedProvider={selectedProvider}
+          selectedModel={selectedModel}
+          providerOptions={providerOptions}
+          onSegmentationStrategyChange={onSegmentationStrategyChange}
+          onProviderChange={onProviderChange}
+          onModelChange={onModelChange}
+        />
+        <Typography variant="caption" color="text.secondary">
+          Running with {selectedProvider === 'poe' ? 'Poe' : 'OpenAI'} • {selectedModel}
+        </Typography>
         <Typography variant="caption" color="text.secondary">
           Segment preview: {segmentPreviewCount}{' '}
           {segmentPreviewCount === 1 ? 'segment' : 'segments'}

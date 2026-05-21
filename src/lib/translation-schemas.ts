@@ -57,6 +57,8 @@ export const translationWorkspaceRequestSchema = z.object({
       locked: z.boolean(),
     }),
   ),
+  provider: z.enum(['openai', 'poe']).optional(),
+  model: z.string().min(1).optional(),
 });
 
 export const stageSegmentSchema = z.object({

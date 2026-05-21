@@ -43,15 +43,15 @@ If you are new to the repo, read these in order:
 2. Set `AI_PROVIDER` to `openai` or `poe`.
 3. If `AI_PROVIDER=openai`, set `OPENAI_API_KEY`.
 4. If `AI_PROVIDER=poe`, set `POE_API_KEY` and optionally `POE_BOT`.
-5. Optionally set `OPENAI_MODEL` if you want to override the default OpenAI model.
-   The code defaults to `gpt-5-mini` because it is the best cost-quality
-   starting point for the explicit multi-pass translation pipeline. Use
-   `gpt-5.1` if you want to spend more for maximum output quality, or
-   `gpt-4.1` if you want a non-reasoning alternative.
-6. Optionally set `REFERENCE_SOURCE_PDF_URL` to a runtime-accessible Swedish reference PDF.
-7. Optionally set `REFERENCE_DRAFT_PDF_URL` to a runtime-accessible English draft/reference PDF.
-8. Set `WORDPRESS_TRANSLATION_API_KEY` if you want to enable the WordPress plugin route.
-9. Run `npm run dev`.
+5. The app now loads live model lists from OpenAI and Poe when possible and lets you pick
+   provider + model in the UI.
+6. Optionally set `OPENAI_MODEL` or `POE_BOT` if you want a default selection before the live
+   picker finishes loading. The code defaults to `gpt-5-mini` for OpenAI and
+   `Claude-Sonnet-4.5` for Poe.
+7. Optionally set `REFERENCE_SOURCE_PDF_URL` to a runtime-accessible Swedish reference PDF.
+8. Optionally set `REFERENCE_DRAFT_PDF_URL` to a runtime-accessible English draft/reference PDF.
+9. Set `WORDPRESS_TRANSLATION_API_KEY` if you want to enable the WordPress plugin route.
+10. Run `npm run dev`.
 
 If you are using the WordPress plugin:
 

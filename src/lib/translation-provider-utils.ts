@@ -28,16 +28,42 @@ export type TranslationWorkspaceResponse = {
 
 export type TranslationProvider = Exclude<TranslationWorkspaceResponse['mode'], 'fallback'>;
 
-const openaiClient = env.OPENAI_API_KEY ? new OpenAI({ apiKey: env.OPENAI_API_KEY }) : null;
-const openaiModel = env.OPENAI_MODEL ?? 'gpt-5-mini';
-const poeApiUrl = env.POE_API_URL ?? 'https://api.poe.com/v1/chat/completions';
-const poeBot = env.POE_BOT ?? 'Claude-Sonnet-4.5';
+export type RuntimeProvider = TranslationProvider;
 
-export const activeProvider = env.AI_PROVIDER;
+export type RuntimeModelSelection = {
+  provider: RuntimeProvider;
+  model: string;
+};
+
+const openaiClient = env.OPENAI_API_KEY ? new OpenAI({ apiKey: env.OPENAI_API_KEY }) : null;
+const poeApiUrl = env.POE_API_URL ?? 'https://api.poe.com/v1/chat/completions';
+
 export const isOpenAIConfigured = Boolean(openaiClient);
 export const isPoeConfigured = Boolean(env.POE_API_KEY);
-export const isLlmConfigured = activeProvider === 'poe' ? isPoeConfigured : isOpenAIConfigured;
-export const activeProviderMode: TranslationProvider = activeProvider;
+
+export function getDefaultRuntimeProvider(): RuntimeProvider {
+  return env.AI_PROVIDER;
+}
+
+export function getDefaultRuntimeModel(provider: RuntimeProvider): string {
+  return provider === 'poe'
+    ? (env.POE_BOT ?? 'Claude-Sonnet-4.5')
+    : (env.OPENAI_MODEL ?? 'gpt-5-mini');
+}
+
+export function resolveRuntimeModelSelection(selection?: {
+  provider?: RuntimeProvider;
+  model?: string;
+}): RuntimeModelSelection {
+  const provider = selection?.provider ?? getDefaultRuntimeProvider();
+  const model = selection?.model?.trim() || getDefaultRuntimeModel(provider);
+
+  return { provider, model };
+}
+
+export function isRuntimeProviderConfigured(provider: RuntimeProvider): boolean {
+  return provider === 'poe' ? isPoeConfigured : isOpenAIConfigured;
+}
 
 function providerDisplayName(provider: TranslationProvider): string {
   return provider === 'poe' ? 'Poe' : 'OpenAI';
@@ -46,9 +72,10 @@ function providerDisplayName(provider: TranslationProvider): string {
 async function parseOpenAIStageResponse(
   stageName: string,
   prompt: string,
+  model: string,
 ): Promise<StageSegment[]> {
   const response = await openaiClient!.responses.parse({
-    model: openaiModel,
+    model,
     input: [
       {
         role: 'system',
@@ -74,9 +101,10 @@ async function parseOpenAIStageResponse(
 
 async function parseOpenAIQaResponse(
   prompt: string,
+  model: string,
 ): Promise<Array<z.infer<typeof qaFindingSchema>>> {
   const response = await openaiClient!.responses.parse({
-    model: openaiModel,
+    model,
     input: [
       {
         role: 'system',
@@ -100,36 +128,47 @@ async function parseOpenAIQaResponse(
   return response.output_parsed.findings;
 }
 
-export function parseStageResponse(stageName: string, prompt: string): Promise<StageSegment[]> {
-  if (activeProvider === 'poe') {
+export function parseStageResponse(
+  stageName: string,
+  prompt: string,
+  selection?: RuntimeModelSelection,
+): Promise<StageSegment[]> {
+  const runtimeSelection = selection ?? resolveRuntimeModelSelection();
+
+  if (runtimeSelection.provider === 'poe') {
     if (!env.POE_API_KEY) {
       return Promise.resolve([]);
     }
 
-    return parsePoeStageResponse(poeApiUrl, env.POE_API_KEY, poeBot, prompt);
+    return parsePoeStageResponse(poeApiUrl, env.POE_API_KEY, runtimeSelection.model, prompt);
   }
 
   if (!openaiClient) {
     return Promise.resolve([]);
   }
 
-  return parseOpenAIStageResponse(stageName, prompt);
+  return parseOpenAIStageResponse(stageName, prompt, runtimeSelection.model);
 }
 
-export function parseQaResponse(prompt: string): Promise<Array<z.infer<typeof qaFindingSchema>>> {
-  if (activeProvider === 'poe') {
+export function parseQaResponse(
+  prompt: string,
+  selection?: RuntimeModelSelection,
+): Promise<Array<z.infer<typeof qaFindingSchema>>> {
+  const runtimeSelection = selection ?? resolveRuntimeModelSelection();
+
+  if (runtimeSelection.provider === 'poe') {
     if (!env.POE_API_KEY) {
       return Promise.resolve([]);
     }
 
-    return parsePoeQaResponse(poeApiUrl, env.POE_API_KEY, poeBot, prompt);
+    return parsePoeQaResponse(poeApiUrl, env.POE_API_KEY, runtimeSelection.model, prompt);
   }
 
   if (!openaiClient) {
     return Promise.resolve([]);
   }
 
-  return parseOpenAIQaResponse(prompt);
+  return parseOpenAIQaResponse(prompt, runtimeSelection.model);
 }
 
 export function ensureStageCoverage(

@@ -16,6 +16,11 @@ import {
   splitSourceText,
 } from '@/lib/pipeline';
 import type { DocumentSegment, GlossaryEntry, StyleProfile } from '@/lib/domain';
+import {
+  getDefaultModelId,
+  type ModelProvider,
+  type ProviderModelOptions,
+} from '@/lib/model-options';
 import type {
   SegmentationStrategy,
   StudioShellProject,
@@ -25,8 +30,9 @@ import type {
 import { WorkspaceControls } from './workspace-controls';
 
 type TranslationWorkspaceProps = {
-  apiKeyConfigured: boolean;
-  activeRuntimeModelLabel: string;
+  providerAvailability: Record<ModelProvider, boolean>;
+  initialProvider: ModelProvider;
+  initialModel: string;
   initialSeed: TranslationWorkspaceSeed;
 };
 
@@ -46,6 +52,8 @@ type PersistedWorkspaceState = {
   sourceText: string;
   segmentationStrategy: SegmentationStrategy;
   project: StudioShellProject;
+  provider?: ModelProvider;
+  model?: string;
 };
 
 const workspaceStorageKey = 'translator.workspace.v1';
@@ -53,6 +61,9 @@ const workspaceStorageKey = 'translator.workspace.v1';
 type TranslationWorkspaceViewProps = {
   apiKeyConfigured: boolean;
   activeRuntimeModelLabel: string;
+  selectedProvider: ModelProvider;
+  selectedModel: string;
+  providerOptions: Record<ModelProvider, ProviderModelOptions | null>;
   sourceText: string;
   segmentationStrategy: SegmentationStrategy;
   segmentPreviewCount: number;
@@ -66,6 +77,8 @@ type TranslationWorkspaceViewProps = {
   selectedRecoverySegmentIndex: number | null;
   onSourceTextChange: (value: string) => void;
   onSegmentationStrategyChange: (value: SegmentationStrategy) => void;
+  onProviderChange: (value: ModelProvider) => void;
+  onModelChange: (value: string) => void;
   onEditableSegmentChange: (index: number, value: string) => void;
   onEditableSegmentAdd: () => void;
   onEditableSegmentRemove: (index: number) => void;
@@ -318,16 +331,6 @@ function deriveImportedTitle(fileName: string, fallbackTitle: string): string {
   return baseName.length > 0 ? baseName : fallbackTitle;
 }
 
-function buildInitialStatus(apiKeyConfigured: boolean): StatusNotice {
-  return apiKeyConfigured
-    ? { message: 'Ready to call the configured model provider.', severity: 'info' }
-    : {
-        message:
-          'Provider key missing. Demo fallback only; do not treat output as production translation.',
-        severity: 'warning',
-      };
-}
-
 function buildFallbackStatus(message?: string): StatusNotice {
   return {
     message:
@@ -335,6 +338,27 @@ function buildFallbackStatus(message?: string): StatusNotice {
       'The configured model provider is unavailable. Showing demo fallback drafts only; review before using.',
     severity: 'warning',
   };
+}
+
+function buildProviderStatus(provider: ModelProvider, apiKeyConfigured: boolean): StatusNotice {
+  if (apiKeyConfigured) {
+    return {
+      message: `${provider === 'poe' ? 'Poe' : 'OpenAI'} is ready for translation runs.`,
+      severity: 'info',
+    };
+  }
+
+  return {
+    message:
+      provider === 'poe'
+        ? 'Poe API key missing. Demo fallback only; do not treat output as production translation.'
+        : 'OpenAI API key missing. Demo fallback only; do not treat output as production translation.',
+    severity: 'warning',
+  };
+}
+
+function formatRuntimeModelLabel(provider: ModelProvider, model: string): string {
+  return `${provider === 'poe' ? 'Poe' : 'OpenAI'} • ${model}`;
 }
 
 function buildImportedSeed(args: {
@@ -422,6 +446,10 @@ function loadPersistedWorkspaceState(): PersistedWorkspaceState | null {
     }
 
     const project = record.project as Partial<StudioShellProject>;
+    const provider =
+      record.provider === 'openai' || record.provider === 'poe' ? record.provider : undefined;
+    const model =
+      typeof record.model === 'string' && record.model.trim().length > 0 ? record.model : undefined;
 
     return {
       sourceText: record.sourceText,
@@ -430,6 +458,8 @@ function loadPersistedWorkspaceState(): PersistedWorkspaceState | null {
         ...project,
         styleProfile: project.styleProfile ?? buildDefaultStyleProfile(),
       } as StudioShellProject,
+      provider,
+      model,
     };
   } catch {
     return null;
@@ -466,6 +496,9 @@ function downloadTextFile(content: string, fileName: string, mimeType: string): 
 function TranslationWorkspaceView({
   apiKeyConfigured,
   activeRuntimeModelLabel,
+  selectedProvider,
+  selectedModel,
+  providerOptions,
   sourceText,
   segmentationStrategy,
   segmentPreviewCount,
@@ -479,6 +512,8 @@ function TranslationWorkspaceView({
   selectedRecoverySegmentIndex,
   onSourceTextChange,
   onSegmentationStrategyChange,
+  onProviderChange,
+  onModelChange,
   onEditableSegmentChange,
   onEditableSegmentAdd,
   onEditableSegmentRemove,
@@ -506,6 +541,9 @@ function TranslationWorkspaceView({
         contentType={project.contentType}
         targetLanguage={project.targetLanguage}
         segmentationStrategy={segmentationStrategy}
+        selectedProvider={selectedProvider}
+        selectedModel={selectedModel}
+        providerOptions={providerOptions}
         segmentPreviewCount={segmentPreviewCount}
         editableSegments={editableSegments}
         isRunning={isRunning}
@@ -515,6 +553,8 @@ function TranslationWorkspaceView({
         pipelineWarnings={pipelineWarnings}
         onSourceTextChange={onSourceTextChange}
         onSegmentationStrategyChange={onSegmentationStrategyChange}
+        onProviderChange={onProviderChange}
+        onModelChange={onModelChange}
         onEditableSegmentChange={onEditableSegmentChange}
         onEditableSegmentAdd={onEditableSegmentAdd}
         onEditableSegmentRemove={onEditableSegmentRemove}
@@ -556,11 +596,14 @@ function createGlossaryEntryId(): string {
 }
 
 export function TranslationWorkspace({
-  apiKeyConfigured,
-  activeRuntimeModelLabel,
+  providerAvailability,
+  initialProvider,
+  initialModel,
   initialSeed,
 }: TranslationWorkspaceProps): ReactElement {
   const defaultSegmentationStrategy = initialSeed.segmentationStrategy ?? 'paragraph';
+  const [provider, setProvider] = useState<ModelProvider>(initialProvider);
+  const [model, setModel] = useState(initialModel);
   const [sourceText, setSourceText] = useState(initialSeed.sourceText);
   const [segmentationStrategy, setSegmentationStrategy] = useState<SegmentationStrategy>(
     defaultSegmentationStrategy,
@@ -578,10 +621,27 @@ export function TranslationWorkspace({
   const [selectedRecoverySegmentIndex, setSelectedRecoverySegmentIndex] = useState<number | null>(
     null,
   );
+  const [modelOptionsByProvider, setModelOptionsByProvider] = useState<
+    Record<ModelProvider, ProviderModelOptions | null>
+  >({
+    openai: null,
+    poe: null,
+  });
   const [statusNotice, setStatusNotice] = useState<StatusNotice | undefined>(
-    buildInitialStatus(apiKeyConfigured),
+    buildProviderStatus(initialProvider, providerAvailability[initialProvider]),
   );
   const hasRestoredPersistedWorkspaceRef = useRef(false);
+
+  const currentProviderOptions = modelOptionsByProvider[provider];
+  const currentProviderModelIds = currentProviderOptions?.models ?? [];
+  const resolvedModel =
+    currentProviderOptions === null
+      ? model
+      : currentProviderModelIds.some((option) => option.id === model)
+        ? model
+        : (currentProviderOptions?.defaultModelId ?? getDefaultModelId(provider));
+  const providerApiKeyConfigured = providerAvailability[provider];
+  const activeRuntimeModelLabel = formatRuntimeModelLabel(provider, resolvedModel);
 
   useEffect(() => {
     const restoreTimeoutId = window.setTimeout(() => {
@@ -595,6 +655,12 @@ export function TranslationWorkspace({
 
       setSourceText(persistedWorkspace.sourceText);
       setSegmentationStrategy(persistedWorkspace.segmentationStrategy);
+      if (persistedWorkspace.provider) {
+        setProvider(persistedWorkspace.provider);
+      }
+      if (persistedWorkspace.model) {
+        setModel(persistedWorkspace.model);
+      }
       setProject({
         ...persistedWorkspace.project,
         styleProfile: persistedWorkspace.project.styleProfile ?? buildDefaultStyleProfile(),
@@ -616,8 +682,53 @@ export function TranslationWorkspace({
       return;
     }
 
-    persistWorkspaceState({ sourceText, segmentationStrategy, project });
-  }, [project, segmentationStrategy, sourceText]);
+    persistWorkspaceState({
+      sourceText,
+      segmentationStrategy,
+      project,
+      provider,
+      model: resolvedModel,
+    });
+  }, [model, project, provider, resolvedModel, segmentationStrategy, sourceText]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    const loadModelOptions = async (): Promise<void> => {
+      try {
+        const response = await fetch('/api/model-options', {
+          signal: controller.signal,
+        });
+
+        if (!response.ok) {
+          throw new Error(`Model options request failed with status ${response.status}.`);
+        }
+
+        const payload = (await response.json()) as {
+          providers?: Record<ModelProvider, ProviderModelOptions | undefined>;
+        };
+
+        if (!payload.providers) {
+          return;
+        }
+
+        setModelOptionsByProvider({
+          openai: payload.providers.openai ?? null,
+          poe: payload.providers.poe ?? null,
+        });
+      } catch (error) {
+        if (error instanceof DOMException && error.name === 'AbortError') {
+          return;
+        }
+      }
+    };
+
+    void loadModelOptions();
+
+    return () => {
+      controller.abort();
+    };
+  }, []);
 
   useEffect(() => {
     if (runStartedAt === null) {
@@ -657,6 +768,8 @@ export function TranslationWorkspace({
           styleProfile: project.styleProfile,
           sourceText,
           segmentationStrategy,
+          provider,
+          model: resolvedModel,
         }),
       });
 
@@ -705,18 +818,20 @@ export function TranslationWorkspace({
       setStatusNotice(lockStatus ?? baseStatus);
       setPipelineWarnings(result.warnings ?? []);
     } catch (error) {
-      setProject(
-        buildStudioShellProject({
-          ...initialSeed,
-          title: project.title,
-          contentType: project.contentType,
-          targetLanguage: project.targetLanguage,
-          glossary: project.glossary,
-          styleProfile: project.styleProfile,
-          sourceText,
-          segmentationStrategy,
-        }),
-      );
+      const nextSeed = {
+        ...initialSeed,
+        title: project.title,
+        contentType: project.contentType,
+        targetLanguage: project.targetLanguage,
+        glossary: project.glossary,
+        styleProfile: project.styleProfile,
+        sourceText,
+        segmentationStrategy,
+        provider,
+        model: resolvedModel,
+      };
+
+      setProject(buildStudioShellProject(nextSeed));
       setStatusNotice(
         error instanceof Error
           ? buildFallbackStatus(`${error.message} Demo fallback only.`)
@@ -739,6 +854,23 @@ export function TranslationWorkspace({
     setPipelineWarnings([]);
     setSelectedRecoverySegmentIndex(null);
     setSegmentationStrategy(value);
+  };
+
+  const handleProviderChange = (value: ModelProvider): void => {
+    setPipelineWarnings([]);
+    setSelectedRecoverySegmentIndex(null);
+    setProvider(value);
+
+    const nextOptions = modelOptionsByProvider[value];
+
+    setModel(nextOptions?.defaultModelId ?? getDefaultModelId(value));
+    setStatusNotice(buildProviderStatus(value, providerAvailability[value]));
+  };
+
+  const handleModelChange = (value: string): void => {
+    setPipelineWarnings([]);
+    setSelectedRecoverySegmentIndex(null);
+    setModel(value);
   };
 
   const handleImportText = (importedText: string, fileName: string): void => {
@@ -966,8 +1098,11 @@ export function TranslationWorkspace({
 
   return (
     <TranslationWorkspaceView
-      apiKeyConfigured={apiKeyConfigured}
+      apiKeyConfigured={providerApiKeyConfigured}
       activeRuntimeModelLabel={activeRuntimeModelLabel}
+      selectedProvider={provider}
+      selectedModel={resolvedModel}
+      providerOptions={modelOptionsByProvider}
       sourceText={sourceText}
       segmentationStrategy={segmentationStrategy}
       segmentPreviewCount={segmentPreviewCount}
@@ -981,6 +1116,8 @@ export function TranslationWorkspace({
       selectedRecoverySegmentIndex={selectedRecoverySegmentIndex}
       onSourceTextChange={handleSourceTextChange}
       onSegmentationStrategyChange={handleSegmentationStrategyChange}
+      onProviderChange={handleProviderChange}
+      onModelChange={handleModelChange}
       onEditableSegmentChange={handleEditableSegmentChange}
       onEditableSegmentAdd={handleEditableSegmentAdd}
       onEditableSegmentRemove={handleEditableSegmentRemove}
