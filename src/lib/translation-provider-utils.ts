@@ -25,6 +25,8 @@ export type TranslationWorkspaceResponse = {
   message?: string;
 };
 
+export type TranslationProvider = Exclude<TranslationWorkspaceResponse['mode'], 'fallback'>;
+
 const openaiClient = env.OPENAI_API_KEY ? new OpenAI({ apiKey: env.OPENAI_API_KEY }) : null;
 const openaiModel = env.OPENAI_MODEL ?? 'gpt-5-mini';
 const poeApiUrl = env.POE_API_URL ?? 'https://api.poe.com/v1/chat/completions';
@@ -34,8 +36,11 @@ export const activeProvider = env.AI_PROVIDER;
 export const isOpenAIConfigured = Boolean(openaiClient);
 export const isPoeConfigured = Boolean(env.POE_API_KEY);
 export const isLlmConfigured = activeProvider === 'poe' ? isPoeConfigured : isOpenAIConfigured;
-export const activeProviderMode: Exclude<TranslationWorkspaceResponse['mode'], 'fallback'> =
-  activeProvider;
+export const activeProviderMode: TranslationProvider = activeProvider;
+
+function providerDisplayName(provider: TranslationProvider): string {
+  return provider === 'poe' ? 'Poe' : 'OpenAI';
+}
 
 async function parseOpenAIStageResponse(
   stageName: string,
@@ -128,11 +133,14 @@ export function parseQaResponse(prompt: string): Promise<Array<z.infer<typeof qa
 
 export function ensureStageCoverage(
   stageName: string,
+  provider: TranslationProvider,
   sourceSegments: string[],
   stageSegments: StageSegment[],
 ): void {
   if (stageSegments.length !== sourceSegments.length) {
-    throw new Error(`OpenAI returned a different number of segments for ${stageName}.`);
+    throw new Error(
+      `${providerDisplayName(provider)} returned a different number of segments for ${stageName}.`,
+    );
   }
 
   const actualIndexes = stageSegments
@@ -144,7 +152,9 @@ export function ensureStageCoverage(
     .map((_, segmentIndex) => segmentIndex)
     .entries()) {
     if (actualIndexes[index] !== expectedIndex) {
-      throw new Error(`OpenAI returned an out-of-order response for ${stageName}.`);
+      throw new Error(
+        `${providerDisplayName(provider)} returned an out-of-order response for ${stageName}.`,
+      );
     }
   }
 }
@@ -209,7 +219,22 @@ export function ensureStageLooksTranslated(
   sourceSegments: string[],
   stageSegments: StageSegment[],
 ): void {
-  const suspiciousIndexes = stageSegments
+  const suspiciousIndexes = getSuspiciousStageIndexes(sourceSegments, stageSegments);
+
+  if (suspiciousIndexes.length > 0) {
+    const previewIndexes = suspiciousIndexes.slice(0, 8).join(', ');
+
+    throw new Error(
+      `Model output for ${stageName} appears untranslated in segment index(es): ${previewIndexes}.`,
+    );
+  }
+}
+
+export function getSuspiciousStageIndexes(
+  sourceSegments: string[],
+  stageSegments: StageSegment[],
+): number[] {
+  return stageSegments
     .filter((segment) => {
       const source = sourceSegments[segment.index] ?? '';
       const sourceComparable = normalizeComparableText(source);
@@ -223,14 +248,6 @@ export function ensureStageLooksTranslated(
       return unchanged || likelySwedishOutput;
     })
     .map((segment) => segment.index);
-
-  if (suspiciousIndexes.length > 0) {
-    const previewIndexes = suspiciousIndexes.slice(0, 8).join(', ');
-
-    throw new Error(
-      `Model output for ${stageName} appears untranslated in segment index(es): ${previewIndexes}.`,
-    );
-  }
 }
 
 type DraftStageSet = {

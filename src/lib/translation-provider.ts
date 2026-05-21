@@ -15,7 +15,7 @@ import { translationWorkspaceRequestSchema } from './translation-schemas';
 import {
   activeProviderMode,
   ensureStageCoverage,
-  ensureStageLooksTranslated,
+  getSuspiciousStageIndexes,
   isLlmConfigured,
   parseQaResponse,
   parseStageResponse,
@@ -95,14 +95,36 @@ async function runChunkedStage(args: {
         const prompt = await args.buildChunkPrompt(chunk);
         const stageSegments = await parseStageResponse(args.stageName, prompt);
 
-        ensureStageCoverage(args.stageName, chunk.segments, stageSegments);
+        ensureStageCoverage(args.stageName, activeProviderMode, chunk.segments, stageSegments);
 
         if (args.ensureTranslated) {
-          ensureStageLooksTranslated(
-            args.stageName as Exclude<typeof args.stageName, 'source_analysis'>,
-            chunk.segments,
-            stageSegments,
-          );
+          const suspiciousIndexes = getSuspiciousStageIndexes(chunk.segments, stageSegments);
+
+          if (suspiciousIndexes.length > 0) {
+            const suspiciousIndexSet = new Set(suspiciousIndexes);
+
+            args.onWarning?.(
+              `${args.stageName} recovered with local fallback for source segment index(es): ${chunk.start}-${chunk.start + chunk.segments.length - 1}. Reason: Model output for ${args.stageName} appears untranslated in segment index(es): ${suspiciousIndexes.slice(0, 8).join(', ')}.`,
+            );
+
+            return stageSegments.map((segment) => {
+              const absoluteIndex = segment.index + chunk.start;
+
+              if (!suspiciousIndexSet.has(segment.index)) {
+                return {
+                  index: absoluteIndex,
+                  text: segment.text,
+                };
+              }
+
+              const sourceText = chunk.segments[segment.index] ?? '';
+
+              return {
+                index: absoluteIndex,
+                text: args.fallbackSegmentText(sourceText, absoluteIndex),
+              };
+            });
+          }
         }
 
         return stageSegments.map((segment) => ({

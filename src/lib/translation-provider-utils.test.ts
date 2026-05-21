@@ -570,4 +570,15 @@ describe('translation-provider-utils (provider adapters)', () => {
       ),
     ).not.toThrow();
   });
+
+  it('reports provider-specific coverage errors', async () => {
+    process.env.AI_PROVIDER = 'poe';
+    process.env.POE_API_KEY = 'test-poe-key';
+
+    const utils = await loadUtilsModule();
+
+    expect(() => utils.ensureStageCoverage('faithful_translation', 'poe', ['source'], [])).toThrow(
+      /Poe returned a different number of segments for faithful_translation\./,
+    );
+  });
 });
