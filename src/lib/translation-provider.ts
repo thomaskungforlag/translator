@@ -56,6 +56,33 @@ function formatWarningMessage(warnings: string[]): string | undefined {
   return `${preview} ${uniqueWarnings.length - 2 > 0 ? `(${uniqueWarnings.length - 2} additional warning${uniqueWarnings.length - 2 > 1 ? 's' : ''}.) ` : ''}Review impacted segments before publishing.`;
 }
 
+function previewChunkSegments(segments: string[]): string[] {
+  return segments.slice(0, 2).map((segment) => segment.slice(0, 180));
+}
+
+function logChunkFallback(args: {
+  stageName: TranslationStageName;
+  chunkStart: number;
+  chunkSize: number;
+  sourceSegments: string[];
+  reason: string;
+  recoveredByFallback: boolean;
+  suspiciousIndexes?: number[];
+}): void {
+  const chunkEnd = args.chunkStart + args.chunkSize - 1;
+
+  console.warn('[translation] stage fallback', {
+    provider: activeProviderMode,
+    stageName: args.stageName,
+    chunkRange: `${args.chunkStart}-${chunkEnd}`,
+    chunkSize: args.chunkSize,
+    sourcePreview: previewChunkSegments(args.sourceSegments),
+    recoveredByFallback: args.recoveredByFallback,
+    suspiciousIndexes: args.suspiciousIndexes ?? [],
+    reason: args.reason,
+  });
+}
+
 function splitIntoChunks(sourceSegments: string[], chunkSize = stageChunkSize): ChunkDescriptor[] {
   const chunks: ChunkDescriptor[] = [];
 
@@ -102,9 +129,20 @@ async function runChunkedStage(args: {
 
           if (suspiciousIndexes.length > 0) {
             const suspiciousIndexSet = new Set(suspiciousIndexes);
+            const reason = `Model output for ${args.stageName} appears untranslated in segment index(es): ${suspiciousIndexes.slice(0, 8).join(', ')}.`;
+
+            logChunkFallback({
+              stageName: args.stageName,
+              chunkStart: chunk.start,
+              chunkSize: chunk.segments.length,
+              sourceSegments: chunk.segments,
+              reason,
+              recoveredByFallback: true,
+              suspiciousIndexes,
+            });
 
             args.onWarning?.(
-              `${args.stageName} recovered with local fallback for source segment index(es): ${chunk.start}-${chunk.start + chunk.segments.length - 1}. Reason: Model output for ${args.stageName} appears untranslated in segment index(es): ${suspiciousIndexes.slice(0, 8).join(', ')}.`,
+              `${args.stageName} recovered with local fallback for source segment index(es): ${chunk.start}-${chunk.start + chunk.segments.length - 1}. Reason: ${reason}`,
             );
 
             return stageSegments.map((segment) => {
@@ -133,6 +171,15 @@ async function runChunkedStage(args: {
         }));
       } catch (error) {
         const reason = error instanceof Error ? error.message : String(error);
+
+        logChunkFallback({
+          stageName: args.stageName,
+          chunkStart: chunk.start,
+          chunkSize: chunk.segments.length,
+          sourceSegments: chunk.segments,
+          reason,
+          recoveredByFallback: true,
+        });
 
         args.onWarning?.(
           `${args.stageName} recovered with local fallback for source segment index(es): ${chunk.start}-${chunk.start + chunk.segments.length - 1}. Reason: ${reason}`,

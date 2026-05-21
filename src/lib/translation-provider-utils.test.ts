@@ -245,6 +245,7 @@ describe('translation-provider-utils (provider adapters)', () => {
     process.env.POE_API_KEY = 'test-poe-key';
 
     const fetchMock = jest.mocked(globalThis.fetch);
+    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
 
     fetchMock
       .mockResolvedValueOnce({
@@ -261,7 +262,20 @@ describe('translation-provider-utils (provider adapters)', () => {
     await expect(utils.parseQaResponse('qa prompt')).rejects.toThrow(
       'Poe returned invalid qa_response JSON after repair attempt.',
     );
+    expect(
+      consoleErrorSpy.mock.calls.some(
+        ([message, details]) =>
+          message === '[poe] repair parse failed' &&
+          typeof details === 'object' &&
+          details !== null &&
+          'schemaName' in details &&
+          (details as { schemaName?: string }).schemaName === 'qa_response' &&
+          'provider' in details &&
+          (details as { provider?: string }).provider === 'poe',
+      ),
+    ).toBe(true);
     expect(fetchMock).toHaveBeenCalledTimes(2);
+    consoleErrorSpy.mockRestore();
   });
 
   it('accepts repaired stage_response wrapper payloads', async () => {

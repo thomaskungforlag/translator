@@ -74,6 +74,10 @@ function extractPoeText(response: PoeCompletionResponse): string {
   throw new Error('Poe returned an empty response body.');
 }
 
+function previewLength(value: string): number {
+  return value.length;
+}
+
 function extractJsonText(rawText: string): string {
   const fencedJsonMatch = rawText.match(/```json\s*([\s\S]*?)```/i);
 
@@ -553,10 +557,12 @@ export async function requestPoe(
     const errorBody = await response.text();
 
     console.error('[poe] request failed', {
+      provider: 'poe',
       status: response.status,
       statusText: response.statusText,
       apiUrl: context.apiUrl,
       model: context.bot,
+      bodyLength: errorBody.length,
       bodyPreview: preview(errorBody),
     });
 
@@ -613,8 +619,12 @@ async function parsePoeJsonWithRepair<T>(
   }
 
   console.info('[poe] initial parse mismatch; attempting one repair pass', {
+    provider: 'poe',
+    apiUrl: context.apiUrl,
+    model: context.bot,
     schemaName,
     issues: summarizeParseIssues(initial.result),
+    rawLength: previewLength(rawResponse),
     rawPreview: preview(rawResponse),
     parsedCandidateType: typeof initial.parsedCandidate,
     normalizedType: typeof initial.normalized,
@@ -625,18 +635,27 @@ async function parsePoeJsonWithRepair<T>(
 
   if (repaired.result.success) {
     console.info('[poe] repair pass succeeded', {
+      provider: 'poe',
+      apiUrl: context.apiUrl,
+      model: context.bot,
       schemaName,
       initialIssues: summarizeParseIssues(initial.result),
+      repairedLength: previewLength(repairedResponse),
     });
 
     return repaired.result.data as T;
   }
 
   console.error('[poe] repair parse failed', {
+    provider: 'poe',
+    apiUrl: context.apiUrl,
+    model: context.bot,
     schemaName,
     initialIssues: summarizeParseIssues(initial.result),
     repairIssues: summarizeParseIssues(repaired.result),
+    rawLength: previewLength(rawResponse),
     rawPreview: preview(rawResponse),
+    repairedLength: previewLength(repairedResponse),
     repairedPreview: preview(repairedResponse),
     parsedCandidateType: typeof repaired.parsedCandidate,
     normalizedType: typeof repaired.normalized,

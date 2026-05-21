@@ -9,6 +9,35 @@ describe('reference-material-runtime', () => {
     ).toBe('https://drive.google.com/uc?export=download&id=17II_a5abZ9Ocgw6iB-5FwWXVVaucaml_');
   });
 
+  it('fetches reference PDFs without using the Next.js data cache', async () => {
+    process.env.REFERENCE_SOURCE_PDF_URL = 'https://example.com/reference.pdf';
+    process.env.REFERENCE_DRAFT_PDF_URL = '';
+
+    const fetchMock = jest.fn().mockResolvedValue({
+      ok: true,
+      arrayBuffer: () => Promise.resolve(new ArrayBuffer(8)),
+    });
+    Object.defineProperty(globalThis, 'fetch', {
+      configurable: true,
+      writable: true,
+      value: fetchMock,
+    });
+
+    jest.resetModules();
+    jest.doMock('pdf-parse', () => ({
+      __esModule: true,
+      default: jest.fn().mockResolvedValue({ text: 'Paragraph one\n\nParagraph two' }),
+    }));
+
+    const { buildRuntimeReferencePromptContext } = await import('./reference-material-runtime');
+
+    await buildRuntimeReferencePromptContext('Paragraph one');
+
+    expect(fetchMock).toHaveBeenCalledWith('https://example.com/reference.pdf', {
+      cache: 'no-store',
+    });
+  });
+
   it('prefers the most relevant excerpts for the current source text', () => {
     const referenceText = [
       'Morning light lay cold over the quay while the harbor workers waited in silence for the ferry horn to return across the water.',

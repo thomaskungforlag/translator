@@ -111,7 +111,7 @@ export function selectReferenceExcerpts(referenceText: string, sourceText: strin
 
 async function fetchReferencePdfText(url: string): Promise<string | null> {
   const response = await fetch(toReferencePdfDownloadUrl(url), {
-    cache: 'force-cache',
+    cache: 'no-store',
   });
 
   if (!response.ok) {
