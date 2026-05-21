@@ -1,6 +1,7 @@
 import type { ReactElement } from 'react';
 
 import ViewSidebarRoundedIcon from '@mui/icons-material/ViewSidebarRounded';
+import ContentCopyRoundedIcon from '@mui/icons-material/ContentCopyRounded';
 import DownloadRoundedIcon from '@mui/icons-material/DownloadRounded';
 import PlayArrowRoundedIcon from '@mui/icons-material/PlayArrowRounded';
 import { Box, Button, Chip, Paper, Stack, Typography } from '@mui/material';
@@ -13,6 +14,7 @@ type StudioHeroProps = {
   onExportMarkdown?: () => void;
   onExportQaReport?: () => void;
   onExportProjectJson?: () => void;
+  onCopyFinalText?: () => void;
   isRunning?: boolean;
   showWorkspacePanelsButton?: boolean;
 };
@@ -25,6 +27,7 @@ export function StudioHero({
   onExportMarkdown,
   onExportQaReport,
   onExportProjectJson,
+  onCopyFinalText,
   isRunning = false,
   showWorkspacePanelsButton = false,
 }: StudioHeroProps): ReactElement {
@@ -85,6 +88,14 @@ export function StudioHero({
             disabled={isRunning}
           >
             Run pipeline
+          </Button>
+          <Button
+            variant="outlined"
+            startIcon={<ContentCopyRoundedIcon />}
+            onClick={onCopyFinalText}
+            data-testid="pinned-copy-final-text-button"
+          >
+            Copy Final Text
           </Button>
           <Button variant="outlined" startIcon={<DownloadRoundedIcon />} onClick={onExportMarkdown}>
             Export Markdown

@@ -22,12 +22,14 @@ import { countWords, segmentPassLabels, type SegmentPassIndex } from './segment-
 
 type SegmentReviewPanelProps = {
   segments: DocumentSegment[];
+  selectedSegmentIndex?: number | null;
   onSegmentFinalTextChange?: (segmentId: string, value: string) => void;
   onSegmentFinalTextLockChange?: (segmentId: string, locked: boolean) => void;
 };
 
 export function SegmentReviewPanel({
   segments,
+  selectedSegmentIndex,
   onSegmentFinalTextChange,
   onSegmentFinalTextLockChange,
 }: SegmentReviewPanelProps): ReactElement {
@@ -37,8 +39,14 @@ export function SegmentReviewPanel({
   const [selectedSegmentId, setSelectedSegmentId] = useState(segments[0]?.id ?? '');
   const [isFocusModeOpen, setIsFocusModeOpen] = useState(false);
 
+  const selectedSegmentFromWarning =
+    selectedSegmentIndex === null || selectedSegmentIndex === undefined
+      ? undefined
+      : segments[selectedSegmentIndex];
+  const resolvedSelectedSegmentId =
+    selectedSegmentFromWarning?.id ?? selectedSegmentId ?? segments[0]?.id ?? '';
   const selectedSegment =
-    segments.find((segment) => segment.id === selectedSegmentId) ?? segments[0];
+    segments.find((segment) => segment.id === resolvedSelectedSegmentId) ?? segments[0];
   const selectedSegmentIdForList = selectedSegment?.id ?? '';
   const totalWords = segments.reduce((count, segment) => count + countWords(segment.sourceText), 0);
 

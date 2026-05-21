@@ -1,4 +1,4 @@
-import type { ReactElement } from 'react';
+import { useEffect, useRef, type ReactElement } from 'react';
 
 import {
   Box,
@@ -25,6 +25,14 @@ export function SegmentList({
   selectedSegmentId,
   onSelectSegment,
 }: SegmentListProps): ReactElement {
+  const buttonRefs = useRef<Record<string, HTMLDivElement | null>>({});
+
+  useEffect(() => {
+    buttonRefs.current[selectedSegmentId]?.scrollIntoView?.({
+      block: 'nearest',
+    });
+  }, [selectedSegmentId]);
+
   return (
     <Paper
       variant="outlined"
@@ -56,6 +64,9 @@ export function SegmentList({
               <ListItemButton
                 key={segment.id}
                 selected={isSelected}
+                ref={(node) => {
+                  buttonRefs.current[segment.id] = node;
+                }}
                 onClick={() => {
                   onSelectSegment(segment.id);
                 }}

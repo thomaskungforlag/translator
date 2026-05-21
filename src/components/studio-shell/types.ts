@@ -5,6 +5,7 @@ export type StudioShellProps = {
   apiKeyConfigured: boolean;
   activeRuntimeModelLabel: string;
   project: StudioShellProject;
+  selectedRecoverySegmentIndex: number | null;
   onRunPipeline?: () => void;
   onExportMarkdown?: () => void;
   onExportQaReport?: () => void;

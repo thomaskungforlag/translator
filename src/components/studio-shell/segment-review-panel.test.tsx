@@ -97,4 +97,17 @@ describe('SegmentReviewPanel', () => {
     expect(screen.getByTestId('segment-focus-drawer')).toBeVisible();
     expect(screen.getByText(/focus mode/i)).toBeVisible();
   });
+
+  it('jumps to an externally selected segment index', async () => {
+    const segments = [
+      buildSegment(0, 'First source paragraph.', 'Final draft 1.'),
+      buildSegment(1, 'Second source paragraph.', 'Final draft 2.'),
+    ];
+
+    render(<SegmentReviewPanel segments={segments} selectedSegmentIndex={1} />);
+
+    expect(await screen.findByTestId('selected-segment-text')).toHaveTextContent(
+      'Second source paragraph.',
+    );
+  });
 });

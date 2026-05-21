@@ -35,6 +35,7 @@ describe('WorkspaceControls', () => {
         onSplitSourceByLineBreaks={jest.fn()}
         onImportText={jest.fn()}
         onRunPipeline={jest.fn()}
+        onReviewSegment={jest.fn()}
       />,
     );
 
@@ -47,7 +48,10 @@ describe('WorkspaceControls', () => {
     expect(onEditableSegmentAdd).toHaveBeenCalledTimes(1);
   });
 
-  it('surfaces structured recovery guidance when a provider fallback occurs', () => {
+  it('surfaces structured recovery guidance when a provider fallback occurs', async () => {
+    const user = userEvent.setup();
+    const onReviewSegment = jest.fn();
+
     render(
       <WorkspaceControls
         sourceText="Alpha\n\nBeta"
@@ -77,6 +81,7 @@ describe('WorkspaceControls', () => {
         onSplitSourceByLineBreaks={jest.fn()}
         onImportText={jest.fn()}
         onRunPipeline={jest.fn()}
+        onReviewSegment={onReviewSegment}
       />,
     );
 
@@ -91,5 +96,8 @@ describe('WorkspaceControls', () => {
     expect(recoveryDetails).toHaveTextContent(
       /recovered locally after the provider returned invalid structured output/i,
     );
+
+    await user.click(screen.getByRole('button', { name: /review segment 1/i }));
+    expect(onReviewSegment).toHaveBeenCalledWith(0);
   });
 });

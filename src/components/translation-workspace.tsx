@@ -63,6 +63,7 @@ type TranslationWorkspaceViewProps = {
   statusMessage?: string;
   statusSeverity?: AlertColor;
   pipelineWarnings: string[];
+  selectedRecoverySegmentIndex: number | null;
   onSourceTextChange: (value: string) => void;
   onSegmentationStrategyChange: (value: SegmentationStrategy) => void;
   onEditableSegmentChange: (index: number, value: string) => void;
@@ -71,6 +72,7 @@ type TranslationWorkspaceViewProps = {
   onSplitSourceByLineBreaks: () => void;
   onImportText: (value: string, fileName: string) => void;
   onRunPipeline: () => void;
+  onReviewSegment: (segmentIndex: number) => void;
   onExportMarkdown: () => void;
   onExportQaReport: () => void;
   onExportProjectJson: () => void;
@@ -474,6 +476,7 @@ function TranslationWorkspaceView({
   statusMessage,
   statusSeverity,
   pipelineWarnings,
+  selectedRecoverySegmentIndex,
   onSourceTextChange,
   onSegmentationStrategyChange,
   onEditableSegmentChange,
@@ -482,6 +485,7 @@ function TranslationWorkspaceView({
   onSplitSourceByLineBreaks,
   onImportText,
   onRunPipeline,
+  onReviewSegment,
   onExportMarkdown,
   onExportQaReport,
   onExportProjectJson,
@@ -517,11 +521,13 @@ function TranslationWorkspaceView({
         onSplitSourceByLineBreaks={onSplitSourceByLineBreaks}
         onImportText={onImportText}
         onRunPipeline={onRunPipeline}
+        onReviewSegment={onReviewSegment}
       />
       <StudioShell
         apiKeyConfigured={apiKeyConfigured}
         activeRuntimeModelLabel={activeRuntimeModelLabel}
         project={project}
+        selectedRecoverySegmentIndex={selectedRecoverySegmentIndex}
         isRunning={isRunning}
         onRunPipeline={onRunPipeline}
         onExportMarkdown={onExportMarkdown}
@@ -574,6 +580,9 @@ export function TranslationWorkspace({
   const [runStartedAt, setRunStartedAt] = useState<number | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const [pipelineWarnings, setPipelineWarnings] = useState<string[]>([]);
+  const [selectedRecoverySegmentIndex, setSelectedRecoverySegmentIndex] = useState<number | null>(
+    null,
+  );
   const [statusNotice, setStatusNotice] = useState<StatusNotice | undefined>(
     persistedWorkspace
       ? {
@@ -608,6 +617,7 @@ export function TranslationWorkspace({
     setRunStartedAt(Date.now());
     setStatusNotice(undefined);
     setPipelineWarnings([]);
+    setSelectedRecoverySegmentIndex(null);
 
     try {
       const response = await fetch('/api/translate', {
@@ -698,11 +708,13 @@ export function TranslationWorkspace({
 
   const handleSourceTextChange = (value: string): void => {
     setPipelineWarnings([]);
+    setSelectedRecoverySegmentIndex(null);
     setSourceText(value);
   };
 
   const handleSegmentationStrategyChange = (value: SegmentationStrategy): void => {
     setPipelineWarnings([]);
+    setSelectedRecoverySegmentIndex(null);
     setSegmentationStrategy(value);
   };
 
@@ -716,6 +728,7 @@ export function TranslationWorkspace({
     });
 
     setPipelineWarnings([]);
+    setSelectedRecoverySegmentIndex(null);
     setSourceText(importedText);
     setProject(buildStudioShellProject(nextSeed));
     setStatusNotice({
@@ -737,6 +750,7 @@ export function TranslationWorkspace({
     );
 
     setPipelineWarnings([]);
+    setSelectedRecoverySegmentIndex(null);
     setSourceText(joinSegmentsAsSourceText(nextSegments, segmentationStrategy));
   };
 
@@ -744,6 +758,7 @@ export function TranslationWorkspace({
     const nextSegments = [...editableSegments, '(new segment)'];
 
     setPipelineWarnings([]);
+    setSelectedRecoverySegmentIndex(null);
     setSourceText(joinSegmentsAsSourceText(nextSegments, segmentationStrategy));
   };
 
@@ -751,6 +766,7 @@ export function TranslationWorkspace({
     const nextSegments = editableSegments.filter((_, segmentIndex) => segmentIndex !== index);
 
     setPipelineWarnings([]);
+    setSelectedRecoverySegmentIndex(null);
     setSourceText(joinSegmentsAsSourceText(nextSegments, segmentationStrategy));
   };
 
@@ -758,6 +774,7 @@ export function TranslationWorkspace({
     const lineBreakSegments = splitBySingleLineBreaks(sourceText);
 
     setPipelineWarnings([]);
+    setSelectedRecoverySegmentIndex(null);
     setSourceText(joinSegmentsAsSourceText(lineBreakSegments, segmentationStrategy));
     setStatusNotice({
       message: `Split source into ${lineBreakSegments.length} segment${lineBreakSegments.length === 1 ? '' : 's'} by line breaks.`,
@@ -938,6 +955,7 @@ export function TranslationWorkspace({
       statusMessage={statusNotice?.message}
       statusSeverity={statusNotice?.severity}
       pipelineWarnings={pipelineWarnings}
+      selectedRecoverySegmentIndex={selectedRecoverySegmentIndex}
       onSourceTextChange={handleSourceTextChange}
       onSegmentationStrategyChange={handleSegmentationStrategyChange}
       onEditableSegmentChange={handleEditableSegmentChange}
@@ -946,6 +964,9 @@ export function TranslationWorkspace({
       onSplitSourceByLineBreaks={handleSplitSourceByLineBreaks}
       onImportText={handleImportText}
       onRunPipeline={triggerRunPipeline}
+      onReviewSegment={(segmentIndex) => {
+        setSelectedRecoverySegmentIndex(segmentIndex);
+      }}
       onExportMarkdown={handleExportMarkdown}
       onExportQaReport={handleExportQaReport}
       onExportProjectJson={handleExportProjectJson}

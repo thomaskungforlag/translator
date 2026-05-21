@@ -15,6 +15,7 @@ export function StudioShell({
   apiKeyConfigured,
   activeRuntimeModelLabel,
   project,
+  selectedRecoverySegmentIndex,
   onRunPipeline,
   onExportMarkdown,
   onExportQaReport,
@@ -85,6 +86,7 @@ export function StudioShell({
               onExportMarkdown={onExportMarkdown}
               onExportQaReport={onExportQaReport}
               onExportProjectJson={onExportProjectJson}
+              onCopyFinalText={onCopyFinalText}
               isRunning={isRunning}
               showWorkspacePanelsButton={!isDesktop}
             />
@@ -101,6 +103,7 @@ export function StudioShell({
               <Box sx={{ minWidth: 0 }}>
                 <SegmentReviewPanel
                   segments={project.segments}
+                  selectedSegmentIndex={selectedRecoverySegmentIndex}
                   onSegmentFinalTextChange={onSegmentFinalTextChange}
                   onSegmentFinalTextLockChange={onSegmentFinalTextLockChange}
                 />

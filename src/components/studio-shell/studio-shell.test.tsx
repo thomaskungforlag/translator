@@ -29,7 +29,13 @@ describe('StudioShell', () => {
     const project = buildStudioShellProject(demoWorkspaceSeed);
 
     render(
-      <StudioShell apiKeyConfigured activeRuntimeModelLabel="Poe • Claude" project={project} />,
+      <StudioShell
+        apiKeyConfigured
+        activeRuntimeModelLabel="Poe • Claude"
+        project={project}
+        selectedRecoverySegmentIndex={null}
+        onCopyFinalText={jest.fn()}
+      />,
     );
 
     expect(screen.getByTestId('workspace-panels-drawer')).toBeVisible();
@@ -40,13 +46,22 @@ describe('StudioShell', () => {
     setMatchMedia(false);
     const user = userEvent.setup();
     const project = buildStudioShellProject(demoWorkspaceSeed);
+    const onCopyFinalText = jest.fn();
 
     render(
-      <StudioShell apiKeyConfigured activeRuntimeModelLabel="Poe • Claude" project={project} />,
+      <StudioShell
+        apiKeyConfigured
+        activeRuntimeModelLabel="Poe • Claude"
+        project={project}
+        selectedRecoverySegmentIndex={null}
+        onCopyFinalText={onCopyFinalText}
+      />,
     );
 
     await user.click(screen.getByRole('button', { name: /workspace panels/i }));
 
     expect(screen.getByTestId('workspace-panels-drawer')).toBeVisible();
+    await user.click(screen.getByTestId('pinned-copy-final-text-button'));
+    expect(onCopyFinalText).toHaveBeenCalledTimes(1);
   });
 });
