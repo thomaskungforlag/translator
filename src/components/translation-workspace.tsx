@@ -642,13 +642,18 @@ export function TranslationWorkspace({
       const baseStatus =
         result.mode === 'fallback'
           ? buildFallbackStatus(result.message)
-          : {
-              message:
-                result.mode === 'poe'
-                  ? 'Translation completed with Poe.'
-                  : 'Translation completed with OpenAI.',
-              severity: 'success' as const,
-            };
+          : result.message
+            ? {
+                message: result.message,
+                severity: 'warning' as const,
+              }
+            : {
+                message:
+                  result.mode === 'poe'
+                    ? 'Translation completed with Poe.'
+                    : 'Translation completed with OpenAI.',
+                severity: 'success' as const,
+              };
       const lockStatus =
         lockedConflictCount > 0 && !shouldOverwriteLockedSegments
           ? {

@@ -1,9 +1,14 @@
 import {
+  buildFaithfulDraft,
+  buildLiteraryNaturalnessDraft,
+  buildPolishedDraft,
+  buildProfessionalLiteraryCopyeditDraft,
   buildSegmentQaFindings,
   buildSourceAnalysis,
   buildStudioShellProject,
   splitSourceText,
   type SegmentDraft,
+  buildVoiceDraft,
 } from './pipeline';
 import { buildQaPrompt, buildStageInput } from './translation-prompts';
 import { translationWorkspaceRequestSchema } from './translation-schemas';
@@ -26,7 +31,30 @@ type ChunkDescriptor = {
   segments: string[];
 };
 
+type TranslationStageName =
+  | 'source_analysis'
+  | 'faithful_translation'
+  | 'voice_adaptation'
+  | 'literary_naturalness'
+  | 'polish_pass'
+  | 'professional_literary_copyedit';
+
 const stageChunkSize = 8;
+
+function formatWarningMessage(warnings: string[]): string | undefined {
+  if (warnings.length === 0) {
+    return undefined;
+  }
+
+  const uniqueWarnings = Array.from(new Set(warnings));
+  const preview = uniqueWarnings.slice(0, 2).join(' ');
+
+  if (uniqueWarnings.length === 1) {
+    return `${preview} Review impacted segments before publishing.`;
+  }
+
+  return `${preview} ${uniqueWarnings.length - 2 > 0 ? `(${uniqueWarnings.length - 2} additional warning${uniqueWarnings.length - 2 > 1 ? 's' : ''}.) ` : ''}Review impacted segments before publishing.`;
+}
 
 function splitIntoChunks(sourceSegments: string[], chunkSize = stageChunkSize): ChunkDescriptor[] {
   const chunks: ChunkDescriptor[] = [];
@@ -53,37 +81,50 @@ function toLocalIndexedSegments(
 }
 
 async function runChunkedStage(args: {
-  stageName:
-    | 'source_analysis'
-    | 'faithful_translation'
-    | 'voice_adaptation'
-    | 'literary_naturalness'
-    | 'polish_pass'
-    | 'professional_literary_copyedit';
+  stageName: TranslationStageName;
   sourceSegments: string[];
   buildChunkPrompt: (chunk: ChunkDescriptor) => Promise<string>;
+  fallbackSegmentText: (sourceText: string, absoluteIndex: number) => string;
+  onWarning?: (warning: string) => void;
   ensureTranslated?: boolean;
 }): Promise<IndexedTextSegment[]> {
   const chunks = splitIntoChunks(args.sourceSegments);
   const chunkedResults = await Promise.all(
     chunks.map(async (chunk) => {
-      const prompt = await args.buildChunkPrompt(chunk);
-      const stageSegments = await parseStageResponse(args.stageName, prompt);
+      try {
+        const prompt = await args.buildChunkPrompt(chunk);
+        const stageSegments = await parseStageResponse(args.stageName, prompt);
 
-      ensureStageCoverage(args.stageName, chunk.segments, stageSegments);
+        ensureStageCoverage(args.stageName, chunk.segments, stageSegments);
 
-      if (args.ensureTranslated) {
-        ensureStageLooksTranslated(
-          args.stageName as Exclude<typeof args.stageName, 'source_analysis'>,
-          chunk.segments,
-          stageSegments,
+        if (args.ensureTranslated) {
+          ensureStageLooksTranslated(
+            args.stageName as Exclude<typeof args.stageName, 'source_analysis'>,
+            chunk.segments,
+            stageSegments,
+          );
+        }
+
+        return stageSegments.map((segment) => ({
+          index: segment.index + chunk.start,
+          text: segment.text,
+        }));
+      } catch (error) {
+        const reason = error instanceof Error ? error.message : String(error);
+
+        args.onWarning?.(
+          `${args.stageName} recovered with local fallback for source segment index(es): ${chunk.start}-${chunk.start + chunk.segments.length - 1}. Reason: ${reason}`,
         );
-      }
 
-      return stageSegments.map((segment) => ({
-        index: segment.index + chunk.start,
-        text: segment.text,
-      }));
+        return chunk.segments.map((sourceText, localIndex) => {
+          const absoluteIndex = chunk.start + localIndex;
+
+          return {
+            index: absoluteIndex,
+            text: args.fallbackSegmentText(sourceText, absoluteIndex),
+          };
+        });
+      }
     }),
   );
 
@@ -236,12 +277,21 @@ function buildProfessionalCopyeditPrompt(prompt: {
   });
 }
 
-async function translateWithProvider(seed: TranslationWorkspaceSeed): Promise<SegmentDraft[]> {
+async function translateWithProvider(seed: TranslationWorkspaceSeed): Promise<{
+  drafts: SegmentDraft[];
+  warnings: string[];
+}> {
+  const warnings: string[] = [];
+  const pushWarning = (warning: string): void => {
+    warnings.push(warning);
+  };
   const sourceSegments = splitSourceText(seed.sourceText, seed.segmentationStrategy);
   const analysisSegments = await runChunkedStage({
     stageName: 'source_analysis',
     sourceSegments,
     buildChunkPrompt: (chunk) => buildAnalysisPrompt(seed, chunk.segments),
+    fallbackSegmentText: (sourceText) => buildSourceAnalysis(sourceText),
+    onWarning: pushWarning,
   });
 
   const faithfulSegments = await runChunkedStage({
@@ -253,6 +303,8 @@ async function translateWithProvider(seed: TranslationWorkspaceSeed): Promise<Se
         chunk.segments,
         toLocalIndexedSegments(analysisSegments, chunk.start, chunk.segments.length),
       ),
+    fallbackSegmentText: (sourceText) => buildFaithfulDraft(sourceText),
+    onWarning: pushWarning,
     ensureTranslated: true,
   });
 
@@ -266,6 +318,12 @@ async function translateWithProvider(seed: TranslationWorkspaceSeed): Promise<Se
         toLocalIndexedSegments(analysisSegments, chunk.start, chunk.segments.length),
         toLocalIndexedSegments(faithfulSegments, chunk.start, chunk.segments.length),
       ),
+    fallbackSegmentText: (sourceText, absoluteIndex) =>
+      buildVoiceDraft(
+        sourceText,
+        faithfulSegments[absoluteIndex]?.text ?? buildFaithfulDraft(sourceText),
+      ),
+    onWarning: pushWarning,
     ensureTranslated: true,
   });
 
@@ -288,6 +346,16 @@ async function translateWithProvider(seed: TranslationWorkspaceSeed): Promise<Se
         ),
         voiceSegments: toLocalIndexedSegments(voiceSegments, chunk.start, chunk.segments.length),
       }),
+    fallbackSegmentText: (sourceText, absoluteIndex) =>
+      buildLiteraryNaturalnessDraft(
+        sourceText,
+        voiceSegments[absoluteIndex]?.text ??
+          buildVoiceDraft(
+            sourceText,
+            faithfulSegments[absoluteIndex]?.text ?? buildFaithfulDraft(sourceText),
+          ),
+      ),
+    onWarning: pushWarning,
     ensureTranslated: true,
   });
 
@@ -315,6 +383,20 @@ async function translateWithProvider(seed: TranslationWorkspaceSeed): Promise<Se
           chunk.segments.length,
         ),
       }),
+    fallbackSegmentText: (sourceText, absoluteIndex) =>
+      buildPolishedDraft(
+        sourceText,
+        naturalnessSegments[absoluteIndex]?.text ??
+          buildLiteraryNaturalnessDraft(
+            sourceText,
+            voiceSegments[absoluteIndex]?.text ??
+              buildVoiceDraft(
+                sourceText,
+                faithfulSegments[absoluteIndex]?.text ?? buildFaithfulDraft(sourceText),
+              ),
+          ),
+      ),
+    onWarning: pushWarning,
     ensureTranslated: true,
   });
 
@@ -347,28 +429,50 @@ async function translateWithProvider(seed: TranslationWorkspaceSeed): Promise<Se
           chunk.segments.length,
         ),
       }),
+    fallbackSegmentText: (sourceText, absoluteIndex) =>
+      buildProfessionalLiteraryCopyeditDraft(
+        sourceText,
+        polishedSegments[absoluteIndex]?.text ??
+          buildPolishedDraft(
+            sourceText,
+            naturalnessSegments[absoluteIndex]?.text ??
+              buildLiteraryNaturalnessDraft(
+                sourceText,
+                voiceSegments[absoluteIndex]?.text ??
+                  buildVoiceDraft(
+                    sourceText,
+                    faithfulSegments[absoluteIndex]?.text ?? buildFaithfulDraft(sourceText),
+                  ),
+              ),
+          ),
+      ),
+    onWarning: pushWarning,
     ensureTranslated: true,
   });
 
-  return toDrafts({
-    sourceSegments,
-    analysisSegments,
-    faithfulSegments,
-    voiceSegments,
-    naturalnessSegments,
-    polishedSegments,
-    professionalCopyeditSegments,
-  });
+  return {
+    drafts: toDrafts({
+      sourceSegments,
+      analysisSegments,
+      faithfulSegments,
+      voiceSegments,
+      naturalnessSegments,
+      polishedSegments,
+      professionalCopyeditSegments,
+    }),
+    warnings,
+  };
 }
 
 async function finalizeWithQa(
   seed: TranslationWorkspaceSeed,
   drafts: SegmentDraft[],
+  warnings: string[],
 ): Promise<SegmentDraft[]> {
   const sourceSegments = splitSourceText(seed.sourceText, seed.segmentationStrategy);
   const qaChunks = splitIntoChunks(sourceSegments);
   const findings = (
-    await Promise.all(
+    await Promise.allSettled(
       qaChunks.map(async (chunk) => {
         const prompt = await buildQaPrompt(
           seed,
@@ -391,7 +495,21 @@ async function finalizeWithQa(
         }));
       }),
     )
-  ).flat();
+  ).flatMap((result, chunkIndex) => {
+    if (result.status === 'fulfilled') {
+      return result.value;
+    }
+
+    const chunk = qaChunks[chunkIndex];
+    const reason =
+      result.reason instanceof Error ? result.reason.message : String(result.reason ?? 'Unknown');
+
+    warnings.push(
+      `qa_review recovered without model findings for source segment index(es): ${chunk.start}-${chunk.start + chunk.segments.length - 1}. Reason: ${reason}`,
+    );
+
+    return [];
+  });
   const findingsByIndex = new Map<number, SegmentDraft['qaFindings']>();
 
   for (const finding of findings) {
@@ -437,12 +555,13 @@ export async function runTranslationWorkspace(
       };
     }
 
-    const providerDrafts = await translateWithProvider(seed);
-    const draftsWithQa = await finalizeWithQa(seed, providerDrafts);
+    const { drafts, warnings } = await translateWithProvider(seed);
+    const draftsWithQa = await finalizeWithQa(seed, drafts, warnings);
 
     return {
       project: buildStudioShellProject(seed, draftsWithQa),
       mode: activeProviderMode,
+      message: formatWarningMessage(warnings),
     };
   } catch (error) {
     console.error('[translation] pipeline failed, returning fallback', {
