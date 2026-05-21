@@ -33,7 +33,9 @@ export function StudioShell({
 }: StudioShellProps): ReactElement {
   const shellRef = useRef<HTMLDivElement>(null);
   const theme = useTheme();
-  const isDesktop = useMediaQuery(theme.breakpoints.up('lg'), { noSsr: true });
+  const isDesktop = useMediaQuery(theme.breakpoints.up('lg'), {
+    defaultMatches: false,
+  });
   const [isWorkspaceDrawerOpen, setIsWorkspaceDrawerOpen] = useState(false);
 
   useEffect(() => {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, type ReactElement } from 'react';
+import { useEffect, useRef, useState, type ReactElement } from 'react';
 
 import type { AlertColor } from '@mui/material';
 import { Stack } from '@mui/material';
@@ -560,21 +560,16 @@ export function TranslationWorkspace({
   activeRuntimeModelLabel,
   initialSeed,
 }: TranslationWorkspaceProps): ReactElement {
-  const persistedWorkspace = loadPersistedWorkspaceState();
-  const defaultSegmentationStrategy =
-    persistedWorkspace?.segmentationStrategy ?? initialSeed.segmentationStrategy ?? 'paragraph';
-  const [sourceText, setSourceText] = useState(
-    persistedWorkspace?.sourceText ?? initialSeed.sourceText,
-  );
+  const defaultSegmentationStrategy = initialSeed.segmentationStrategy ?? 'paragraph';
+  const [sourceText, setSourceText] = useState(initialSeed.sourceText);
   const [segmentationStrategy, setSegmentationStrategy] = useState<SegmentationStrategy>(
     defaultSegmentationStrategy,
   );
   const [project, setProject] = useState<StudioShellProject>(
-    persistedWorkspace?.project ??
-      buildStudioShellProject({
-        ...initialSeed,
-        segmentationStrategy: defaultSegmentationStrategy,
-      }),
+    buildStudioShellProject({
+      ...initialSeed,
+      segmentationStrategy: defaultSegmentationStrategy,
+    }),
   );
   const [isRunning, setIsRunning] = useState(false);
   const [runStartedAt, setRunStartedAt] = useState<number | null>(null);
@@ -584,15 +579,43 @@ export function TranslationWorkspace({
     null,
   );
   const [statusNotice, setStatusNotice] = useState<StatusNotice | undefined>(
-    persistedWorkspace
-      ? {
-          message: 'Restored the previous workspace session.',
-          severity: 'info',
-        }
-      : buildInitialStatus(apiKeyConfigured),
+    buildInitialStatus(apiKeyConfigured),
   );
+  const hasRestoredPersistedWorkspaceRef = useRef(false);
 
   useEffect(() => {
+    const restoreTimeoutId = window.setTimeout(() => {
+      const persistedWorkspace = loadPersistedWorkspaceState();
+
+      if (!persistedWorkspace) {
+        hasRestoredPersistedWorkspaceRef.current = true;
+
+        return;
+      }
+
+      setSourceText(persistedWorkspace.sourceText);
+      setSegmentationStrategy(persistedWorkspace.segmentationStrategy);
+      setProject({
+        ...persistedWorkspace.project,
+        styleProfile: persistedWorkspace.project.styleProfile ?? buildDefaultStyleProfile(),
+      });
+      setStatusNotice({
+        message: 'Restored the previous workspace session.',
+        severity: 'info',
+      });
+      hasRestoredPersistedWorkspaceRef.current = true;
+    }, 0);
+
+    return () => {
+      window.clearTimeout(restoreTimeoutId);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!hasRestoredPersistedWorkspaceRef.current) {
+      return;
+    }
+
     persistWorkspaceState({ sourceText, segmentationStrategy, project });
   }, [project, segmentationStrategy, sourceText]);
 
