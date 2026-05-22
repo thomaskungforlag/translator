@@ -23,12 +23,15 @@ import MoreHorizRoundedIcon from '@mui/icons-material/MoreHorizRounded';
 import type { ContentType, LanguageConfig } from '@/lib/domain';
 import type { ModelOption, ModelProvider, ProviderModelOptions } from '@/lib/model-options';
 import type { SegmentationStrategy } from '@/lib/workspace';
+import type { ContentTypeOption, TargetLanguageOption } from '@/lib/workspace-options';
 import { parsePipelineWarning } from './studio-shell/recovery-warning-utils';
 
 type WorkspaceControlsProps = {
   sourceText: string;
   contentType: ContentType;
   targetLanguage: LanguageConfig;
+  contentTypeOptions: ContentTypeOption[];
+  targetLanguageOptions: TargetLanguageOption[];
   segmentationStrategy: SegmentationStrategy;
   selectedProvider: ModelProvider;
   selectedModel: string;
@@ -41,6 +44,8 @@ type WorkspaceControlsProps = {
   statusSeverity?: AlertColor;
   pipelineWarnings: string[];
   onSourceTextChange: (value: string) => void;
+  onContentTypeChange: (value: ContentType) => void;
+  onTargetLanguageChange: (value: LanguageConfig) => void;
   onSegmentationStrategyChange: (value: SegmentationStrategy) => void;
   onProviderChange: (value: ModelProvider) => void;
   onModelChange: (value: string) => void;
@@ -132,6 +137,8 @@ export function WorkspaceControls({
   sourceText,
   contentType,
   targetLanguage,
+  contentTypeOptions,
+  targetLanguageOptions,
   segmentationStrategy,
   selectedProvider,
   selectedModel,
@@ -144,6 +151,8 @@ export function WorkspaceControls({
   statusSeverity = 'info',
   pipelineWarnings,
   onSourceTextChange,
+  onContentTypeChange,
+  onTargetLanguageChange,
   onSegmentationStrategyChange,
   onProviderChange,
   onModelChange,
@@ -207,11 +216,42 @@ export function WorkspaceControls({
           Source workspace
         </Typography>
         <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
-          <TextField select fullWidth label="Content type" value={contentType} disabled>
-            <MenuItem value={contentType}>{contentType}</MenuItem>
+          <TextField
+            select
+            fullWidth
+            label="Content type"
+            value={contentType}
+            onChange={(event) => {
+              onContentTypeChange(event.target.value as ContentType);
+            }}
+          >
+            {contentTypeOptions.map((option) => (
+              <MenuItem key={option.value} value={option.value}>
+                {option.label}
+              </MenuItem>
+            ))}
           </TextField>
-          <TextField select fullWidth label="Target language" value={targetLanguage.label} disabled>
-            <MenuItem value={targetLanguage.label}>{targetLanguage.label}</MenuItem>
+          <TextField
+            select
+            fullWidth
+            label="Target language"
+            value={targetLanguage.code}
+            onChange={(event) => {
+              const selectedLanguage = targetLanguageOptions.find(
+                (option) => option.code === event.target.value,
+              );
+
+              if (selectedLanguage) {
+                onTargetLanguageChange(selectedLanguage);
+              }
+            }}
+            helperText={targetLanguage.label}
+          >
+            {targetLanguageOptions.map((option) => (
+              <MenuItem key={option.code} value={option.code}>
+                {option.label}
+              </MenuItem>
+            ))}
           </TextField>
         </Stack>
         <WorkspaceModelControls

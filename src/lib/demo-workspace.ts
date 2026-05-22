@@ -1,23 +1,8 @@
-import type { ContentType, GlossaryEntry, LanguageConfig } from '@/lib/domain';
+import type { GlossaryEntry } from '@/lib/domain';
 
 import { buildDefaultStyleProfile } from './reference-material';
+import { defaultContentType, getTargetLanguageConfig } from './workspace-options';
 import type { TranslationWorkspaceSeed } from './workspace';
-
-export const demoTargetLanguage: LanguageConfig = {
-  code: 'en',
-  label: 'English',
-  locale: 'en',
-  translationNotes: [
-    'Use international literary English by default.',
-    'Preserve speculative-fiction terminology and tone.',
-    'Keep dialogue natural without flattening character voice.',
-  ],
-  dialogueRules: ['Preserve punctuation conventions that fit the chosen English variant.'],
-  punctuationRules: ['Keep paragraph breaks stable across all passes.'],
-  marketQualityNotes: ['Aim for market-ready prose that still reveals translation decisions.'],
-};
-
-export const demoContentType: ContentType = 'novel_chapter';
 
 export const demoGlossary: GlossaryEntry[] = [
   {
@@ -53,10 +38,10 @@ export const demoSourceText = [
 export const demoWorkspaceSeed: TranslationWorkspaceSeed = {
   projectId: 'proj_001',
   title: 'Sample Project - Harbor Signal',
-  contentType: demoContentType,
+  contentType: defaultContentType,
   sourceLanguageCode: 'sv',
   segmentationStrategy: 'paragraph',
-  targetLanguage: demoTargetLanguage,
+  targetLanguage: getTargetLanguageConfig('en'),
   styleProfile: buildDefaultStyleProfile(),
   sourceText: demoSourceText,
   glossary: demoGlossary,

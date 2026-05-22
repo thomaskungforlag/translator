@@ -267,6 +267,33 @@ export function buildFallbackStatus(message?: string): StatusNotice {
   };
 }
 
+export function buildProviderStatus(
+  provider: import('@/lib/model-options').ModelProvider,
+  apiKeyConfigured: boolean,
+): StatusNotice {
+  if (apiKeyConfigured) {
+    return {
+      message: `${provider === 'poe' ? 'Poe' : 'OpenAI'} is ready for translation runs.`,
+      severity: 'info',
+    };
+  }
+
+  return {
+    message:
+      provider === 'poe'
+        ? 'Poe API key missing. Demo fallback only; do not treat output as production translation.'
+        : 'OpenAI API key missing. Demo fallback only; do not treat output as production translation.',
+    severity: 'warning',
+  };
+}
+
+export function formatRuntimeModelLabel(
+  provider: import('@/lib/model-options').ModelProvider,
+  model: string,
+): string {
+  return `${provider === 'poe' ? 'Poe' : 'OpenAI'} • ${model}`;
+}
+
 export function buildImportedSeed(
   initialSeed: TranslationWorkspaceSeed,
   importedText: string,

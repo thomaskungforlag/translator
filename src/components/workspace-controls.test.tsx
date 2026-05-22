@@ -2,6 +2,11 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { WorkspaceControls } from './workspace-controls';
+import {
+  contentTypeOptions,
+  getTargetLanguageConfig,
+  targetLanguageOptions,
+} from '@/lib/workspace-options';
 
 describe('WorkspaceControls', () => {
   it('keeps the scene actions in a sticky toolbar and exposes the overflow menu', async () => {
@@ -13,15 +18,9 @@ describe('WorkspaceControls', () => {
       <WorkspaceControls
         sourceText="Alpha\n\nBeta"
         contentType="novel_chapter"
-        targetLanguage={{
-          code: 'en',
-          label: 'English',
-          locale: 'en',
-          translationNotes: [],
-          dialogueRules: [],
-          punctuationRules: [],
-          marketQualityNotes: [],
-        }}
+        targetLanguage={getTargetLanguageConfig('en')}
+        contentTypeOptions={contentTypeOptions}
+        targetLanguageOptions={targetLanguageOptions}
         segmentationStrategy="hybrid"
         selectedProvider="openai"
         selectedModel="gpt-5-mini"
@@ -48,6 +47,8 @@ describe('WorkspaceControls', () => {
         runElapsedSeconds={0}
         pipelineWarnings={[]}
         onSourceTextChange={jest.fn()}
+        onContentTypeChange={jest.fn()}
+        onTargetLanguageChange={jest.fn()}
         onSegmentationStrategyChange={jest.fn()}
         onProviderChange={onProviderChange}
         onModelChange={jest.fn()}
@@ -74,6 +75,73 @@ describe('WorkspaceControls', () => {
     expect(onEditableSegmentAdd).toHaveBeenCalledTimes(1);
   });
 
+  it('allows content type and target language selection', async () => {
+    const user = userEvent.setup();
+    const onContentTypeChange = jest.fn();
+    const onTargetLanguageChange = jest.fn();
+
+    render(
+      <WorkspaceControls
+        sourceText="Alpha\n\nBeta"
+        contentType="novel_chapter"
+        targetLanguage={getTargetLanguageConfig('en')}
+        contentTypeOptions={contentTypeOptions}
+        targetLanguageOptions={targetLanguageOptions}
+        segmentationStrategy="hybrid"
+        selectedProvider="openai"
+        selectedModel="gpt-5-mini"
+        providerOptions={{
+          openai: {
+            provider: 'openai',
+            configured: true,
+            defaultModelId: 'gpt-5-mini',
+            models: [
+              { id: 'gpt-5-mini', label: 'GPT-5-mini', source: 'live' },
+              { id: 'gpt-4o', label: 'GPT-4o', source: 'live' },
+            ],
+          },
+          poe: {
+            provider: 'poe',
+            configured: true,
+            defaultModelId: 'Claude-Sonnet-4.5',
+            models: [{ id: 'Claude-Sonnet-4.5', label: 'Claude-Sonnet-4.5', source: 'live' }],
+          },
+        }}
+        segmentPreviewCount={2}
+        editableSegments={['Alpha', 'Beta']}
+        isRunning={false}
+        runElapsedSeconds={0}
+        pipelineWarnings={[]}
+        onSourceTextChange={jest.fn()}
+        onContentTypeChange={onContentTypeChange}
+        onTargetLanguageChange={onTargetLanguageChange}
+        onSegmentationStrategyChange={jest.fn()}
+        onProviderChange={jest.fn()}
+        onModelChange={jest.fn()}
+        onEditableSegmentChange={jest.fn()}
+        onEditableSegmentAdd={jest.fn()}
+        onEditableSegmentRemove={jest.fn()}
+        onSplitSourceByLineBreaks={jest.fn()}
+        onImportText={jest.fn()}
+        onRunPipeline={jest.fn()}
+        onReviewSegment={jest.fn()}
+      />,
+    );
+
+    await user.click(screen.getByRole('combobox', { name: /content type/i }));
+    await user.click(screen.getByRole('option', { name: /website copy/i }));
+    expect(onContentTypeChange).toHaveBeenCalledWith('website_copy');
+
+    await user.click(screen.getByRole('combobox', { name: /target language/i }));
+    await user.click(screen.getByRole('option', { name: /german/i }));
+    expect(onTargetLanguageChange).toHaveBeenCalledWith(
+      expect.objectContaining({
+        code: 'de',
+        label: 'German',
+      }),
+    );
+  });
+
   it('surfaces structured recovery guidance when a provider fallback occurs', async () => {
     const user = userEvent.setup();
     const onReviewSegment = jest.fn();
@@ -82,15 +150,9 @@ describe('WorkspaceControls', () => {
       <WorkspaceControls
         sourceText="Alpha\n\nBeta"
         contentType="novel_chapter"
-        targetLanguage={{
-          code: 'en',
-          label: 'English',
-          locale: 'en',
-          translationNotes: [],
-          dialogueRules: [],
-          punctuationRules: [],
-          marketQualityNotes: [],
-        }}
+        targetLanguage={getTargetLanguageConfig('en')}
+        contentTypeOptions={contentTypeOptions}
+        targetLanguageOptions={targetLanguageOptions}
         segmentationStrategy="hybrid"
         selectedProvider="poe"
         selectedModel="Claude-Sonnet-4.5"
@@ -126,6 +188,8 @@ describe('WorkspaceControls', () => {
         onImportText={jest.fn()}
         onRunPipeline={jest.fn()}
         onReviewSegment={onReviewSegment}
+        onContentTypeChange={jest.fn()}
+        onTargetLanguageChange={jest.fn()}
       />,
     );
 

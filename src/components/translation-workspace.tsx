@@ -7,7 +7,6 @@ import { Stack } from '@mui/material';
 
 import { StudioShell } from '@/components/studio-shell';
 import {
-  buildSegmentQaFindings,
   buildDefaultStyleProfile,
   buildStudioShellProject,
   exportProjectJson,
@@ -26,8 +25,26 @@ import type {
   StudioShellProject,
   TranslationWorkspaceSeed,
 } from '@/lib/workspace';
+import {
+  contentTypeOptions,
+  getTargetLanguageConfig,
+  targetLanguageOptions,
+} from '@/lib/workspace-options';
 
 import { WorkspaceControls } from './workspace-controls';
+import {
+  buildFinalTranslationText,
+  buildQaSummaryText,
+  deriveImportedTitle,
+  buildFallbackStatus,
+  buildProviderStatus,
+  formatRuntimeModelLabel,
+  findLockedConflicts,
+  hasUnresolvedQaFindings,
+  mergeLockedSegments,
+  updateProjectFromSegments,
+  updateSegmentQa,
+} from './translation-workspace-utils';
 
 type TranslationWorkspaceProps = {
   providerAvailability: Record<ModelProvider, boolean>;
@@ -65,6 +82,8 @@ type TranslationWorkspaceViewProps = {
   selectedModel: string;
   providerOptions: Record<ModelProvider, ProviderModelOptions | null>;
   sourceText: string;
+  contentTypeOptions: typeof contentTypeOptions;
+  targetLanguageOptions: typeof targetLanguageOptions;
   segmentationStrategy: SegmentationStrategy;
   segmentPreviewCount: number;
   editableSegments: string[];
@@ -76,6 +95,8 @@ type TranslationWorkspaceViewProps = {
   pipelineWarnings: string[];
   selectedRecoverySegmentIndex: number | null;
   onSourceTextChange: (value: string) => void;
+  onContentTypeChange: (value: StudioShellProject['contentType']) => void;
+  onTargetLanguageChange: (value: StudioShellProject['targetLanguage']) => void;
   onSegmentationStrategyChange: (value: SegmentationStrategy) => void;
   onProviderChange: (value: ModelProvider) => void;
   onModelChange: (value: string) => void;
@@ -100,267 +121,6 @@ type TranslationWorkspaceViewProps = {
   onGlossaryEntryRemove: (entryId: string) => void;
 };
 
-function buildFinalTranslationText(project: StudioShellProject): string {
-  return project.segments
-    .map((segment) => segment.finalText?.trim())
-    .filter((text): text is string => Boolean(text))
-    .join('\n\n');
-}
-
-function buildQaSummaryText(project: StudioShellProject): string {
-  const findings = project.qaFindings.filter((finding) => !finding.resolved);
-
-  if (findings.length === 0) {
-    return 'No unresolved QA findings.';
-  }
-
-  return findings
-    .map((finding) => {
-      const suggestion = finding.suggestion ? ` Suggestion: ${finding.suggestion}` : '';
-
-      return `- [${finding.severity}] ${finding.category}: ${finding.issue}${suggestion}`;
-    })
-    .join('\n');
-}
-
-function hasUnresolvedQaFindings(findings: DocumentSegment['qaFindings']): boolean {
-  return findings.some((finding) => !finding.resolved);
-}
-
-function hasUnresolvedQaCategories(
-  findings: DocumentSegment['qaFindings'],
-  categories: ReadonlyArray<DocumentSegment['qaFindings'][number]['category']>,
-): boolean {
-  return findings.some((finding) => !finding.resolved && categories.includes(finding.category));
-}
-
-function hasFinalText(finalText: string | undefined): boolean {
-  return (finalText ?? '').trim().length > 0;
-}
-
-function stageStatus(hasValues: boolean, hasIssues: boolean): DocumentSegment['status'] {
-  if (!hasValues) {
-    return 'pending';
-  }
-
-  return hasIssues ? 'reviewed' : 'approved';
-}
-
-function updateProjectFromSegments(
-  project: StudioShellProject,
-  segments: DocumentSegment[],
-): StudioShellProject {
-  const qaFindings = segments.flatMap((segment) => segment.qaFindings);
-  const completedSegments = segments.filter((segment) => hasFinalText(segment.finalText)).length;
-  const progress =
-    segments.length === 0 ? 0 : Math.round((completedSegments / segments.length) * 100);
-  const hasQaFindings = segments.some((segment) => hasUnresolvedQaFindings(segment.qaFindings));
-  const hasFaithfulDraft = segments.every(
-    (segment) => (segment.translationDraft ?? '').trim().length > 0,
-  );
-  const hasVoiceDraft = segments.every(
-    (segment) => (segment.voiceAdaptedDraft ?? '').trim().length > 0,
-  );
-  const hasNaturalnessDraft = segments.every(
-    (segment) => (segment.literaryNaturalnessDraft ?? '').trim().length > 0,
-  );
-  const hasPolishedDraft = segments.every(
-    (segment) => (segment.polishedDraft ?? '').trim().length > 0,
-  );
-  const hasProfessionalCopyeditDraft = segments.every(
-    (segment) => (segment.professionalLiteraryCopyeditDraft ?? '').trim().length > 0,
-  );
-  const hasTenseAspectFindings = segments.some((segment) =>
-    hasUnresolvedQaCategories(segment.qaFindings, ['tense_aspect_drift']),
-  );
-  const hasImageFindings = segments.some((segment) =>
-    hasUnresolvedQaCategories(segment.qaFindings, ['image_drift', 'motion_image_drift']),
-  );
-  const hasGrammarFlowFindings = segments.some((segment) =>
-    hasUnresolvedQaCategories(segment.qaFindings, ['grammar_flow', 'punctuation_flow']),
-  );
-  const hasEmotionalIntensityFindings = segments.some((segment) =>
-    hasUnresolvedQaCategories(segment.qaFindings, ['emotional_intensity_drift']),
-  );
-  const hasStiffnessFindings = segments.some((segment) =>
-    hasUnresolvedQaCategories(segment.qaFindings, [
-      'translation_stiffness',
-      'family_term_naturalness',
-      'style_drift',
-      'tone_shift',
-      'market_quality',
-      'character_voice',
-    ]),
-  );
-  const hasCulturalTextureFindings = segments.some((segment) =>
-    hasUnresolvedQaCategories(segment.qaFindings, ['cultural_texture_drift']),
-  );
-
-  return {
-    ...project,
-    segments,
-    qaFindings,
-    progress,
-    pipelineStages: project.pipelineStages.map((stage) => {
-      if (stage.label === 'Faithful translation') {
-        return { ...stage, status: stageStatus(segments.length > 0 && hasFaithfulDraft, false) };
-      }
-
-      if (stage.label === 'Voice adaptation') {
-        return { ...stage, status: stageStatus(segments.length > 0 && hasVoiceDraft, false) };
-      }
-
-      if (stage.label === 'Literary naturalness') {
-        return { ...stage, status: stageStatus(segments.length > 0 && hasNaturalnessDraft, false) };
-      }
-
-      if (stage.label === 'Tense/aspect/perspective QA') {
-        return { ...stage, status: stageStatus(segments.length > 0, hasTenseAspectFindings) };
-      }
-
-      if (stage.label === 'Image drift QA') {
-        return { ...stage, status: stageStatus(segments.length > 0, hasImageFindings) };
-      }
-
-      if (stage.label === 'Grammar flow QA') {
-        return { ...stage, status: stageStatus(segments.length > 0, hasGrammarFlowFindings) };
-      }
-
-      if (stage.label === 'Emotional intensity QA') {
-        return {
-          ...stage,
-          status: stageStatus(segments.length > 0, hasEmotionalIntensityFindings),
-        };
-      }
-
-      if (stage.label === 'Translation stiffness QA') {
-        return { ...stage, status: stageStatus(segments.length > 0, hasStiffnessFindings) };
-      }
-
-      if (stage.label === 'Cultural texture QA') {
-        return { ...stage, status: stageStatus(segments.length > 0, hasCulturalTextureFindings) };
-      }
-
-      if (stage.label === 'Final polish') {
-        return { ...stage, status: stageStatus(segments.length > 0 && hasPolishedDraft, false) };
-      }
-
-      if (stage.label === 'Professional literary copyedit') {
-        return {
-          ...stage,
-          status: stageStatus(segments.length > 0 && hasProfessionalCopyeditDraft, false),
-        };
-      }
-
-      if (stage.label === 'QA') {
-        return { ...stage, status: stageStatus(segments.length > 0, hasQaFindings) };
-      }
-
-      return stage;
-    }),
-  };
-}
-
-function updateSegmentQa(segment: DocumentSegment, finalText: string): DocumentSegment {
-  const qaFindings = buildSegmentQaFindings(segment.sourceText, finalText, segment.index);
-
-  return {
-    ...segment,
-    finalText,
-    qaFindings,
-    status: hasUnresolvedQaFindings(qaFindings) ? 'reviewed' : 'approved',
-  };
-}
-
-function getMatchingSegment(
-  currentProject: StudioShellProject,
-  nextSegment: DocumentSegment,
-): DocumentSegment | undefined {
-  return currentProject.segments.find(
-    (segment) =>
-      segment.index === nextSegment.index && segment.sourceText === nextSegment.sourceText,
-  );
-}
-
-function mergeLockedSegments(
-  currentProject: StudioShellProject,
-  nextProject: StudioShellProject,
-): StudioShellProject {
-  const mergedSegments = nextProject.segments.map((nextSegment) => {
-    const currentSegment = getMatchingSegment(currentProject, nextSegment);
-
-    if (!currentSegment?.finalTextLocked) {
-      return nextSegment;
-    }
-
-    const lockedFinalText = currentSegment.finalText ?? '';
-
-    return {
-      ...updateSegmentQa(nextSegment, lockedFinalText),
-      finalTextLocked: true,
-    };
-  });
-
-  return updateProjectFromSegments(nextProject, mergedSegments);
-}
-
-function findLockedConflicts(
-  currentProject: StudioShellProject,
-  nextProject: StudioShellProject,
-): number {
-  return nextProject.segments.reduce((count, nextSegment) => {
-    const currentSegment = getMatchingSegment(currentProject, nextSegment);
-
-    if (!currentSegment?.finalTextLocked) {
-      return count;
-    }
-
-    const lockedFinalText = currentSegment.finalText ?? '';
-    const nextFinalText = nextSegment.finalText ?? '';
-
-    return lockedFinalText !== nextFinalText ? count + 1 : count;
-  }, 0);
-}
-
-function deriveImportedTitle(fileName: string, fallbackTitle: string): string {
-  const baseName = fileName
-    .replace(/\.[^.]+$/, '')
-    .replace(/[-_]+/g, ' ')
-    .trim();
-
-  return baseName.length > 0 ? baseName : fallbackTitle;
-}
-
-function buildFallbackStatus(message?: string): StatusNotice {
-  return {
-    message:
-      message ??
-      'The configured model provider is unavailable. Showing demo fallback drafts only; review before using.',
-    severity: 'warning',
-  };
-}
-
-function buildProviderStatus(provider: ModelProvider, apiKeyConfigured: boolean): StatusNotice {
-  if (apiKeyConfigured) {
-    return {
-      message: `${provider === 'poe' ? 'Poe' : 'OpenAI'} is ready for translation runs.`,
-      severity: 'info',
-    };
-  }
-
-  return {
-    message:
-      provider === 'poe'
-        ? 'Poe API key missing. Demo fallback only; do not treat output as production translation.'
-        : 'OpenAI API key missing. Demo fallback only; do not treat output as production translation.',
-    severity: 'warning',
-  };
-}
-
-function formatRuntimeModelLabel(provider: ModelProvider, model: string): string {
-  return `${provider === 'poe' ? 'Poe' : 'OpenAI'} • ${model}`;
-}
-
 function buildImportedSeed(args: {
   initialSeed: TranslationWorkspaceSeed;
   currentProject: StudioShellProject;
@@ -372,9 +132,11 @@ function buildImportedSeed(args: {
 
   return {
     ...initialSeed,
+    contentType: currentProject.contentType,
     title: deriveImportedTitle(fileName, initialSeed.title),
     sourceText: importedText,
     segmentationStrategy,
+    targetLanguage: currentProject.targetLanguage,
     glossary: currentProject.glossary,
     styleProfile: currentProject.styleProfile,
   };
@@ -511,6 +273,8 @@ function TranslationWorkspaceView({
   pipelineWarnings,
   selectedRecoverySegmentIndex,
   onSourceTextChange,
+  onContentTypeChange,
+  onTargetLanguageChange,
   onSegmentationStrategyChange,
   onProviderChange,
   onModelChange,
@@ -540,6 +304,8 @@ function TranslationWorkspaceView({
         sourceText={sourceText}
         contentType={project.contentType}
         targetLanguage={project.targetLanguage}
+        contentTypeOptions={contentTypeOptions}
+        targetLanguageOptions={targetLanguageOptions}
         segmentationStrategy={segmentationStrategy}
         selectedProvider={selectedProvider}
         selectedModel={selectedModel}
@@ -552,6 +318,8 @@ function TranslationWorkspaceView({
         statusSeverity={statusSeverity}
         pipelineWarnings={pipelineWarnings}
         onSourceTextChange={onSourceTextChange}
+        onContentTypeChange={onContentTypeChange}
+        onTargetLanguageChange={onTargetLanguageChange}
         onSegmentationStrategyChange={onSegmentationStrategyChange}
         onProviderChange={onProviderChange}
         onModelChange={onModelChange}
@@ -850,6 +618,24 @@ export function TranslationWorkspace({
     setSourceText(value);
   };
 
+  const handleContentTypeChange = (value: StudioShellProject['contentType']): void => {
+    setPipelineWarnings([]);
+    setSelectedRecoverySegmentIndex(null);
+    setProject((currentProject) => ({
+      ...currentProject,
+      contentType: value,
+    }));
+  };
+
+  const handleTargetLanguageChange = (value: StudioShellProject['targetLanguage']): void => {
+    setPipelineWarnings([]);
+    setSelectedRecoverySegmentIndex(null);
+    setProject((currentProject) => ({
+      ...currentProject,
+      targetLanguage: getTargetLanguageConfig(value.code),
+    }));
+  };
+
   const handleSegmentationStrategyChange = (value: SegmentationStrategy): void => {
     setPipelineWarnings([]);
     setSelectedRecoverySegmentIndex(null);
@@ -1104,6 +890,8 @@ export function TranslationWorkspace({
       selectedModel={resolvedModel}
       providerOptions={modelOptionsByProvider}
       sourceText={sourceText}
+      contentTypeOptions={contentTypeOptions}
+      targetLanguageOptions={targetLanguageOptions}
       segmentationStrategy={segmentationStrategy}
       segmentPreviewCount={segmentPreviewCount}
       editableSegments={editableSegments}
@@ -1115,6 +903,8 @@ export function TranslationWorkspace({
       pipelineWarnings={pipelineWarnings}
       selectedRecoverySegmentIndex={selectedRecoverySegmentIndex}
       onSourceTextChange={handleSourceTextChange}
+      onContentTypeChange={handleContentTypeChange}
+      onTargetLanguageChange={handleTargetLanguageChange}
       onSegmentationStrategyChange={handleSegmentationStrategyChange}
       onProviderChange={handleProviderChange}
       onModelChange={handleModelChange}
