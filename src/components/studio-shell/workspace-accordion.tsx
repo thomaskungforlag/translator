@@ -1,4 +1,4 @@
-import type { ReactElement, ReactNode } from 'react';
+import { useState, type ReactElement, type ReactNode } from 'react';
 
 import KeyboardArrowDownRoundedIcon from '@mui/icons-material/KeyboardArrowDownRounded';
 import {
@@ -25,9 +25,11 @@ export function WorkspaceAccordion({
   defaultExpanded = false,
   children,
 }: WorkspaceAccordionProps): ReactElement {
+  const [initialExpanded] = useState<boolean>(() => defaultExpanded);
+
   return (
     <Accordion
-      defaultExpanded={defaultExpanded}
+      defaultExpanded={initialExpanded}
       disableGutters
       elevation={0}
       sx={{
