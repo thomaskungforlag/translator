@@ -1,3 +1,4 @@
+/* eslint-disable max-lines, max-lines-per-function -- this workspace orchestrator intentionally keeps the route-level persistence, history, and translation controls together */
 'use client';
 
 import { useEffect, useRef, useState, type ReactElement } from 'react';
@@ -30,7 +31,17 @@ import {
   getTargetLanguageConfig,
   targetLanguageOptions,
 } from '@/lib/workspace-options';
+import {
+  loadTranslationHistoryEntries,
+  loadTranslationHistoryEntry,
+  restoreTranslationHistoryEntry,
+  saveTranslationHistoryEntry,
+  type TranslationHistoryEntryInput,
+  type TranslationHistoryMode,
+  type TranslationHistorySummary,
+} from '@/lib/translation-history';
 
+import { TranslationHistoryPanel } from './translation-history-panel';
 import { WorkspaceControls } from './workspace-controls';
 import {
   buildFinalTranslationText,
@@ -55,7 +66,7 @@ type TranslationWorkspaceProps = {
 
 type TranslationWorkspaceResponse = {
   project: StudioShellProject;
-  mode: 'openai' | 'poe' | 'fallback';
+  mode: TranslationHistoryMode;
   message?: string;
   warnings: string[];
 };
@@ -75,6 +86,174 @@ type PersistedWorkspaceState = {
 
 const workspaceStorageKey = 'translator.workspace.v1';
 
+function buildTranslationHistoryInput(args: {
+  initialSeed: TranslationWorkspaceSeed;
+  sourceText: string;
+  segmentationStrategy: SegmentationStrategy;
+  project: StudioShellProject;
+  provider: ModelProvider;
+  model: string;
+  mode: TranslationHistoryMode;
+  message?: string;
+  warnings: string[];
+}): TranslationHistoryEntryInput {
+  const {
+    initialSeed,
+    sourceText,
+    segmentationStrategy,
+    project,
+    provider,
+    model,
+    mode,
+    message,
+    warnings,
+  } = args;
+
+  return {
+    sourceLanguageCode: initialSeed.sourceLanguageCode,
+    sourceText,
+    segmentationStrategy,
+    project,
+    provider,
+    model,
+    mode,
+    message,
+    warnings,
+  };
+}
+
+type TranslationPipelineCompletionState = {
+  nextProject: StudioShellProject;
+  statusNotice: StatusNotice;
+  warnings: string[];
+  historyInput: TranslationHistoryEntryInput;
+};
+
+function buildSuccessfulPipelineCompletionState(args: {
+  initialSeed: TranslationWorkspaceSeed;
+  currentProject: StudioShellProject;
+  sourceText: string;
+  segmentationStrategy: SegmentationStrategy;
+  provider: ModelProvider;
+  resolvedModel: string;
+  result: TranslationWorkspaceResponse;
+}): TranslationPipelineCompletionState {
+  const {
+    initialSeed,
+    currentProject,
+    sourceText,
+    segmentationStrategy,
+    provider,
+    resolvedModel,
+    result,
+  } = args;
+  const lockedConflictCount = findLockedConflicts(currentProject, result.project);
+  const canConfirmOverwrite = typeof window !== 'undefined' && typeof window.confirm === 'function';
+  const shouldOverwriteLockedSegments =
+    lockedConflictCount > 0 && canConfirmOverwrite
+      ? window.confirm(
+          `${lockedConflictCount} locked segment${lockedConflictCount > 1 ? 's have' : ' has'} new model output. Overwrite the locked final text?`,
+        )
+      : false;
+  const nextProject =
+    lockedConflictCount > 0 && !shouldOverwriteLockedSegments
+      ? mergeLockedSegments(currentProject, result.project)
+      : result.project;
+  const baseStatus =
+    result.mode === 'fallback'
+      ? buildFallbackStatus(result.message)
+      : result.message
+        ? {
+            message: result.message,
+            severity: 'warning' as const,
+          }
+        : {
+            message:
+              result.mode === 'poe'
+                ? 'Translation completed with Poe.'
+                : 'Translation completed with OpenAI.',
+            severity: 'success' as const,
+          };
+  const lockStatus =
+    lockedConflictCount > 0 && !shouldOverwriteLockedSegments
+      ? {
+          message: `${lockedConflictCount} locked segment${lockedConflictCount > 1 ? 's were' : ' was'} preserved during re-run.`,
+          severity: 'info' as const,
+        }
+      : undefined;
+
+  return {
+    nextProject,
+    statusNotice: lockStatus ?? baseStatus,
+    warnings: result.warnings ?? [],
+    historyInput: buildTranslationHistoryInput({
+      initialSeed,
+      sourceText,
+      segmentationStrategy,
+      project: nextProject,
+      provider,
+      model: resolvedModel,
+      mode: result.mode,
+      message: result.message,
+      warnings: result.warnings ?? [],
+    }),
+  };
+}
+
+function buildFallbackPipelineCompletionState(args: {
+  initialSeed: TranslationWorkspaceSeed;
+  currentProject: StudioShellProject;
+  sourceText: string;
+  segmentationStrategy: SegmentationStrategy;
+  provider: ModelProvider;
+  resolvedModel: string;
+  error: unknown;
+}): TranslationPipelineCompletionState {
+  const {
+    initialSeed,
+    currentProject,
+    sourceText,
+    segmentationStrategy,
+    provider,
+    resolvedModel,
+    error,
+  } = args;
+  const nextSeed = {
+    ...initialSeed,
+    title: currentProject.title,
+    contentType: currentProject.contentType,
+    targetLanguage: currentProject.targetLanguage,
+    glossary: currentProject.glossary,
+    styleProfile: currentProject.styleProfile,
+    sourceText,
+    segmentationStrategy,
+    provider,
+    model: resolvedModel,
+  };
+  const nextProject = buildStudioShellProject(nextSeed);
+  const statusNotice =
+    error instanceof Error
+      ? buildFallbackStatus(`${error.message} Demo fallback only.`)
+      : buildFallbackStatus();
+
+  return {
+    nextProject,
+    statusNotice,
+    warnings: [],
+    historyInput: buildTranslationHistoryInput({
+      initialSeed,
+      sourceText,
+      segmentationStrategy,
+      project: nextProject,
+      provider,
+      model: resolvedModel,
+      mode: 'fallback',
+      message: statusNotice.message,
+      warnings: [],
+    }),
+  };
+}
+
 type TranslationWorkspaceViewProps = {
   apiKeyConfigured: boolean;
   activeRuntimeModelLabel: string;
@@ -93,6 +272,8 @@ type TranslationWorkspaceViewProps = {
   statusMessage?: string;
   statusSeverity?: AlertColor;
   pipelineWarnings: string[];
+  historyEntries: TranslationHistorySummary[];
+  historyReady: boolean;
   selectedRecoverySegmentIndex: number | null;
   onSourceTextChange: (value: string) => void;
   onContentTypeChange: (value: StudioShellProject['contentType']) => void;
@@ -107,6 +288,7 @@ type TranslationWorkspaceViewProps = {
   onImportText: (value: string, fileName: string) => void;
   onRunPipeline: () => void;
   onReviewSegment: (segmentIndex: number) => void;
+  onOpenHistoryEntry: (entryId: string) => void;
   onExportMarkdown: () => void;
   onExportQaReport: () => void;
   onExportProjectJson: () => void;
@@ -271,6 +453,8 @@ function TranslationWorkspaceView({
   statusMessage,
   statusSeverity,
   pipelineWarnings,
+  historyEntries,
+  historyReady,
   selectedRecoverySegmentIndex,
   onSourceTextChange,
   onContentTypeChange,
@@ -285,6 +469,7 @@ function TranslationWorkspaceView({
   onImportText,
   onRunPipeline,
   onReviewSegment,
+  onOpenHistoryEntry,
   onExportMarkdown,
   onExportQaReport,
   onExportProjectJson,
@@ -331,6 +516,9 @@ function TranslationWorkspaceView({
         onRunPipeline={onRunPipeline}
         onReviewSegment={onReviewSegment}
       />
+      {historyReady ? (
+        <TranslationHistoryPanel entries={historyEntries} onOpenEntry={onOpenHistoryEntry} />
+      ) : null}
       <StudioShell
         apiKeyConfigured={apiKeyConfigured}
         activeRuntimeModelLabel={activeRuntimeModelLabel}
@@ -386,6 +574,8 @@ export function TranslationWorkspace({
   const [runStartedAt, setRunStartedAt] = useState<number | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const [pipelineWarnings, setPipelineWarnings] = useState<string[]>([]);
+  const [historyEntries, setHistoryEntries] = useState<TranslationHistorySummary[]>([]);
+  const [historyReady, setHistoryReady] = useState(false);
   const [selectedRecoverySegmentIndex, setSelectedRecoverySegmentIndex] = useState<number | null>(
     null,
   );
@@ -458,6 +648,18 @@ export function TranslationWorkspace({
       model: resolvedModel,
     });
   }, [model, project, provider, resolvedModel, segmentationStrategy, sourceText]);
+
+  useEffect(() => {
+    // The history cache is local-only and should hydrate from the browser after mount.
+    const restoreHistoryTimeoutId = window.setTimeout(() => {
+      setHistoryEntries(loadTranslationHistoryEntries());
+      setHistoryReady(true);
+    }, 0);
+
+    return () => {
+      window.clearTimeout(restoreHistoryTimeoutId);
+    };
+  }, []);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -546,66 +748,49 @@ export function TranslationWorkspace({
       }
 
       const result = (await response.json()) as TranslationWorkspaceResponse;
-      const lockedConflictCount = findLockedConflicts(project, result.project);
-      const canConfirmOverwrite =
-        typeof window !== 'undefined' && typeof window.confirm === 'function';
-      const shouldOverwriteLockedSegments =
-        lockedConflictCount > 0 && canConfirmOverwrite
-          ? window.confirm(
-              `${lockedConflictCount} locked segment${lockedConflictCount > 1 ? 's have' : ' has'} new model output. Overwrite the locked final text?`,
-            )
-          : false;
-      const nextProject =
-        lockedConflictCount > 0 && !shouldOverwriteLockedSegments
-          ? mergeLockedSegments(project, result.project)
-          : result.project;
-      const baseStatus =
-        result.mode === 'fallback'
-          ? buildFallbackStatus(result.message)
-          : result.message
-            ? {
-                message: result.message,
-                severity: 'warning' as const,
-              }
-            : {
-                message:
-                  result.mode === 'poe'
-                    ? 'Translation completed with Poe.'
-                    : 'Translation completed with OpenAI.',
-                severity: 'success' as const,
-              };
-      const lockStatus =
-        lockedConflictCount > 0 && !shouldOverwriteLockedSegments
-          ? {
-              message: `${lockedConflictCount} locked segment${lockedConflictCount > 1 ? 's were' : ' was'} preserved during re-run.`,
-              severity: 'info' as const,
-            }
-          : undefined;
-
-      setProject(nextProject);
-      setStatusNotice(lockStatus ?? baseStatus);
-      setPipelineWarnings(result.warnings ?? []);
-    } catch (error) {
-      const nextSeed = {
-        ...initialSeed,
-        title: project.title,
-        contentType: project.contentType,
-        targetLanguage: project.targetLanguage,
-        glossary: project.glossary,
-        styleProfile: project.styleProfile,
+      const completionState = buildSuccessfulPipelineCompletionState({
+        initialSeed,
+        currentProject: project,
         sourceText,
         segmentationStrategy,
         provider,
-        model: resolvedModel,
-      };
+        resolvedModel,
+        result,
+      });
 
-      setProject(buildStudioShellProject(nextSeed));
-      setStatusNotice(
-        error instanceof Error
-          ? buildFallbackStatus(`${error.message} Demo fallback only.`)
-          : buildFallbackStatus(),
-      );
-      setPipelineWarnings([]);
+      setProject(completionState.nextProject);
+      setStatusNotice(completionState.statusNotice);
+      setPipelineWarnings(completionState.warnings);
+
+      try {
+        const savedHistoryEntries = saveTranslationHistoryEntry(completionState.historyInput);
+
+        setHistoryEntries(savedHistoryEntries);
+      } catch {
+        // Ignore history write failures so translation completion still succeeds.
+      }
+    } catch (error) {
+      const completionState = buildFallbackPipelineCompletionState({
+        initialSeed,
+        currentProject: project,
+        sourceText,
+        segmentationStrategy,
+        provider,
+        resolvedModel,
+        error,
+      });
+
+      setProject(completionState.nextProject);
+      setStatusNotice(completionState.statusNotice);
+      setPipelineWarnings(completionState.warnings);
+
+      try {
+        const savedHistoryEntries = saveTranslationHistoryEntry(completionState.historyInput);
+
+        setHistoryEntries(savedHistoryEntries);
+      } catch {
+        // Ignore history write failures so translation fallback still completes.
+      }
     } finally {
       setIsRunning(false);
       setRunStartedAt(null);
@@ -882,6 +1067,36 @@ export function TranslationWorkspace({
     }));
   };
 
+  const handleOpenHistoryEntry = (entryId: string): void => {
+    const entry = loadTranslationHistoryEntry(entryId);
+
+    if (!entry) {
+      setStatusNotice({
+        message: 'That translation history entry is no longer available.',
+        severity: 'warning',
+      });
+
+      return;
+    }
+
+    const restoredEntry = restoreTranslationHistoryEntry(entry);
+
+    setSourceText(restoredEntry.sourceText);
+    setSegmentationStrategy(restoredEntry.segmentationStrategy);
+    setProject({
+      ...restoredEntry.project,
+      styleProfile: restoredEntry.project.styleProfile ?? buildDefaultStyleProfile(),
+    });
+    setProvider(restoredEntry.provider);
+    setModel(restoredEntry.model);
+    setPipelineWarnings(restoredEntry.warnings);
+    setSelectedRecoverySegmentIndex(null);
+    setStatusNotice({
+      message: `Restored "${entry.title}" from translation history.`,
+      severity: 'info',
+    });
+  };
+
   return (
     <TranslationWorkspaceView
       apiKeyConfigured={providerApiKeyConfigured}
@@ -901,6 +1116,8 @@ export function TranslationWorkspace({
       statusMessage={statusNotice?.message}
       statusSeverity={statusNotice?.severity}
       pipelineWarnings={pipelineWarnings}
+      historyEntries={historyEntries}
+      historyReady={historyReady}
       selectedRecoverySegmentIndex={selectedRecoverySegmentIndex}
       onSourceTextChange={handleSourceTextChange}
       onContentTypeChange={handleContentTypeChange}
@@ -917,6 +1134,7 @@ export function TranslationWorkspace({
       onReviewSegment={(segmentIndex) => {
         setSelectedRecoverySegmentIndex(segmentIndex);
       }}
+      onOpenHistoryEntry={handleOpenHistoryEntry}
       onExportMarkdown={handleExportMarkdown}
       onExportQaReport={handleExportQaReport}
       onExportProjectJson={handleExportProjectJson}

@@ -73,6 +73,7 @@
   - [Task 6.5: App Shell and Navigation](#task-65-app-shell-and-navigation)
   - [Task 6.6: Route-Based Translation Workspace](#task-66-route-based-translation-workspace)
   - [Task 6.7: Landing Page Navigation Hub](#task-67-landing-page-navigation-hub)
+  - [Task 6.8: Translation History Cache](#task-68-translation-history-cache)
 - [Epic 7: Export](#epic-7-export)
   - [Task 7.1: Markdown Export](#task-71-markdown-export)
   - [Task 7.2: QA Report Export](#task-72-qa-report-export)
@@ -978,6 +979,17 @@ Acceptance criteria:
 - The home page surfaces the dedicated routes instead of embedding every workflow inline.
 - The home page makes proofreading and translation the primary entry points.
 - Future routes such as projects, glossary, and style profile can be introduced later without reshaping the home screen.
+
+### Task 6.8: Translation History Cache
+
+Keep completed translations available for later access, even before full project persistence exists.
+
+Acceptance criteria:
+
+- Every completed translation run is stored in a local history cache.
+- The user can reopen prior translations without rerunning the pipeline.
+- The cache survives page refreshes at minimum, with broader persistence considered later.
+- Cached history records include the source text, target text, route, date, and key metadata needed to find the translation again.
 
 ---
 
