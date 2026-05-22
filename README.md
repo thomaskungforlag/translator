@@ -73,7 +73,11 @@ If you are deploying on Vercel:
 ## Code Map
 
 - [src/app/layout.tsx](src/app/layout.tsx) sets up the App Router shell, fonts, metadata, and MUI cache.
-- [src/components/studio-shell.tsx](src/components/studio-shell.tsx) is the top-level UI coordinator.
+- [src/app/page.tsx](src/app/page.tsx) is the route-based landing page and navigation hub.
+- [src/app/proofreading/page.tsx](src/app/proofreading/page.tsx) hosts the dedicated proofreading route.
+- [src/app/translate/page.tsx](src/app/translate/page.tsx) hosts the dedicated translation route.
+- [src/components/app-shell.tsx](src/components/app-shell.tsx) is the shared top-level navigation shell.
+- [src/components/studio-shell.tsx](src/components/studio-shell.tsx) is the translation dashboard coordinator.
 - [src/components/studio-shell/](src/components/studio-shell) holds the small dashboard panels and review widgets.
 - [src/lib/domain.ts](src/lib/domain.ts) defines the domain types and Zod schemas.
 - [src/lib/translation.ts](src/lib/translation.ts) orchestrates provider responses into the app's project shape.

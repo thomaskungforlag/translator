@@ -27,7 +27,11 @@
 ## Current Entry Points
 
 - [src/app/layout.tsx](../src/app/layout.tsx) sets up the root layout, metadata, font, and MUI cache provider.
-- [src/components/studio-shell.tsx](../src/components/studio-shell.tsx) composes the dashboard layout.
+- [src/app/page.tsx](../src/app/page.tsx) is the route-based landing page and navigation hub.
+- [src/app/proofreading/page.tsx](../src/app/proofreading/page.tsx) hosts the dedicated proofreading route.
+- [src/app/translate/page.tsx](../src/app/translate/page.tsx) hosts the dedicated translation route.
+- [src/components/app-shell.tsx](../src/components/app-shell.tsx) provides shared top-level navigation.
+- [src/components/studio-shell.tsx](../src/components/studio-shell.tsx) composes the translation dashboard layout.
 - [src/components/studio-shell/segment-review-panel.tsx](../src/components/studio-shell/segment-review-panel.tsx) shows the segment review workflow.
 - [src/lib/domain.ts](../src/lib/domain.ts) defines the project, segment, glossary, and QA types.
 - [src/app/api/wordpress/translate-page/route.ts](../src/app/api/wordpress/translate-page/route.ts) is the authenticated WordPress-facing translation route.

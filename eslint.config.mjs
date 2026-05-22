@@ -11,6 +11,7 @@ export default defineConfig(
       '**/CHANGELOG.md',
       '**/coverage/**',
       '**/node_modules/**',
+      '**/next-env.d.ts',
       '**/out/**',
       '**/*.d.ts',
     ],

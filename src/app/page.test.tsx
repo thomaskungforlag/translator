@@ -1,30 +1,29 @@
 import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 
 import HomePage from './page';
 
 describe('HomePage', () => {
-  it('renders the workspace and lets the source metadata be changed', async () => {
-    const user = userEvent.setup();
-
+  it('renders the landing page and links to the dedicated routes', () => {
     render(<HomePage />);
 
-    expect(screen.getByRole('heading', { name: /visual proofing guidance/i })).toBeVisible();
-    expect(
-      screen.getByRole('heading', { name: /thomas kung author translation studio/i }),
-    ).toBeVisible();
-    expect(screen.getAllByRole('button', { name: /run pipeline/i })[0]).toBeVisible();
-    expect(screen.getAllByRole('button', { name: /export markdown/i })[0]).toBeVisible();
-    expect(screen.getByLabelText(/source text/i)).toHaveValue('');
-
-    await user.click(screen.getByRole('combobox', { name: /content type/i }));
-    await user.click(screen.getByRole('option', { name: /website copy/i }));
-    expect(screen.getByRole('combobox', { name: /content type/i })).toHaveTextContent(
-      /website copy/i,
+    expect(screen.getByRole('heading', { name: /choose a workspace/i })).toBeVisible();
+    expect(screen.getByRole('link', { name: /^proofreading$/i })).toHaveAttribute(
+      'href',
+      '/proofreading',
     );
-
-    await user.click(screen.getByRole('combobox', { name: /target language/i }));
-    await user.click(screen.getByRole('option', { name: /french/i }));
-    expect(screen.getByRole('combobox', { name: /target language/i })).toHaveTextContent(/french/i);
+    expect(screen.getByRole('link', { name: /^translate$/i })).toHaveAttribute(
+      'href',
+      '/translate',
+    );
+    expect(screen.getByRole('link', { name: /open proofreading workspace/i })).toHaveAttribute(
+      'href',
+      '/proofreading',
+    );
+    expect(screen.getByRole('link', { name: /open translation workspace/i })).toHaveAttribute(
+      'href',
+      '/translate',
+    );
+    expect(screen.queryByLabelText(/translated text/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /run pipeline/i })).not.toBeInTheDocument();
   });
 });

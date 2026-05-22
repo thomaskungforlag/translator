@@ -70,6 +70,9 @@
   - [Task 6.2: QA Findings Panel](#task-62-qa-findings-panel)
   - [Task 6.3: Manual Editing](#task-63-manual-editing)
   - [Task 6.4: Proofreading Mode](#task-64-proofreading-mode)
+  - [Task 6.5: App Shell and Navigation](#task-65-app-shell-and-navigation)
+  - [Task 6.6: Route-Based Translation Workspace](#task-66-route-based-translation-workspace)
+  - [Task 6.7: Landing Page Navigation Hub](#task-67-landing-page-navigation-hub)
 - [Epic 7: Export](#epic-7-export)
   - [Task 7.1: Markdown Export](#task-71-markdown-export)
   - [Task 7.2: QA Report Export](#task-72-qa-report-export)
@@ -945,6 +948,36 @@ Acceptance criteria:
 - The app shows a readable list of findings with the affected phrase and a suggested rewrite direction.
 - The basic version works locally without requiring a source text or an API key.
 - The feature keeps using the existing review vocabulary so proofreading guidance feels consistent with the QA system.
+
+### Task 6.5: App Shell and Navigation
+
+Create a shared route shell so the app feels like one product instead of one crowded page.
+
+Acceptance criteria:
+
+- All major app routes share a common top-level navigation.
+- The active route is visible and easy to distinguish.
+- The shell leaves room for future editorial tools without changing the route layout again.
+
+### Task 6.6: Route-Based Translation Workspace
+
+Move the existing translation studio onto its own dedicated route.
+
+Acceptance criteria:
+
+- The translation workspace is reachable at a dedicated route.
+- The route still supports the existing multi-pass translation workflow.
+- The current translation experience remains functionally unchanged apart from navigation and page framing.
+
+### Task 6.7: Landing Page Navigation Hub
+
+Replace the crowded front page with a simple entry point into the dedicated workflows.
+
+Acceptance criteria:
+
+- The home page surfaces the dedicated routes instead of embedding every workflow inline.
+- The home page makes proofreading and translation the primary entry points.
+- Future routes such as projects, glossary, and style profile can be introduced later without reshaping the home screen.
 
 ---
 
