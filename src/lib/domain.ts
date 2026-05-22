@@ -89,6 +89,10 @@ export type QAFinding = {
   category: QAFindingCategory;
   sourceExcerpt?: string;
   targetExcerpt?: string;
+  targetRange?: {
+    start: number;
+    end: number;
+  };
   issue: string;
   suggestion?: string;
   resolved: boolean;
@@ -169,6 +173,12 @@ export const qafindingSchema = z.object({
   category: z.enum(qafindingCategoryValues),
   sourceExcerpt: z.string().optional(),
   targetExcerpt: z.string().optional(),
+  targetRange: z
+    .object({
+      start: z.number().int().nonnegative(),
+      end: z.number().int().nonnegative(),
+    })
+    .optional(),
   issue: z.string().min(1),
   suggestion: z.string().optional(),
   resolved: z.boolean(),

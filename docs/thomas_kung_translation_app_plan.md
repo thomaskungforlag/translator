@@ -69,6 +69,7 @@
   - [Task 6.1: Side-by-Side Viewer](#task-61-side-by-side-viewer)
   - [Task 6.2: QA Findings Panel](#task-62-qa-findings-panel)
   - [Task 6.3: Manual Editing](#task-63-manual-editing)
+  - [Task 6.4: Proofreading Mode](#task-64-proofreading-mode)
 - [Epic 7: Export](#epic-7-export)
   - [Task 7.1: Markdown Export](#task-71-markdown-export)
   - [Task 7.2: QA Report Export](#task-72-qa-report-export)
@@ -932,6 +933,18 @@ Acceptance criteria:
 - Manual edits persist.
 - Edited segment can be locked.
 - Re-running AI does not overwrite locked text without confirmation.
+
+### Task 6.4: Proofreading Mode
+
+Allow the user to paste a translated text and get visual guidance on words or phrases that could be improved.
+
+Acceptance criteria:
+
+- User can paste or type translated prose into a proofreading field.
+- The app highlights likely improvement spots inline in the preview.
+- The app shows a readable list of findings with the affected phrase and a suggested rewrite direction.
+- The basic version works locally without requiring a source text or an API key.
+- The feature keeps using the existing review vocabulary so proofreading guidance feels consistent with the QA system.
 
 ---
 

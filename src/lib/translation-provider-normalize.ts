@@ -401,61 +401,94 @@ function toQaResponseShape(candidate: unknown): unknown {
   const toOptionalText = (value: unknown): string | undefined =>
     typeof value === 'string' && value.trim().length > 0 ? value : undefined;
 
+  const resolveSegmentIndex = (record: Record<string, unknown>): number | null =>
+    typeof record.segmentIndex === 'number'
+      ? record.segmentIndex
+      : typeof record.segment_index === 'number'
+        ? record.segment_index
+        : typeof record.index === 'number'
+          ? record.index
+          : null;
+
+  const extractTargetRange = (
+    record: Record<string, unknown>,
+  ): z.infer<typeof qaFindingSchema>['targetRange'] => {
+    const targetRangeRecord =
+      record.targetRange && typeof record.targetRange === 'object'
+        ? (record.targetRange as Record<string, unknown>)
+        : null;
+
+    if (
+      !targetRangeRecord ||
+      typeof targetRangeRecord.start !== 'number' ||
+      typeof targetRangeRecord.end !== 'number' ||
+      targetRangeRecord.start < 0 ||
+      targetRangeRecord.end < targetRangeRecord.start
+    ) {
+      return undefined;
+    }
+
+    return {
+      start: targetRangeRecord.start,
+      end: targetRangeRecord.end,
+    };
+  };
+
+  const normalizeQaItem = (item: unknown): z.infer<typeof qaFindingSchema> | null => {
+    if (!item || typeof item !== 'object') {
+      return null;
+    }
+
+    const record = item as Record<string, unknown>;
+    const segmentIndex = resolveSegmentIndex(record);
+    const severity = normalizeQaSeverity(record.severity);
+    const issue = toOptionalText(record.issue) ?? toOptionalText(record.finding);
+
+    if (segmentIndex === null || severity === null || !issue) {
+      return null;
+    }
+
+    const normalizedFinding: z.infer<typeof qaFindingSchema> = {
+      segmentIndex,
+      severity,
+      category: normalizeQaCategory(record.category),
+      issue,
+    };
+
+    const suggestion = toOptionalText(record.suggestion) ?? toOptionalText(record.recommendation);
+
+    if (suggestion) {
+      normalizedFinding.suggestion = suggestion;
+    }
+
+    const sourceExcerpt =
+      toOptionalText(record.sourceExcerpt) ??
+      toOptionalText(record.source_phrase) ??
+      toOptionalText(record.evidence);
+
+    if (sourceExcerpt) {
+      normalizedFinding.sourceExcerpt = sourceExcerpt;
+    }
+
+    const targetExcerpt =
+      toOptionalText(record.targetExcerpt) ?? toOptionalText(record.final_phrase);
+
+    if (targetExcerpt) {
+      normalizedFinding.targetExcerpt = targetExcerpt;
+    }
+
+    const targetRange = extractTargetRange(record);
+
+    if (targetRange) {
+      normalizedFinding.targetRange = targetRange;
+    }
+
+    return normalizedFinding;
+  };
+
   const normalizeQaItems = (items: unknown[]): Array<z.infer<typeof qaFindingSchema>> =>
     items
-      .map((item) => {
-        if (!item || typeof item !== 'object') {
-          return null;
-        }
-
-        const record = item as Record<string, unknown>;
-        const segmentIndex =
-          typeof record.segmentIndex === 'number'
-            ? record.segmentIndex
-            : typeof record.segment_index === 'number'
-              ? record.segment_index
-              : typeof record.index === 'number'
-                ? record.index
-                : null;
-        const severity = normalizeQaSeverity(record.severity);
-        const issue = toOptionalText(record.issue) ?? toOptionalText(record.finding);
-
-        if (segmentIndex === null || severity === null || !issue) {
-          return null;
-        }
-
-        const normalizedFinding: z.infer<typeof qaFindingSchema> = {
-          segmentIndex,
-          severity,
-          category: normalizeQaCategory(record.category),
-          issue,
-        };
-
-        const suggestion =
-          toOptionalText(record.suggestion) ?? toOptionalText(record.recommendation);
-
-        if (suggestion) {
-          normalizedFinding.suggestion = suggestion;
-        }
-
-        const sourceExcerpt =
-          toOptionalText(record.sourceExcerpt) ??
-          toOptionalText(record.source_phrase) ??
-          toOptionalText(record.evidence);
-
-        if (sourceExcerpt) {
-          normalizedFinding.sourceExcerpt = sourceExcerpt;
-        }
-
-        const targetExcerpt =
-          toOptionalText(record.targetExcerpt) ?? toOptionalText(record.final_phrase);
-
-        if (targetExcerpt) {
-          normalizedFinding.targetExcerpt = targetExcerpt;
-        }
-
-        return normalizedFinding;
-      })
+      .map(normalizeQaItem)
       .filter((item): item is z.infer<typeof qaFindingSchema> => item !== null);
 
   if (Array.isArray(candidate)) {

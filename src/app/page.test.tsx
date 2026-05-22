@@ -9,6 +9,7 @@ describe('HomePage', () => {
 
     render(<HomePage />);
 
+    expect(screen.getByRole('heading', { name: /visual proofing guidance/i })).toBeVisible();
     expect(
       screen.getByRole('heading', { name: /thomas kung author translation studio/i }),
     ).toBeVisible();

@@ -96,6 +96,12 @@ export const qaFindingSchema = z.object({
   ]),
   sourceExcerpt: z.string().optional(),
   targetExcerpt: z.string().optional(),
+  targetRange: z
+    .object({
+      start: z.number().int().nonnegative(),
+      end: z.number().int().nonnegative(),
+    })
+    .optional(),
   issue: z.string().min(1),
   suggestion: z.string().optional(),
 });
