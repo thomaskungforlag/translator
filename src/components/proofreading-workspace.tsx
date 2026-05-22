@@ -3,7 +3,17 @@
 import { useState, type ReactElement } from 'react';
 
 import { alpha } from '@mui/material/styles';
-import { Box, Chip, Divider, Paper, Stack, TextField, Typography, useTheme } from '@mui/material';
+import {
+  Box,
+  Chip,
+  Divider,
+  Paper,
+  Stack,
+  TextField,
+  Tooltip,
+  Typography,
+  useTheme,
+} from '@mui/material';
 
 import type { QAFinding } from '@/lib/domain';
 import { buildProofreadingFindings, buildProofreadingSummary } from '@/lib/proofreading';
@@ -43,6 +53,14 @@ function getFindingTone(finding: QAFinding): 'info' | 'warning' | 'error' {
   }
 
   return 'info';
+}
+
+function getFindingTooltipLabel(finding: QAFinding): string {
+  if (finding.suggestion) {
+    return `${finding.issue} ${finding.suggestion}`;
+  }
+
+  return finding.issue;
 }
 
 function buildHighlightRanges(text: string, findings: QAFinding[]): HighlightRange[] {
@@ -94,32 +112,37 @@ function renderPreviewText(text: string, ranges: HighlightRange[]): ReactElement
     }
 
     nodes.push(
-      <Box
-        component="mark"
-        key={`highlight-${range.start}-${range.end}-${index}`}
-        data-testid="proofreading-highlight"
-        title={range.finding.issue}
-        sx={(theme) => {
-          const tone = getFindingTone(range.finding);
-          const palette =
-            tone === 'error'
-              ? theme.palette.error
-              : tone === 'warning'
-                ? theme.palette.warning
-                : theme.palette.info;
-
-          return {
-            px: 0.15,
-            borderRadius: 0.5,
-            backgroundColor: alpha(palette.light, 0.28),
-            color: 'inherit',
-            borderBottom: `2px solid ${palette.main}`,
-            textDecoration: 'none',
-          };
-        }}
+      <Tooltip
+        key={`tooltip-${range.start}-${range.end}-${index}`}
+        title={getFindingTooltipLabel(range.finding)}
+        arrow
       >
-        {text.slice(range.start, range.end)}
-      </Box>,
+        <Box
+          component="mark"
+          data-testid="proofreading-highlight"
+          sx={(theme) => {
+            const tone = getFindingTone(range.finding);
+            const palette =
+              tone === 'error'
+                ? theme.palette.error
+                : tone === 'warning'
+                  ? theme.palette.warning
+                  : theme.palette.info;
+
+            return {
+              px: 0.15,
+              borderRadius: 0.5,
+              backgroundColor: alpha(palette.light, 0.28),
+              color: 'inherit',
+              borderBottom: `2px solid ${palette.main}`,
+              textDecoration: 'none',
+              cursor: 'help',
+            };
+          }}
+        >
+          {text.slice(range.start, range.end)}
+        </Box>
+      </Tooltip>,
     );
 
     cursor = range.end;
@@ -262,11 +285,6 @@ export function ProofreadingWorkspace(): ReactElement {
                         {finding.targetExcerpt ? (
                           <Typography variant="body2" color="text.secondary">
                             Highlight: {finding.targetExcerpt}
-                          </Typography>
-                        ) : null}
-                        {finding.suggestion ? (
-                          <Typography variant="body2" color="text.secondary">
-                            Suggestion: {finding.suggestion}
                           </Typography>
                         ) : null}
                       </Stack>

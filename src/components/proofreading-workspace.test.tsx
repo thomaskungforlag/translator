@@ -19,5 +19,11 @@ describe('ProofreadingWorkspace', () => {
     expect(screen.getByText(/repeated word/i)).toBeVisible();
     expect(screen.getByText(/weak modifier/i)).toBeVisible();
     expect(screen.getByText(/passive construction/i)).toBeVisible();
+
+    await user.hover(screen.getAllByTestId('proofreading-highlight')[1]);
+
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(
+      /try a more specific adjective or stronger verb/i,
+    );
   });
 });
