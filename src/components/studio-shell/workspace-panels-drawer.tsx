@@ -35,7 +35,15 @@ export function WorkspacePanelsDrawer({
   onGlossaryEntryRemove,
 }: WorkspacePanelsDrawerProps): ReactElement {
   const panelContent = (
-    <Box data-testid="workspace-panels-drawer" sx={{ p: 2.5, height: '100%', overflowY: 'auto' }}>
+    <Box
+      data-testid="workspace-panels-drawer"
+      sx={{
+        p: 2.5,
+        flex: 1,
+        minHeight: 0,
+        overflowY: 'auto',
+      }}
+    >
       <Stack spacing={2}>
         <Box>
           <Typography variant="overline" color="text.secondary">
@@ -83,9 +91,12 @@ export function WorkspacePanelsDrawer({
           width: 320,
           flex: '0 0 320px',
           minWidth: 320,
+          display: 'flex',
+          flexDirection: 'column',
           position: 'sticky',
           top: 24,
           alignSelf: 'flex-start',
+          height: 'calc(100vh - 48px)',
           maxHeight: 'calc(100vh - 48px)',
           overflow: 'hidden',
           borderRadius: 4,
@@ -112,6 +123,9 @@ export function WorkspacePanelsDrawer({
         '& .MuiDrawer-paper': {
           width: 320,
           boxSizing: 'border-box',
+          display: 'flex',
+          flexDirection: 'column',
+          height: '100%',
           backgroundImage: 'none',
           borderRight: '1px solid',
           borderColor: 'divider',
