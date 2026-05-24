@@ -28,6 +28,7 @@ import {
 type SelectedSegmentCardProps = {
   activePass: SegmentPassIndex;
   selectedSegment: DocumentSegment;
+  isRunning?: boolean;
   onFinalTextChange?: (value: string) => void;
   onFinalTextLockChange?: (locked: boolean) => void;
   onOpenFocusMode?: () => void;
@@ -36,6 +37,7 @@ type SelectedSegmentCardProps = {
 export function SelectedSegmentCard({
   activePass,
   selectedSegment,
+  isRunning = false,
   onFinalTextChange,
   onFinalTextLockChange,
   onOpenFocusMode,
@@ -50,6 +52,7 @@ export function SelectedSegmentCard({
       <TextField
         label="Final text"
         value={selectedSegment.finalText ?? ''}
+        disabled={isRunning}
         onChange={(event) => {
           onFinalTextChange?.(event.target.value);
         }}
@@ -62,6 +65,7 @@ export function SelectedSegmentCard({
         control={
           <Switch
             checked={Boolean(selectedSegment.finalTextLocked)}
+            disabled={isRunning}
             onChange={(_, checked) => {
               onFinalTextLockChange?.(checked);
             }}

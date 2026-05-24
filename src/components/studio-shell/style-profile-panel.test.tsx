@@ -23,4 +23,14 @@ describe('StyleProfilePanel', () => {
       voicePrinciples: ['First line', 'Second line'],
     });
   });
+
+  it('locks profile editing while running', () => {
+    const profile = buildDefaultStyleProfile();
+
+    render(<StyleProfilePanel profile={profile} isRunning />);
+
+    expect(screen.getByLabelText(/profile name/i)).toBeDisabled();
+    expect(screen.getByLabelText(/voice principles/i)).toBeDisabled();
+    expect(screen.getByLabelText(/avoid patterns/i)).toBeDisabled();
+  });
 });

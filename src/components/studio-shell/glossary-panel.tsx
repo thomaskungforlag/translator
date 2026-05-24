@@ -18,6 +18,7 @@ import type { GlossaryEntry } from '@/lib/domain';
 
 type GlossaryPanelProps = {
   entries: GlossaryEntry[];
+  isRunning?: boolean;
   onAddEntry?: () => void;
   onUpdateEntry?: (entryId: string, patch: Partial<GlossaryEntry>) => void;
   onRemoveEntry?: (entryId: string) => void;
@@ -25,6 +26,7 @@ type GlossaryPanelProps = {
 
 export function GlossaryPanel({
   entries,
+  isRunning = false,
   onAddEntry,
   onUpdateEntry,
   onRemoveEntry,
@@ -53,6 +55,7 @@ export function GlossaryPanel({
                 fullWidth
                 label="Source"
                 value={entry.sourceTerm}
+                disabled={isRunning}
                 onChange={(event) =>
                   onUpdateEntry?.(entry.id, {
                     sourceTerm: event.target.value,
@@ -64,6 +67,7 @@ export function GlossaryPanel({
                 color="error"
                 aria-label={`Remove glossary entry ${entry.sourceTerm || entry.id}`}
                 onClick={() => onRemoveEntry?.(entry.id)}
+                disabled={isRunning}
               >
                 <DeleteOutlineRoundedIcon fontSize="small" />
               </IconButton>
@@ -74,6 +78,7 @@ export function GlossaryPanel({
               fullWidth
               label="Target"
               value={entry.targetTerm}
+              disabled={isRunning}
               onChange={(event) =>
                 onUpdateEntry?.(entry.id, {
                   targetTerm: event.target.value,
@@ -88,6 +93,7 @@ export function GlossaryPanel({
                 fullWidth
                 label="Category"
                 value={entry.category}
+                disabled={isRunning}
                 onChange={(event) =>
                   onUpdateEntry?.(entry.id, {
                     category: event.target.value as GlossaryEntry['category'],
@@ -105,6 +111,7 @@ export function GlossaryPanel({
                 control={
                   <Switch
                     checked={entry.locked}
+                    disabled={isRunning}
                     onChange={(_, checked) =>
                       onUpdateEntry?.(entry.id, {
                         locked: checked,
@@ -122,6 +129,7 @@ export function GlossaryPanel({
           variant="outlined"
           startIcon={<AddRoundedIcon />}
           onClick={onAddEntry}
+          disabled={isRunning}
           sx={{ alignSelf: 'flex-start' }}
         >
           Add glossary term

@@ -69,6 +69,7 @@ export function StudioShell({
             project={project}
             open
             variant="permanent"
+            isRunning={isRunning}
             onStyleProfileUpdate={onStyleProfileUpdate}
             onGlossaryEntryAdd={onGlossaryEntryAdd}
             onGlossaryEntryUpdate={onGlossaryEntryUpdate}
@@ -106,6 +107,7 @@ export function StudioShell({
                 <SegmentReviewPanel
                   segments={project.segments}
                   selectedSegmentIndex={selectedRecoverySegmentIndex}
+                  isRunning={isRunning}
                   onSegmentFinalTextChange={onSegmentFinalTextChange}
                   onSegmentFinalTextLockChange={onSegmentFinalTextLockChange}
                 />
@@ -135,6 +137,7 @@ export function StudioShell({
           onClose={() => {
             setIsWorkspaceDrawerOpen(false);
           }}
+          isRunning={isRunning}
           onStyleProfileUpdate={onStyleProfileUpdate}
           onGlossaryEntryAdd={onGlossaryEntryAdd}
           onGlossaryEntryUpdate={onGlossaryEntryUpdate}

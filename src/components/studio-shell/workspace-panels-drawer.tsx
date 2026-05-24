@@ -14,6 +14,7 @@ type WorkspacePanelsDrawerProps = {
   project: StudioShellProject;
   open: boolean;
   variant: DrawerProps['variant'];
+  isRunning?: boolean;
   onClose?: () => void;
   onStyleProfileUpdate?: (patch: Partial<StudioShellProject['styleProfile']>) => void;
   onGlossaryEntryAdd?: () => void;
@@ -28,6 +29,7 @@ export function WorkspacePanelsDrawer({
   project,
   open,
   variant,
+  isRunning = false,
   onClose,
   onStyleProfileUpdate,
   onGlossaryEntryAdd,
@@ -63,6 +65,7 @@ export function WorkspacePanelsDrawer({
         >
           <StyleProfilePanel
             profile={project.styleProfile}
+            isRunning={isRunning}
             onUpdateProfile={onStyleProfileUpdate}
           />
         </WorkspaceAccordion>
@@ -74,6 +77,7 @@ export function WorkspacePanelsDrawer({
         <WorkspaceAccordion title="Glossary" caption="Locked terms and recurring entities">
           <GlossaryPanel
             entries={project.glossary}
+            isRunning={isRunning}
             onAddEntry={onGlossaryEntryAdd}
             onUpdateEntry={onGlossaryEntryUpdate}
             onRemoveEntry={onGlossaryEntryRemove}

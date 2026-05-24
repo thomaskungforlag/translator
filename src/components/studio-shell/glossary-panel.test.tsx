@@ -53,4 +53,18 @@ describe('GlossaryPanel', () => {
       }),
     );
   });
+
+  it('locks glossary editing while running', () => {
+    render(<GlossaryPanel entries={entries} isRunning />);
+
+    expect(screen.getByRole('textbox', { name: /source/i })).toBeDisabled();
+    expect(screen.getByRole('textbox', { name: /target/i })).toBeDisabled();
+    expect(screen.getByRole('combobox', { name: /category/i })).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
+    expect(screen.getByRole('switch', { name: /locked/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /remove glossary entry/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /add glossary term/i })).toBeDisabled();
+  });
 });

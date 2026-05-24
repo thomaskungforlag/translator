@@ -34,6 +34,7 @@ type SegmentFocusSurfaceProps = {
   isDesktop: boolean;
   activePass: SegmentPassIndex;
   segment: DocumentSegment;
+  isRunning?: boolean;
   onClose: () => void;
   onActivePassChange: (nextPass: SegmentPassIndex) => void;
   onFinalTextChange?: (value: string) => void;
@@ -57,6 +58,7 @@ function buildQaFindingSummary(segment: DocumentSegment): string {
 function FocusSurfaceContent({
   activePass,
   segment,
+  isRunning = false,
   onClose,
   onActivePassChange,
   onFinalTextChange,
@@ -196,6 +198,7 @@ function FocusSurfaceContent({
                   <TextField
                     label="Final text"
                     value={segment.finalText ?? ''}
+                    disabled={isRunning}
                     onChange={(event) => {
                       onFinalTextChange?.(event.target.value);
                     }}
@@ -208,6 +211,7 @@ function FocusSurfaceContent({
                     control={
                       <Switch
                         checked={Boolean(segment.finalTextLocked)}
+                        disabled={isRunning}
                         onChange={(_, checked) => {
                           onFinalTextLockChange?.(checked);
                         }}
@@ -246,6 +250,7 @@ export function SegmentFocusSurface({
   isDesktop,
   activePass,
   segment,
+  isRunning,
   onClose,
   onActivePassChange,
   onFinalTextChange,
@@ -270,6 +275,7 @@ export function SegmentFocusSurface({
         <FocusSurfaceContent
           activePass={activePass}
           segment={segment}
+          isRunning={isRunning}
           onClose={onClose}
           onActivePassChange={onActivePassChange}
           onFinalTextChange={onFinalTextChange}
@@ -285,6 +291,7 @@ export function SegmentFocusSurface({
       <FocusSurfaceContent
         activePass={activePass}
         segment={segment}
+        isRunning={isRunning}
         onClose={onClose}
         onActivePassChange={onActivePassChange}
         onFinalTextChange={onFinalTextChange}

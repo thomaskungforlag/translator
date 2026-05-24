@@ -23,6 +23,7 @@ import { countWords, segmentPassLabels, type SegmentPassIndex } from './segment-
 type SegmentReviewPanelProps = {
   segments: DocumentSegment[];
   selectedSegmentIndex?: number | null;
+  isRunning?: boolean;
   onSegmentFinalTextChange?: (segmentId: string, value: string) => void;
   onSegmentFinalTextLockChange?: (segmentId: string, locked: boolean) => void;
 };
@@ -30,6 +31,7 @@ type SegmentReviewPanelProps = {
 export function SegmentReviewPanel({
   segments,
   selectedSegmentIndex,
+  isRunning = false,
   onSegmentFinalTextChange,
   onSegmentFinalTextLockChange,
 }: SegmentReviewPanelProps): ReactElement {
@@ -141,6 +143,7 @@ export function SegmentReviewPanel({
             <SelectedSegmentCard
               activePass={activePass}
               selectedSegment={selectedSegment}
+              isRunning={isRunning}
               onFinalTextChange={(value) => {
                 onSegmentFinalTextChange?.(selectedSegment.id, value);
               }}
@@ -161,6 +164,7 @@ export function SegmentReviewPanel({
         isDesktop={isDesktop}
         activePass={activePass}
         segment={selectedSegment}
+        isRunning={isRunning}
         onClose={() => {
           setIsFocusModeOpen(false);
         }}

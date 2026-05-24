@@ -64,6 +64,7 @@ type WorkspaceModelControlsProps = {
   selectedProvider: ModelProvider;
   selectedModel: string;
   providerOptions: Record<ModelProvider, ProviderModelOptions | null>;
+  isRunning: boolean;
   onSegmentationStrategyChange: (value: SegmentationStrategy) => void;
   onProviderChange: (value: ModelProvider) => void;
   onModelChange: (value: string) => void;
@@ -74,6 +75,7 @@ function WorkspaceModelControls({
   selectedProvider,
   selectedModel,
   providerOptions,
+  isRunning,
   onSegmentationStrategyChange,
   onProviderChange,
   onModelChange,
@@ -90,6 +92,7 @@ function WorkspaceModelControls({
         fullWidth
         label="Provider"
         value={selectedProvider}
+        disabled={isRunning}
         onChange={(event) => {
           onProviderChange(event.target.value as ModelProvider);
         }}
@@ -102,10 +105,10 @@ function WorkspaceModelControls({
         fullWidth
         label="Model"
         value={selectedModel}
+        disabled={isRunning || modelSelectDisabled}
         onChange={(event) => {
           onModelChange(event.target.value);
         }}
-        disabled={modelSelectDisabled}
         helperText={
           providerModelOptions?.note ??
           (modelSelectDisabled ? 'Loading live models...' : (selectedModelOption?.label ?? ''))
@@ -122,6 +125,7 @@ function WorkspaceModelControls({
         fullWidth
         label="Segmentation"
         value={segmentationStrategy}
+        disabled={isRunning}
         onChange={(event) => {
           onSegmentationStrategyChange(event.target.value as SegmentationStrategy);
         }}
@@ -200,7 +204,7 @@ export function WorkspaceControls({
     const input = event.currentTarget;
     const file = input.files?.[0];
 
-    if (!file) {
+    if (isRunning || !file) {
       return;
     }
 
@@ -223,6 +227,7 @@ export function WorkspaceControls({
             fullWidth
             label="Content type"
             value={contentType}
+            disabled={isRunning}
             onChange={(event) => {
               onContentTypeChange(event.target.value as ContentType);
             }}
@@ -238,6 +243,7 @@ export function WorkspaceControls({
             fullWidth
             label="Target language"
             value={targetLanguage.code}
+            disabled={isRunning}
             onChange={(event) => {
               const selectedLanguage = targetLanguageOptions.find(
                 (option) => option.code === event.target.value,
@@ -261,6 +267,7 @@ export function WorkspaceControls({
           selectedProvider={selectedProvider}
           selectedModel={selectedModel}
           providerOptions={providerOptions}
+          isRunning={isRunning}
           onSegmentationStrategyChange={onSegmentationStrategyChange}
           onProviderChange={onProviderChange}
           onModelChange={onModelChange}
@@ -308,13 +315,19 @@ export function WorkspaceControls({
                 variant="outlined"
                 startIcon={<MoreHorizRoundedIcon />}
                 onClick={handleSceneActionsClick}
+                disabled={isRunning}
                 aria-controls={sceneActionsAnchorEl ? 'scene-actions-menu' : undefined}
                 aria-haspopup="true"
                 aria-expanded={sceneActionsAnchorEl ? 'true' : undefined}
               >
                 Scene actions
               </Button>
-              <Button size="small" variant="outlined" onClick={handleImportClick}>
+              <Button
+                size="small"
+                variant="outlined"
+                onClick={handleImportClick}
+                disabled={isRunning}
+              >
                 Import text/Markdown
               </Button>
               <Button size="small" variant="outlined" onClick={onCopyFinalText}>
@@ -336,10 +349,10 @@ export function WorkspaceControls({
             open={Boolean(sceneActionsAnchorEl)}
             onClose={handleSceneActionsClose}
           >
-            <MenuItem onClick={handleSplitByLineBreaks} disabled={!sourceText.trim()}>
+            <MenuItem onClick={handleSplitByLineBreaks} disabled={isRunning || !sourceText.trim()}>
               Split by line breaks
             </MenuItem>
-            <MenuItem onClick={handleAddSegment}>
+            <MenuItem onClick={handleAddSegment} disabled={isRunning}>
               <AddRoundedIcon fontSize="small" />
               Add segment
             </MenuItem>
@@ -349,6 +362,7 @@ export function WorkspaceControls({
                 handleSceneActionsClose();
                 handleImportClick();
               }}
+              disabled={isRunning}
             >
               Import text/Markdown
             </MenuItem>
@@ -378,6 +392,7 @@ export function WorkspaceControls({
                 minRows={2}
                 label={`Segment ${index + 1}`}
                 value={segment}
+                disabled={isRunning}
                 onChange={(event) => {
                   onEditableSegmentChange(index, event.target.value);
                 }}
@@ -385,6 +400,7 @@ export function WorkspaceControls({
               <IconButton
                 aria-label={`Remove segment ${index + 1}`}
                 color="error"
+                disabled={isRunning}
                 onClick={() => {
                   onEditableSegmentRemove(index);
                 }}
@@ -398,6 +414,7 @@ export function WorkspaceControls({
         <TextField
           label="Source text (original)"
           value={sourceText}
+          disabled={isRunning}
           onChange={(event) => {
             onSourceTextChange(event.target.value);
           }}
@@ -411,6 +428,7 @@ export function WorkspaceControls({
         <input
           ref={importInputRef}
           hidden
+          disabled={isRunning}
           type="file"
           accept=".txt,.md,text/plain,text/markdown"
           onChange={(event) => {

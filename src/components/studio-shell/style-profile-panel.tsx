@@ -7,6 +7,7 @@ import type { StyleProfile } from '@/lib/domain';
 
 type StyleProfilePanelProps = {
   profile: StyleProfile;
+  isRunning?: boolean;
   onUpdateProfile?: (patch: Partial<StyleProfile>) => void;
 };
 
@@ -23,6 +24,7 @@ function splitLines(value: string): string[] {
 
 export function StyleProfilePanel({
   profile,
+  isRunning = false,
   onUpdateProfile,
 }: StyleProfilePanelProps): ReactElement {
   return (
@@ -46,6 +48,7 @@ export function StyleProfilePanel({
         <TextField
           label="Profile name"
           value={profile.name}
+          disabled={isRunning}
           onChange={(event) => onUpdateProfile?.({ name: event.target.value })}
           fullWidth
         />
@@ -53,6 +56,7 @@ export function StyleProfilePanel({
         <TextField
           label="Description"
           value={profile.description}
+          disabled={isRunning}
           onChange={(event) => onUpdateProfile?.({ description: event.target.value })}
           fullWidth
           multiline
@@ -62,6 +66,7 @@ export function StyleProfilePanel({
         <TextField
           label="Voice principles"
           value={joinLines(profile.voicePrinciples)}
+          disabled={isRunning}
           onChange={(event) =>
             onUpdateProfile?.({ voicePrinciples: splitLines(event.target.value) })
           }
@@ -73,6 +78,7 @@ export function StyleProfilePanel({
         <TextField
           label="Preferred tone"
           value={joinLines(profile.preferredTone)}
+          disabled={isRunning}
           onChange={(event) => onUpdateProfile?.({ preferredTone: splitLines(event.target.value) })}
           fullWidth
           multiline
@@ -82,6 +88,7 @@ export function StyleProfilePanel({
         <TextField
           label="Avoid patterns"
           value={joinLines(profile.avoidPatterns)}
+          disabled={isRunning}
           onChange={(event) => onUpdateProfile?.({ avoidPatterns: splitLines(event.target.value) })}
           fullWidth
           multiline
@@ -91,6 +98,7 @@ export function StyleProfilePanel({
         <TextField
           label="Sentence rhythm notes"
           value={joinLines(profile.sentenceRhythmNotes)}
+          disabled={isRunning}
           onChange={(event) =>
             onUpdateProfile?.({ sentenceRhythmNotes: splitLines(event.target.value) })
           }
@@ -102,6 +110,7 @@ export function StyleProfilePanel({
         <TextField
           label="Genre notes"
           value={joinLines(profile.genreNotes)}
+          disabled={isRunning}
           onChange={(event) => onUpdateProfile?.({ genreNotes: splitLines(event.target.value) })}
           fullWidth
           multiline
