@@ -3,16 +3,19 @@ import type { ReactElement } from 'react';
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import {
   Box,
+  Collapse,
   FormControlLabel,
   Dialog,
   DialogContent,
   DialogTitle,
   Drawer,
+  Fade,
   IconButton,
   Paper,
   Stack,
   Tab,
   Tabs,
+  Skeleton,
   TextField,
   Switch,
   Typography,
@@ -71,6 +74,8 @@ function FocusSurfaceContent({
   const passText = getSegmentPassText(segment, activePass);
   const passLabel = getSegmentPassLabel(activePass);
   const wordCount = countWords(segment.sourceText);
+  const sourceTransitionKey = segment.id;
+  const passTransitionKey = `${segment.id}-${activePass}`;
 
   return (
     <Box
@@ -152,24 +157,26 @@ function FocusSurfaceContent({
                 <Typography variant="subtitle2" color="text.secondary">
                   Source and analysis
                 </Typography>
-                <Box
-                  sx={{
-                    maxHeight: { xs: 220, lg: 'min(32vh, 320px)' },
-                    overflowY: 'auto',
-                    pr: 0.5,
-                  }}
-                >
-                  <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap' }}>
-                    {segment.sourceText}
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{ mt: 1.5, whiteSpace: 'pre-wrap' }}
+                <Fade in key={sourceTransitionKey} timeout={220}>
+                  <Box
+                    sx={{
+                      maxHeight: { xs: 220, lg: 'min(32vh, 320px)' },
+                      overflowY: 'auto',
+                      pr: 0.5,
+                    }}
                   >
-                    {segment.sourceAnalysis}
-                  </Typography>
-                </Box>
+                    <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap' }}>
+                      {segment.sourceText}
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ mt: 1.5, whiteSpace: 'pre-wrap' }}
+                    >
+                      {segment.sourceAnalysis}
+                    </Typography>
+                  </Box>
+                </Fade>
               </Stack>
             </Paper>
 
@@ -193,50 +200,74 @@ function FocusSurfaceContent({
               <Typography variant="subtitle2" color="text.secondary">
                 {isFinalPass ? 'Final approved text' : passLabel}
               </Typography>
-              {isFinalPass ? (
-                <Stack spacing={1.25}>
-                  <TextField
-                    label="Final text"
-                    value={segment.finalText ?? ''}
-                    disabled={isRunning}
-                    onChange={(event) => {
-                      onFinalTextChange?.(event.target.value);
-                    }}
-                    multiline
-                    minRows={10}
-                    maxRows={18}
-                    fullWidth
-                  />
-                  <FormControlLabel
-                    control={
-                      <Switch
-                        checked={Boolean(segment.finalTextLocked)}
-                        disabled={isRunning}
-                        onChange={(_, checked) => {
-                          onFinalTextLockChange?.(checked);
-                        }}
-                      />
-                    }
-                    label="Lock this final text on re-run"
-                  />
-                </Stack>
-              ) : (
+              <Collapse in={isRunning && isFinalPass} timeout={180} unmountOnExit>
                 <Box
+                  data-testid="segment-focus-running-banner"
                   sx={{
-                    maxHeight: { xs: 260, lg: 'min(40vh, 420px)' },
-                    overflowY: 'auto',
-                    pr: 0.5,
+                    mb: 1,
+                    p: 1.5,
+                    borderRadius: 2,
+                    border: '1px solid',
+                    borderColor: 'warning.main',
+                    backgroundColor: 'rgba(255, 179, 0, 0.06)',
                   }}
                 >
-                  <Typography
-                    variant="body1"
-                    color="text.secondary"
-                    sx={{ whiteSpace: 'pre-wrap' }}
-                  >
-                    {passText}
-                  </Typography>
+                  <Stack spacing={1}>
+                    <Typography variant="caption" color="text.secondary">
+                      Rebuilding final text from the current snapshot
+                    </Typography>
+                    <Skeleton variant="rounded" height={160} animation="wave" />
+                  </Stack>
                 </Box>
-              )}
+              </Collapse>
+              <Fade in key={passTransitionKey} timeout={220}>
+                <Box>
+                  {isFinalPass ? (
+                    <Stack spacing={1.25}>
+                      <TextField
+                        label="Final text"
+                        value={segment.finalText ?? ''}
+                        disabled={isRunning}
+                        onChange={(event) => {
+                          onFinalTextChange?.(event.target.value);
+                        }}
+                        multiline
+                        minRows={10}
+                        maxRows={18}
+                        fullWidth
+                      />
+                      <FormControlLabel
+                        control={
+                          <Switch
+                            checked={Boolean(segment.finalTextLocked)}
+                            disabled={isRunning}
+                            onChange={(_, checked) => {
+                              onFinalTextLockChange?.(checked);
+                            }}
+                          />
+                        }
+                        label="Lock this final text on re-run"
+                      />
+                    </Stack>
+                  ) : (
+                    <Box
+                      sx={{
+                        maxHeight: { xs: 260, lg: 'min(40vh, 420px)' },
+                        overflowY: 'auto',
+                        pr: 0.5,
+                      }}
+                    >
+                      <Typography
+                        variant="body1"
+                        color="text.secondary"
+                        sx={{ whiteSpace: 'pre-wrap' }}
+                      >
+                        {passText}
+                      </Typography>
+                    </Box>
+                  )}
+                </Box>
+              </Fade>
             </Stack>
           </Paper>
         </Box>

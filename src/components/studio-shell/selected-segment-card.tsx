@@ -3,11 +3,14 @@ import type { ReactElement } from 'react';
 import {
   Box,
   Chip,
+  Collapse,
   Divider,
+  Fade,
   FormControlLabel,
   IconButton,
   Paper,
   Stack,
+  Skeleton,
   Switch,
   TextField,
   Tooltip,
@@ -46,6 +49,8 @@ export function SelectedSegmentCard({
   const passLabel = getSegmentPassLabel(activePass);
   const isFinalPass = activePass === 6;
   const wordCount = countWords(selectedSegment.sourceText);
+  const sourceTransitionKey = selectedSegment.id;
+  const passTransitionKey = `${selectedSegment.id}-${activePass}`;
 
   const passContent = isFinalPass ? (
     <Stack spacing={1.25}>
@@ -137,18 +142,20 @@ export function SelectedSegmentCard({
           <Typography variant="caption" color="text.secondary">
             Source text
           </Typography>
-          <Box
-            data-testid="selected-segment-source-scroll"
-            sx={{
-              maxHeight: { xs: 160, lg: 'min(20vh, 220px)' },
-              overflowY: 'auto',
-              pr: 0.5,
-            }}
-          >
-            <Typography variant="h6" component="p" data-testid="selected-segment-text">
-              {selectedSegment.sourceText}
-            </Typography>
-          </Box>
+          <Fade in key={sourceTransitionKey} timeout={220}>
+            <Box
+              data-testid="selected-segment-source-scroll"
+              sx={{
+                maxHeight: { xs: 160, lg: 'min(20vh, 220px)' },
+                overflowY: 'auto',
+                pr: 0.5,
+              }}
+            >
+              <Typography variant="h6" component="p" data-testid="selected-segment-text">
+                {selectedSegment.sourceText}
+              </Typography>
+            </Box>
+          </Fade>
         </Stack>
 
         <Divider />
@@ -157,7 +164,29 @@ export function SelectedSegmentCard({
           <Typography variant="caption" color="text.secondary">
             {isFinalPass ? 'Final approved text' : passLabel}
           </Typography>
-          {passContent}
+          <Collapse in={isRunning && isFinalPass} timeout={180} unmountOnExit>
+            <Box
+              data-testid="selected-segment-running-banner"
+              sx={{
+                mb: 1,
+                p: 1.5,
+                borderRadius: 2,
+                border: '1px solid',
+                borderColor: 'warning.main',
+                backgroundColor: 'rgba(255, 179, 0, 0.06)',
+              }}
+            >
+              <Stack spacing={1}>
+                <Typography variant="caption" color="text.secondary">
+                  Rebuilding final text from the current snapshot
+                </Typography>
+                <Skeleton variant="rounded" height={110} animation="wave" />
+              </Stack>
+            </Box>
+          </Collapse>
+          <Fade in key={passTransitionKey} timeout={220}>
+            <Box>{passContent}</Box>
+          </Fade>
         </Stack>
       </Stack>
     </Paper>

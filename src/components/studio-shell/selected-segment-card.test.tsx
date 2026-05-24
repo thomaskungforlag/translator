@@ -52,6 +52,7 @@ describe('SelectedSegmentCard', () => {
   it('locks final text editing while the pipeline is running', () => {
     render(<SelectedSegmentCard activePass={6} selectedSegment={demoSegment} isRunning />);
 
+    expect(screen.getByTestId('selected-segment-running-banner')).toBeVisible();
     expect(screen.getByRole('textbox', { name: /final text/i })).toBeDisabled();
     expect(screen.getByRole('switch', { name: /lock this final text on re-run/i })).toBeDisabled();
   });

@@ -78,6 +78,13 @@ export function SegmentList({
                   border: '1px solid',
                   borderColor: isSelected ? 'primary.main' : 'divider',
                   bgcolor: isSelected ? 'action.selected' : 'background.paper',
+                  boxShadow: isSelected ? '0 12px 30px rgba(0, 0, 0, 0.14)' : 'none',
+                  transform: isSelected ? 'translateX(2px)' : 'translateX(0)',
+                  transition:
+                    'background-color 180ms ease, border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease',
+                  '&:hover': {
+                    transform: 'translateX(1px)',
+                  },
                   '&.Mui-selected': {
                     bgcolor: 'action.selected',
                   },

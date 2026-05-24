@@ -287,6 +287,7 @@ describe('WorkspaceControls', () => {
     expect(screen.getByRole('button', { name: /scene actions/i })).toBeDisabled();
     expect(screen.getByRole('button', { name: /import text\/markdown/i })).toBeDisabled();
     expect(screen.getByRole('button', { name: /running pipeline/i })).toBeDisabled();
+    expect(screen.getByTestId('workspace-running-status')).toBeVisible();
     expect(screen.getByRole('textbox', { name: /segment 1/i })).toBeDisabled();
     expect(screen.getByRole('button', { name: /remove segment 1/i })).toBeDisabled();
     expect(screen.getByRole('button', { name: /copy final text/i })).not.toBeDisabled();

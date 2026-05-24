@@ -5,6 +5,7 @@ import {
   Alert,
   Chip,
   Button,
+  Collapse,
   Divider,
   Box,
   IconButton,
@@ -279,6 +280,49 @@ export function WorkspaceControls({
           Segment preview: {segmentPreviewCount}{' '}
           {segmentPreviewCount === 1 ? 'segment' : 'segments'}
         </Typography>
+        <Collapse in={isRunning} timeout={220} unmountOnExit>
+          <Stack spacing={0.75} data-testid="workspace-running-status">
+            <Stack direction="row" spacing={1} sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
+              <Box
+                sx={{
+                  width: 10,
+                  height: 10,
+                  borderRadius: '50%',
+                  bgcolor: 'warning.main',
+                  boxShadow: '0 0 0 0 rgba(255, 179, 0, 0.45)',
+                  animation: 'workspacePulse 1.5s ease-in-out infinite',
+                  '@keyframes workspacePulse': {
+                    '0%': {
+                      boxShadow: '0 0 0 0 rgba(255, 179, 0, 0.45)',
+                      transform: 'scale(1)',
+                    },
+                    '70%': {
+                      boxShadow: '0 0 0 10px rgba(255, 179, 0, 0)',
+                      transform: 'scale(1.08)',
+                    },
+                    '100%': {
+                      boxShadow: '0 0 0 0 rgba(255, 179, 0, 0)',
+                      transform: 'scale(1)',
+                    },
+                  },
+                }}
+              />
+              <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                Pipeline running with the active provider model
+              </Typography>
+              <Chip
+                size="small"
+                variant="outlined"
+                color="warning"
+                label={`${runElapsedSeconds}s`}
+              />
+            </Stack>
+            <Typography variant="caption" color="text.secondary">
+              Editing is locked until this snapshot finishes.
+            </Typography>
+            <LinearProgress aria-label="Pipeline in progress" />
+          </Stack>
+        </Collapse>
         <Paper
           variant="outlined"
           data-testid="workspace-actions-toolbar"
@@ -435,15 +479,9 @@ export function WorkspaceControls({
             void handleImportChange(event);
           }}
         />
-        {isRunning ? (
-          <Stack spacing={1}>
-            <Typography variant="caption" color="text.secondary">
-              Pipeline running with the active provider model ({runElapsedSeconds}s elapsed)
-            </Typography>
-            <LinearProgress aria-label="Pipeline in progress" />
-          </Stack>
-        ) : null}
-        {statusMessage ? <Alert severity={statusSeverity}>{statusMessage}</Alert> : null}
+        <Collapse in={Boolean(statusMessage)} timeout={180} unmountOnExit>
+          {statusMessage ? <Alert severity={statusSeverity}>{statusMessage}</Alert> : null}
+        </Collapse>
         {recoveryWarnings.length > 0 ? (
           <Paper
             variant="outlined"

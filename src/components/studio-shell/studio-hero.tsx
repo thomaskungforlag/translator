@@ -69,6 +69,51 @@ export function StudioHero({
             voice, structure, terminology, and QA traceability from source text to final
             market-ready English.
           </Typography>
+          <Stack
+            direction="row"
+            spacing={1}
+            sx={{ mt: 1.5, alignItems: 'center', flexWrap: 'wrap' }}
+          >
+            <Chip
+              size="small"
+              color={isRunning ? 'warning' : 'success'}
+              variant={isRunning ? 'filled' : 'outlined'}
+              icon={
+                isRunning ? (
+                  <Box
+                    sx={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: '50%',
+                      bgcolor: 'warning.dark',
+                      boxShadow: '0 0 0 0 rgba(255, 179, 0, 0.45)',
+                      animation: 'heroPulse 1.5s ease-in-out infinite',
+                      '@keyframes heroPulse': {
+                        '0%': {
+                          boxShadow: '0 0 0 0 rgba(255, 179, 0, 0.45)',
+                          transform: 'scale(1)',
+                        },
+                        '70%': {
+                          boxShadow: '0 0 0 8px rgba(255, 179, 0, 0)',
+                          transform: 'scale(1.1)',
+                        },
+                        '100%': {
+                          boxShadow: '0 0 0 0 rgba(255, 179, 0, 0)',
+                          transform: 'scale(1)',
+                        },
+                      },
+                    }}
+                  />
+                ) : undefined
+              }
+              label={isRunning ? 'Pipeline running' : 'Ready for next scene'}
+            />
+            <Typography variant="caption" color="text.secondary">
+              {isRunning
+                ? 'Current edits are locked while the snapshot is rebuilding.'
+                : 'Paste source, run, copy final text, repeat.'}
+            </Typography>
+          </Stack>
         </Box>
 
         <Stack direction="row" spacing={1.5} sx={{ flexWrap: 'wrap' }}>
