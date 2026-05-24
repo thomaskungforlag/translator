@@ -13,6 +13,7 @@ describe('WorkspaceControls', () => {
     const user = userEvent.setup();
     const onEditableSegmentAdd = jest.fn();
     const onProviderChange = jest.fn();
+    const onCopyFinalText = jest.fn();
 
     render(
       <WorkspaceControls
@@ -58,6 +59,7 @@ describe('WorkspaceControls', () => {
         onSplitSourceByLineBreaks={jest.fn()}
         onImportText={jest.fn()}
         onRunPipeline={jest.fn()}
+        onCopyFinalText={onCopyFinalText}
         onReviewSegment={jest.fn()}
       />,
     );
@@ -67,6 +69,9 @@ describe('WorkspaceControls', () => {
     await user.click(screen.getByRole('combobox', { name: /provider/i }));
     await user.click(screen.getByRole('option', { name: /poe/i }));
     expect(onProviderChange).toHaveBeenCalledWith('poe');
+
+    await user.click(screen.getByRole('button', { name: /copy final text/i }));
+    expect(onCopyFinalText).toHaveBeenCalledTimes(1);
 
     await user.click(screen.getByRole('button', { name: /scene actions/i }));
 
@@ -124,6 +129,7 @@ describe('WorkspaceControls', () => {
         onSplitSourceByLineBreaks={jest.fn()}
         onImportText={jest.fn()}
         onRunPipeline={jest.fn()}
+        onCopyFinalText={jest.fn()}
         onReviewSegment={jest.fn()}
       />,
     );
@@ -187,6 +193,7 @@ describe('WorkspaceControls', () => {
         onSplitSourceByLineBreaks={jest.fn()}
         onImportText={jest.fn()}
         onRunPipeline={jest.fn()}
+        onCopyFinalText={jest.fn()}
         onReviewSegment={onReviewSegment}
         onContentTypeChange={jest.fn()}
         onTargetLanguageChange={jest.fn()}

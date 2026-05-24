@@ -514,6 +514,7 @@ function TranslationWorkspaceView({
         onSplitSourceByLineBreaks={onSplitSourceByLineBreaks}
         onImportText={onImportText}
         onRunPipeline={onRunPipeline}
+        onCopyFinalText={onCopyFinalText}
         onReviewSegment={onReviewSegment}
       />
       {historyReady ? (

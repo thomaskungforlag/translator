@@ -55,6 +55,7 @@ type WorkspaceControlsProps = {
   onSplitSourceByLineBreaks: () => void;
   onImportText: (value: string, fileName: string) => void;
   onRunPipeline: () => void;
+  onCopyFinalText?: () => void;
   onReviewSegment?: (segmentIndex: number) => void;
 };
 
@@ -162,6 +163,7 @@ export function WorkspaceControls({
   onSplitSourceByLineBreaks,
   onImportText,
   onRunPipeline,
+  onCopyFinalText,
   onReviewSegment,
 }: WorkspaceControlsProps): ReactElement {
   const importInputRef = useRef<HTMLInputElement>(null);
@@ -315,6 +317,9 @@ export function WorkspaceControls({
               <Button size="small" variant="outlined" onClick={handleImportClick}>
                 Import text/Markdown
               </Button>
+              <Button size="small" variant="outlined" onClick={onCopyFinalText}>
+                Copy final text
+              </Button>
               <Button
                 size="small"
                 variant="contained"
@@ -391,14 +396,17 @@ export function WorkspaceControls({
           ))}
         </Stack>
         <TextField
-          label="Source text"
+          label="Source text (original)"
           value={sourceText}
           onChange={(event) => {
             onSourceTextChange(event.target.value);
           }}
           multiline
           minRows={6}
+          maxRows={12}
           fullWidth
+          placeholder="Paste the original source text here."
+          helperText="Paste the original source here, not the translated final text. Copy final text when you want the result, then paste the next source scene."
         />
         <input
           ref={importInputRef}
