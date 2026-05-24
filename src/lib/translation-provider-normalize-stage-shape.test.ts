@@ -148,4 +148,64 @@ describe('translation-provider-normalize stage shape', () => {
     ]);
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
+
+  it('normalizes Poe results arrays into stage segments without repair', async () => {
+    process.env.AI_PROVIDER = 'poe';
+    process.env.POE_API_KEY = 'test-poe-key';
+
+    const fetchMock = jest.mocked(globalThis.fetch);
+
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: () =>
+        mockPoeResponse(
+          JSON.stringify({
+            results: [
+              { index: 0, text: 'Result payload 0' },
+              { index: 1, text: 'Result payload 1' },
+            ],
+          }),
+        ),
+    } as unknown as Response);
+
+    const utils = await loadUtilsModule();
+    const segments = await utils.parseStageResponse('faithful_translation', 'prompt');
+
+    expect(segments).toEqual([
+      { index: 0, text: 'Result payload 0' },
+      { index: 1, text: 'Result payload 1' },
+    ]);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('normalizes repaired stage_response wrappers that contain Poe results arrays', async () => {
+    process.env.AI_PROVIDER = 'poe';
+    process.env.POE_API_KEY = 'test-poe-key';
+
+    const fetchMock = jest.mocked(globalThis.fetch);
+
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: () =>
+        mockPoeResponse(
+          JSON.stringify({
+            stage_response: {
+              results: [
+                { index: 0, polished: 'Result payload 0' },
+                { index: 1, polished: 'Result payload 1' },
+              ],
+            },
+          }),
+        ),
+    } as unknown as Response);
+
+    const utils = await loadUtilsModule();
+    const segments = await utils.parseStageResponse('polish_pass', 'prompt');
+
+    expect(segments).toEqual([
+      { index: 0, text: 'Result payload 0' },
+      { index: 1, text: 'Result payload 1' },
+    ]);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
 });

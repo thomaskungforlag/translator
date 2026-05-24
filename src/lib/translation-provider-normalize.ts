@@ -26,6 +26,16 @@ type PoeRequestContext = {
   bot: string;
 };
 
+class PoeRequestError extends Error {
+  readonly status: number;
+
+  constructor(status: number, message: string) {
+    super(message);
+    this.name = 'PoeRequestError';
+    this.status = status;
+  }
+}
+
 export type StageSegment = {
   index: number;
   text: string;
@@ -152,6 +162,61 @@ function extractJsonCandidate(rawText: string): unknown {
   return safeJsonParse(balanced);
 }
 
+function isRetryablePoeRequestError(error: unknown): boolean {
+  if (error instanceof PoeRequestError) {
+    return error.status === 429 || (error.status >= 500 && error.status < 600);
+  }
+
+  if (error instanceof Error) {
+    return error.name === 'AbortError' || error.name === 'TypeError';
+  }
+
+  return false;
+}
+
+async function sleep(ms: number): Promise<void> {
+  if (ms <= 0) {
+    return;
+  }
+
+  await new Promise<void>((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
+async function requestPoeWithRetry(
+  context: PoeRequestContext,
+  messages: PoeMessage[],
+): Promise<string> {
+  const maxAttempts = 3;
+  let delayMs = 100;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      return await requestPoe(context, messages);
+    } catch (error) {
+      if (attempt >= maxAttempts || !isRetryablePoeRequestError(error)) {
+        throw error;
+      }
+
+      console.warn('[poe] transient request failure; retrying', {
+        provider: 'poe',
+        apiUrl: context.apiUrl,
+        model: context.bot,
+        attempt,
+        maxAttempts,
+        delayMs,
+        reason: error instanceof Error ? error.message : String(error),
+      });
+
+      await sleep(delayMs);
+      delayMs = Math.min(delayMs * 2, 1000);
+    }
+  }
+
+  throw new Error('Poe request retry loop exhausted unexpectedly.');
+}
+
 function toStageResponseShape(candidate: unknown): unknown {
   const pickStageText = (record: Record<string, unknown>): string | undefined =>
     [
@@ -246,6 +311,7 @@ function toStageResponseShape(candidate: unknown): unknown {
     record.stageResult ??
     record.stage_result ??
     record.stage_response ??
+    record.results ??
     record.result ??
     record.payload;
 
@@ -268,6 +334,7 @@ function toStageResponseShape(candidate: unknown): unknown {
   const resolveArrayContainer = (): unknown[] | null => {
     const prioritizedKeys = [
       'segments',
+      'results',
       'data',
       'analyses',
       'translations',
@@ -292,6 +359,7 @@ function toStageResponseShape(candidate: unknown): unknown {
 
       return (
         normalizedKey.includes('segment') ||
+        normalizedKey.includes('result') ||
         normalizedKey.includes('analysis') ||
         normalizedKey.includes('analys') ||
         normalizedKey.includes('translation')
@@ -599,7 +667,10 @@ export async function requestPoe(
       bodyPreview: preview(errorBody),
     });
 
-    throw new Error(`Poe request failed with status ${response.status}.`);
+    throw new PoeRequestError(
+      response.status,
+      `Poe request failed with status ${response.status}.`,
+    );
   }
 
   const payload = (await response.json()) as PoeCompletionResponse;
@@ -612,7 +683,9 @@ async function repairPoeJson(
   rawResponse: string,
   schemaName: string,
 ): Promise<string> {
-  return requestPoe(context, [
+  const targetKey = schemaName === 'stage_response' ? 'segments' : 'findings';
+
+  return requestPoeWithRetry(context, [
     {
       role: 'system',
       content: 'You repair malformed JSON. Return only valid JSON and do not add commentary.',
@@ -621,6 +694,7 @@ async function repairPoeJson(
       role: 'user',
       content: [
         `Repair this response to valid ${schemaName} JSON.`,
+        `Return a top-level object with a ${targetKey} array, and do not wrap it under another key.`,
         'Keep the exact semantic content. Return only JSON.',
         rawResponse,
       ].join('\n\n'),
@@ -705,7 +779,7 @@ export async function parsePoeStageResponse(
 ): Promise<StageSegment[]> {
   const context = { apiUrl, apiKey, bot };
 
-  const rawResponse = await requestPoe(context, [
+  const rawResponse = await requestPoeWithRetry(context, [
     {
       role: 'system',
       content:
@@ -735,7 +809,7 @@ export async function parsePoeQaResponse(
 ): Promise<Array<z.infer<typeof qaFindingSchema>>> {
   const context = { apiUrl, apiKey, bot };
 
-  const rawResponse = await requestPoe(context, [
+  const rawResponse = await requestPoeWithRetry(context, [
     {
       role: 'system',
       content: 'You are a literary QA reviewer. Return only strict JSON with actionable findings.',

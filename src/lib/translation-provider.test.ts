@@ -156,6 +156,8 @@ describe('runTranslationWorkspace', () => {
   it('recovers QA model failures without falling back the whole project', async () => {
     const sourceText = 'Hon väntade vid räcket tills dimman lättade.';
     const fetchMock = jest.mocked(globalThis.fetch);
+    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
+    const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
 
     fetchMock
       .mockResolvedValueOnce(mockPoeStageResponse('Short source analysis.'))
@@ -178,6 +180,16 @@ describe('runTranslationWorkspace', () => {
         ok: false,
         status: 500,
         text: () => Promise.resolve('internal error'),
+      } as unknown as Response)
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        text: () => Promise.resolve('internal error'),
+      } as unknown as Response)
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        text: () => Promise.resolve('internal error'),
       } as unknown as Response);
 
     const { runTranslationWorkspace } = await loadProviderModule();
@@ -191,5 +203,7 @@ describe('runTranslationWorkspace', () => {
       'She waited at the railing until the fog lifted.',
     );
     expect(result.message).toMatch(/qa_review recovered without model findings/i);
+    consoleErrorSpy.mockRestore();
+    consoleWarnSpy.mockRestore();
   });
 });
