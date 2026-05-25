@@ -46,6 +46,7 @@ import { WorkspaceControls } from './workspace-controls';
 import {
   buildFinalTranslationText,
   buildQaSummaryText,
+  buildTranslationWorkspaceRunRequest,
   deriveImportedTitle,
   buildFallbackStatus,
   buildProviderStatus,
@@ -730,18 +731,16 @@ export function TranslationWorkspace({
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          ...initialSeed,
-          title: project.title,
-          contentType: project.contentType,
-          targetLanguage: project.targetLanguage,
-          glossary: project.glossary,
-          styleProfile: project.styleProfile,
-          sourceText,
-          segmentationStrategy,
-          provider,
-          model: resolvedModel,
-        }),
+        body: JSON.stringify(
+          buildTranslationWorkspaceRunRequest({
+            initialSeed,
+            currentProject: project,
+            sourceText,
+            segmentationStrategy,
+            provider,
+            model: resolvedModel,
+          }),
+        ),
       });
 
       if (!response.ok) {

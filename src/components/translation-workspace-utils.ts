@@ -1,8 +1,13 @@
 import type { AlertColor } from '@mui/material';
 
-import type { DocumentSegment } from '@/lib/domain';
+import type { DocumentSegment, GlossaryEntry } from '@/lib/domain';
 import { buildSegmentQaFindings, exportProjectMarkdown } from '@/lib/pipeline';
-import type { StudioShellProject, TranslationWorkspaceSeed } from '@/lib/workspace';
+import type { ModelProvider } from '@/lib/model-options';
+import type {
+  SegmentationStrategy,
+  StudioShellProject,
+  TranslationWorkspaceSeed,
+} from '@/lib/workspace';
 
 export type StatusNotice = {
   message: string;
@@ -11,8 +16,13 @@ export type StatusNotice = {
 
 export type PersistedWorkspaceState = {
   sourceText: string;
-  segmentationStrategy: import('@/lib/workspace').SegmentationStrategy;
+  segmentationStrategy: SegmentationStrategy;
   project: StudioShellProject;
+};
+
+export type TranslationWorkspaceRunRequest = TranslationWorkspaceSeed & {
+  provider: ModelProvider;
+  model: string;
 };
 
 const workspaceStorageKey = 'translator.workspace.v1';
@@ -61,6 +71,49 @@ function stageStatus(hasValues: boolean, hasIssues: boolean): DocumentSegment['s
   }
 
   return hasIssues ? 'reviewed' : 'approved';
+}
+
+function normalizeGlossaryEntry(entry: GlossaryEntry): GlossaryEntry | null {
+  const sourceTerm = entry.sourceTerm.trim();
+  const targetTerm = entry.targetTerm.trim();
+
+  if (!sourceTerm || !targetTerm) {
+    return null;
+  }
+
+  return {
+    ...entry,
+    sourceTerm,
+    targetTerm,
+  };
+}
+
+export function buildTranslationWorkspaceRunRequest(args: {
+  initialSeed: TranslationWorkspaceSeed;
+  currentProject: StudioShellProject;
+  sourceText: string;
+  segmentationStrategy: SegmentationStrategy;
+  provider: ModelProvider;
+  model: string;
+}): TranslationWorkspaceRunRequest {
+  const { initialSeed, currentProject, sourceText, segmentationStrategy, provider, model } = args;
+
+  return {
+    ...initialSeed,
+    title: currentProject.title,
+    contentType: currentProject.contentType,
+    targetLanguage: currentProject.targetLanguage,
+    styleProfile: currentProject.styleProfile,
+    sourceText,
+    segmentationStrategy,
+    glossary: currentProject.glossary.flatMap((entry) => {
+      const normalizedEntry = normalizeGlossaryEntry(entry);
+
+      return normalizedEntry ? [normalizedEntry] : [];
+    }),
+    provider,
+    model,
+  };
 }
 
 export function updateProjectFromSegments(
