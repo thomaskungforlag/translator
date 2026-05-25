@@ -80,6 +80,69 @@ describe('WorkspaceControls', () => {
     expect(onEditableSegmentAdd).toHaveBeenCalledTimes(1);
   });
 
+  it('keeps the editable segments collapsed until the accordion is opened', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <WorkspaceControls
+        sourceText="Alpha\n\nBeta"
+        contentType="novel_chapter"
+        targetLanguage={getTargetLanguageConfig('en')}
+        contentTypeOptions={contentTypeOptions}
+        targetLanguageOptions={targetLanguageOptions}
+        segmentationStrategy="hybrid"
+        selectedProvider="openai"
+        selectedModel="gpt-5-mini"
+        providerOptions={{
+          openai: {
+            provider: 'openai',
+            configured: true,
+            defaultModelId: 'gpt-5-mini',
+            models: [
+              { id: 'gpt-5-mini', label: 'GPT-5-mini', source: 'live' },
+              { id: 'gpt-4o', label: 'GPT-4o', source: 'live' },
+            ],
+          },
+          poe: {
+            provider: 'poe',
+            configured: true,
+            defaultModelId: 'Claude-Sonnet-4.5',
+            models: [{ id: 'Claude-Sonnet-4.5', label: 'Claude-Sonnet-4.5', source: 'live' }],
+          },
+        }}
+        segmentPreviewCount={1}
+        editableSegments={['Segment one']}
+        isRunning={false}
+        runElapsedSeconds={0}
+        pipelineWarnings={[]}
+        onSourceTextChange={jest.fn()}
+        onContentTypeChange={jest.fn()}
+        onTargetLanguageChange={jest.fn()}
+        onSegmentationStrategyChange={jest.fn()}
+        onProviderChange={jest.fn()}
+        onModelChange={jest.fn()}
+        onEditableSegmentChange={jest.fn()}
+        onEditableSegmentAdd={jest.fn()}
+        onEditableSegmentRemove={jest.fn()}
+        onSplitSourceByLineBreaks={jest.fn()}
+        onImportText={jest.fn()}
+        onRunPipeline={jest.fn()}
+        onCopyFinalText={jest.fn()}
+        onReviewSegment={jest.fn()}
+      />,
+    );
+
+    const accordionButton = screen.getByRole('button', { name: /editable segments/i });
+
+    expect(accordionButton).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByRole('textbox', { name: /segment 1/i })).not.toBeInTheDocument();
+
+    await user.click(accordionButton);
+
+    expect(accordionButton).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByRole('textbox', { name: /segment 1/i })).toBeVisible();
+  });
+
   it('allows content type and target language selection', async () => {
     const user = userEvent.setup();
     const onContentTypeChange = jest.fn();
@@ -216,7 +279,9 @@ describe('WorkspaceControls', () => {
     expect(onReviewSegment).toHaveBeenCalledWith(0);
   });
 
-  it('locks mutating source controls while a run is in progress', () => {
+  it('locks mutating source controls while a run is in progress', async () => {
+    const user = userEvent.setup();
+
     render(
       <WorkspaceControls
         sourceText="Alpha\n\nBeta"
@@ -288,6 +353,16 @@ describe('WorkspaceControls', () => {
     expect(screen.getByRole('button', { name: /import text\/markdown/i })).toBeDisabled();
     expect(screen.getByRole('button', { name: /running pipeline/i })).toBeDisabled();
     expect(screen.getByTestId('workspace-running-status')).toBeVisible();
+
+    expect(screen.getByRole('button', { name: /editable segments/i })).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
+
+    expect(screen.queryByRole('textbox', { name: /segment 1/i })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /editable segments/i }));
+
     expect(screen.getByRole('textbox', { name: /segment 1/i })).toBeDisabled();
     expect(screen.getByRole('button', { name: /remove segment 1/i })).toBeDisabled();
     expect(screen.getByRole('button', { name: /copy final text/i })).not.toBeDisabled();

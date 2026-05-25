@@ -5,6 +5,7 @@ import { type ReactElement } from 'react';
 import { Alert, Box, Button, Chip, Divider, Paper, Stack, Typography } from '@mui/material';
 
 import type { TranslationHistorySummary } from '@/lib/translation-history';
+import { WorkspaceAccordion } from './studio-shell/workspace-accordion';
 
 type TranslationHistoryPanelProps = {
   entries: TranslationHistorySummary[];
@@ -72,18 +73,23 @@ export function TranslationHistoryPanel({
   onOpenEntry,
 }: TranslationHistoryPanelProps): ReactElement {
   return (
-    <Paper sx={{ p: 2.5 }}>
+    <WorkspaceAccordion
+      title="Recent translations"
+      caption="Reopen a completed run"
+      badge={
+        <Chip
+          size="small"
+          variant="outlined"
+          label={`${entries.length} saved run${entries.length === 1 ? '' : 's'}`}
+        />
+      }
+      defaultExpanded={false}
+    >
       <Stack spacing={2}>
-        <Box>
-          <Typography variant="overline" color="text.secondary">
-            Recent translations
-          </Typography>
-          <Typography variant="h6">Reopen a completed run</Typography>
-          <Typography variant="body2" color="text.secondary">
-            Saved locally in this browser so you can revisit prior translation work without
-            rerunning the pipeline.
-          </Typography>
-        </Box>
+        <Typography variant="body2" color="text.secondary">
+          Saved locally in this browser so you can revisit prior translation work without rerunning
+          the pipeline.
+        </Typography>
 
         <Divider />
 
@@ -99,6 +105,6 @@ export function TranslationHistoryPanel({
           </Stack>
         )}
       </Stack>
-    </Paper>
+    </WorkspaceAccordion>
   );
 }

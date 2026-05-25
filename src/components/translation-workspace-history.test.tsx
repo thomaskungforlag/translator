@@ -140,9 +140,15 @@ describe('TranslationWorkspace history integration', () => {
       />,
     );
 
-    await screen.findByRole('button', { name: /^open$/i });
+    const accordionButton = await screen.findByRole('button', {
+      name: /recent translations/i,
+    });
 
-    expect(screen.getByText(/recent translations/i)).toBeVisible();
+    expect(accordionButton).toHaveAttribute('aria-expanded', 'false');
+
+    await user.click(accordionButton);
+
+    await screen.findByRole('button', { name: /^open$/i });
 
     await user.click(screen.getByRole('button', { name: /^open$/i }));
 

@@ -32,11 +32,19 @@ describe('TranslationHistoryPanel', () => {
       />,
     );
 
+    const accordionButton = screen.getByRole('button', { name: /recent translations/i });
+
+    expect(accordionButton).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.getByText(/chapter 7/i)).not.toBeVisible();
+
+    await user.click(accordionButton);
+
+    expect(accordionButton).toHaveAttribute('aria-expanded', 'true');
     expect(screen.getByText(/chapter 7/i)).toBeVisible();
     expect(screen.getByText(/saved locally in this browser/i)).toBeVisible();
     expect(screen.getByText(/a translated passage appears here/i)).toBeVisible();
 
-    await user.click(screen.getByRole('button', { name: /open/i }));
+    await user.click(screen.getByRole('button', { name: /^open$/i }));
 
     expect(onOpenEntry).toHaveBeenCalledWith('entry-1');
   });

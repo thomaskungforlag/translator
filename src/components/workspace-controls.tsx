@@ -26,6 +26,7 @@ import type { ModelOption, ModelProvider, ProviderModelOptions } from '@/lib/mod
 import type { SegmentationStrategy } from '@/lib/workspace';
 import type { ContentTypeOption, TargetLanguageOption } from '@/lib/workspace-options';
 import { parsePipelineWarning } from './studio-shell/recovery-warning-utils';
+import { WorkspaceAccordion } from './studio-shell/workspace-accordion';
 
 type WorkspaceControlsProps = {
   sourceText: string;
@@ -416,45 +417,58 @@ export function WorkspaceControls({
           </Menu>
         </Paper>
 
-        <Stack spacing={1}>
-          {editableSegments.length === 0 ? (
-            <Typography variant="caption" color="text.secondary">
-              Add a segment or paste source text to prepare scenes before running the pipeline.
-            </Typography>
-          ) : null}
+        <WorkspaceAccordion
+          title="Editable segments"
+          caption="Collapse the scene list to keep the source editor in view"
+          badge={
+            <Chip
+              size="small"
+              variant="outlined"
+              label={`${editableSegments.length} scene${editableSegments.length === 1 ? '' : 's'}`}
+            />
+          }
+          defaultExpanded={editableSegments.length === 0}
+        >
+          <Stack spacing={1}>
+            {editableSegments.length === 0 ? (
+              <Typography variant="caption" color="text.secondary">
+                Add a segment or paste source text to prepare scenes before running the pipeline.
+              </Typography>
+            ) : null}
 
-          {editableSegments.map((segment, index) => (
-            <Stack
-              key={`editable-segment-${index + 1}`}
-              direction="row"
-              spacing={1}
-              sx={{ alignItems: 'flex-start' }}
-            >
-              <TextField
-                fullWidth
-                multiline
-                minRows={2}
-                label={`Segment ${index + 1}`}
-                value={segment}
-                disabled={isRunning}
-                onChange={(event) => {
-                  onEditableSegmentChange(index, event.target.value);
-                }}
-              />
-              <IconButton
-                aria-label={`Remove segment ${index + 1}`}
-                color="error"
-                disabled={isRunning}
-                onClick={() => {
-                  onEditableSegmentRemove(index);
-                }}
-                sx={{ mt: 1 }}
+            {editableSegments.map((segment, index) => (
+              <Stack
+                key={`editable-segment-${index + 1}`}
+                direction="row"
+                spacing={1}
+                sx={{ alignItems: 'flex-start' }}
               >
-                <DeleteOutlineRoundedIcon fontSize="small" />
-              </IconButton>
-            </Stack>
-          ))}
-        </Stack>
+                <TextField
+                  fullWidth
+                  multiline
+                  minRows={2}
+                  label={`Segment ${index + 1}`}
+                  value={segment}
+                  disabled={isRunning}
+                  onChange={(event) => {
+                    onEditableSegmentChange(index, event.target.value);
+                  }}
+                />
+                <IconButton
+                  aria-label={`Remove segment ${index + 1}`}
+                  color="error"
+                  disabled={isRunning}
+                  onClick={() => {
+                    onEditableSegmentRemove(index);
+                  }}
+                  sx={{ mt: 1 }}
+                >
+                  <DeleteOutlineRoundedIcon fontSize="small" />
+                </IconButton>
+              </Stack>
+            ))}
+          </Stack>
+        </WorkspaceAccordion>
         <TextField
           label="Source text (original)"
           value={sourceText}
