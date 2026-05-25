@@ -155,3 +155,26 @@ export function buildReferencePromptContext(styleProfile: StyleProfile): string 
     memoryBlock,
   ].join('\n');
 }
+
+function formatGlossaryEntry(entry: GlossaryEntry): string {
+  const notes = entry.notes ? ` Notes: ${entry.notes}` : '';
+
+  return `- ${entry.sourceTerm} -> ${entry.targetTerm}${entry.locked ? ' (locked)' : ''}${notes}`;
+}
+
+export function buildGlossaryPromptContext(glossary: GlossaryEntry[]): string {
+  const lockedEntries = glossary.filter((entry) => entry.locked);
+  const unlockedEntries = glossary.filter((entry) => !entry.locked);
+  const lockedBlock =
+    lockedEntries.length > 0
+      ? lockedEntries.map(formatGlossaryEntry).join('\n')
+      : '- No locked glossary entries.';
+  const unlockedBlock =
+    unlockedEntries.length > 0
+      ? unlockedEntries.map(formatGlossaryEntry).join('\n')
+      : '- No unlocked glossary entries.';
+
+  return ['Project glossary:', lockedBlock, 'Additional glossary guidance:', unlockedBlock].join(
+    '\n',
+  );
+}

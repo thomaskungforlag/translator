@@ -80,7 +80,7 @@ async function parseOpenAIStageResponse(
       {
         role: 'system',
         content:
-          'You are a literary translation engine for Swedish fiction. Return only structured JSON.',
+          'You are a literary translation engine for Swedish fiction. Return only structured JSON. Treat the provided glossary as a hard constraint and preserve canonical terminology exactly as specified.',
       },
       {
         role: 'user',
@@ -109,7 +109,7 @@ async function parseOpenAIQaResponse(
       {
         role: 'system',
         content:
-          'You are a literary QA reviewer. Return only structured JSON with actionable findings.',
+          'You are a literary QA reviewer. Return only structured JSON with actionable findings. Check glossary compliance and flag missing, variant, or mistranslated glossary terms.',
       },
       {
         role: 'user',

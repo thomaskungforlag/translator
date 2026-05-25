@@ -83,6 +83,52 @@ describe('pipeline-qa Tuya fixture regression', () => {
     );
   });
 
+  it('flags missing locked glossary translations for project terms', () => {
+    expect(
+      buildSegmentQaFindings('Han gick längs Södra kajen.', 'He walked along the quay.', 7, [
+        {
+          id: 'gl-sodra-kajen',
+          sourceTerm: 'Södra kajen',
+          targetTerm: 'South Quay',
+          category: 'place',
+          locked: true,
+        },
+      ]),
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          category: 'terminology',
+          severity: 'critical',
+          sourceExcerpt: 'Södra kajen',
+          targetExcerpt: 'South Quay',
+        }),
+      ]),
+    );
+  });
+
+  it('flags capitalization drift for project glossary translations', () => {
+    expect(
+      buildSegmentQaFindings('Han gick längs Södra kajen.', 'He walked along south quay.', 8, [
+        {
+          id: 'gl-sodra-kajen',
+          sourceTerm: 'Södra kajen',
+          targetTerm: 'South Quay',
+          category: 'place',
+          locked: true,
+        },
+      ]),
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          category: 'terminology',
+          severity: 'warning',
+          sourceExcerpt: 'Södra kajen',
+          targetExcerpt: 'South Quay',
+        }),
+      ]),
+    );
+  });
+
   it('flags grammar-flow issue in grass swayed ... brushed her bare legs phrasing', () => {
     expect(
       buildSegmentQaFindings(

@@ -202,7 +202,11 @@ function formatSegmentMarkdown(segment: StudioShellProject['segments'][number]):
 
 export function buildStudioShellProject(
   seed: TranslationWorkspaceSeed,
-  drafts: SegmentDraft[] = createSegmentDrafts(seed.sourceText, seed.segmentationStrategy),
+  drafts: SegmentDraft[] = createSegmentDrafts(
+    seed.sourceText,
+    seed.segmentationStrategy,
+    seed.glossary,
+  ),
 ): StudioShellProject {
   const sourceSegments = splitSourceText(seed.sourceText, seed.segmentationStrategy);
 

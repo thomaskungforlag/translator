@@ -1,4 +1,4 @@
-import type { QAFinding } from '@/lib/domain';
+import type { GlossaryEntry, QAFinding } from '@/lib/domain';
 import type { SegmentationStrategy } from './workspace';
 
 import {
@@ -48,10 +48,16 @@ export function splitSourceText(
   return splitByParagraphsFromText(sourceText);
 }
 
-export function buildSourceAnalysis(sourceText: string): string {
+export function buildSourceAnalysis(
+  sourceText: string,
+  glossary: GlossaryEntry[] = redTwinReference.lockedTerms,
+): string {
   const paragraphs = splitSourceText(sourceText);
   const memoryExample = findMemoryExample(sourceText);
-  const lockedTerms = findLockedTerms(sourceText, redTwinReference.lockedTerms);
+  const lockedTerms = findLockedTerms(
+    sourceText,
+    glossary.filter((entry) => entry.locked),
+  );
   const sentenceCount = countSentences(sourceText);
   const paragraphCount = paragraphs.length;
   const sentenceLabel = sentenceCount === 1 ? 'sentence' : 'sentences';
@@ -108,12 +114,17 @@ export function buildSegmentQaFindings(
   sourceText: string,
   finalText: string,
   segmentIndex = 0,
+  glossary: GlossaryEntry[] = redTwinReference.lockedTerms,
 ): QAFinding[] {
-  return buildCoreSegmentQaFindings(sourceText, finalText, segmentIndex);
+  return buildCoreSegmentQaFindings(sourceText, finalText, segmentIndex, glossary);
 }
 
-function buildSegmentDraft(sourceText: string, segmentIndex: number): SegmentDraft {
-  const sourceAnalysis = buildSourceAnalysis(sourceText);
+function buildSegmentDraft(
+  sourceText: string,
+  segmentIndex: number,
+  glossary: GlossaryEntry[],
+): SegmentDraft {
+  const sourceAnalysis = buildSourceAnalysis(sourceText, glossary);
   const translationDraft = buildFaithfulDraft(sourceText);
   const voiceAdaptedDraft = buildVoiceDraft(sourceText, translationDraft);
   const literaryNaturalnessDraft = buildLiteraryNaturalnessDraft(sourceText, voiceAdaptedDraft);
@@ -123,7 +134,6 @@ function buildSegmentDraft(sourceText: string, segmentIndex: number): SegmentDra
     polishedDraft,
   );
   const finalText = professionalLiteraryCopyeditDraft;
-  const qaFindings = buildSegmentQaFindings(sourceText, finalText, segmentIndex);
 
   return {
     sourceText,
@@ -134,15 +144,16 @@ function buildSegmentDraft(sourceText: string, segmentIndex: number): SegmentDra
     polishedDraft,
     professionalLiteraryCopyeditDraft,
     finalText,
-    qaFindings,
+    qaFindings: buildSegmentQaFindings(sourceText, finalText, segmentIndex, glossary),
   };
 }
 
 export function createSegmentDrafts(
   sourceText: string,
   segmentationStrategy: SegmentationStrategy = 'paragraph',
+  glossary: GlossaryEntry[] = redTwinReference.lockedTerms,
 ): SegmentDraft[] {
   return splitSourceText(sourceText, segmentationStrategy).map((paragraph, index) =>
-    buildSegmentDraft(paragraph, index),
+    buildSegmentDraft(paragraph, index, glossary),
   );
 }

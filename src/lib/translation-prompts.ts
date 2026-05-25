@@ -1,5 +1,5 @@
-import type { StyleProfile } from './domain';
-import { buildReferencePromptContext } from './reference-material';
+import type { GlossaryEntry, StyleProfile } from './domain';
+import { buildGlossaryPromptContext, buildReferencePromptContext } from './reference-material';
 import { buildRuntimeReferencePromptContext } from './reference-material-runtime';
 import type { TranslationWorkspaceSeed } from './workspace';
 
@@ -17,6 +17,7 @@ type StagePromptInput = {
     targetLanguageCode: TranslationWorkspaceSeed['targetLanguage']['code'];
     targetLanguageLabel: TranslationWorkspaceSeed['targetLanguage']['label'];
   };
+  glossary: GlossaryEntry[];
   stageName: string;
   sourceSegments: StageSegment[];
   previousStages: Record<string, StageSegment[]>;
@@ -46,6 +47,7 @@ export async function buildStageInput({
     runtimeReferenceBlock.length > 0
       ? `${buildReferencePromptContext(seed.styleProfile)}\nRuntime document excerpts:\n${runtimeReferenceBlock}`
       : buildReferencePromptContext(seed.styleProfile);
+  const glossaryReference = buildGlossaryPromptContext(seed.glossary);
   const payload: StagePromptInput = {
     reference,
     project: {
@@ -55,6 +57,7 @@ export async function buildStageInput({
       targetLanguageCode: seed.targetLanguage.code,
       targetLanguageLabel: seed.targetLanguage.label,
     },
+    glossary: seed.glossary,
     stageName,
     styleProfile: seed.styleProfile,
     sourceSegments: sourceSegments.map((segment, index) => ({
@@ -65,7 +68,20 @@ export async function buildStageInput({
     instructions,
   };
 
-  return JSON.stringify(payload, null, 2);
+  return JSON.stringify(
+    {
+      ...payload,
+      reference: [reference, glossaryReference].join('\n\n'),
+      instructions: [
+        ...instructions,
+        'Treat locked glossary entries as hard constraints.',
+        'If a source segment contains a glossary source term, use the canonical target term exactly as written.',
+        'Do not paraphrase locked terminology or replace it with a synonym.',
+      ],
+    },
+    null,
+    2,
+  );
 }
 
 export async function buildQaPrompt(
@@ -84,9 +100,10 @@ export async function buildQaPrompt(
     runtimeReferenceBlock.length > 0
       ? `${buildReferencePromptContext(seed.styleProfile)}\nRuntime document excerpts:\n${runtimeReferenceBlock}`
       : buildReferencePromptContext(seed.styleProfile);
+  const glossaryReference = buildGlossaryPromptContext(seed.glossary);
   return JSON.stringify(
     {
-      reference,
+      reference: [reference, glossaryReference].join('\n\n'),
       project: {
         title: seed.title,
         contentType: seed.contentType,
@@ -94,10 +111,13 @@ export async function buildQaPrompt(
         targetLanguageCode: seed.targetLanguage.code,
         targetLanguageLabel: seed.targetLanguage.label,
       },
+      glossary: seed.glossary,
       styleProfile: seed.styleProfile,
       sourceSegments,
       instructions: [
         'Review the final texts against the Swedish source and the reference material.',
+        'Check glossary compliance before all other style considerations.',
+        'Use the project glossary as the canonical source of translations for named terms and recurring entities.',
         'Return only actionable QA findings.',
         'Be strict about locked terminology, voice drift, tense/aspect drift, image drift, motion image drift, emotional intensity drift, grammar flow, punctuation flow, translation stiffness, family-term naturalness, cultural texture drift, and formatting issues.',
         'Check whether the English tense/aspect changes the emotional logic of the source. Flag cases where hope, expectation, remembered belief, or childlike certainty has become ongoing action or completed fact.',
@@ -111,6 +131,7 @@ export async function buildQaPrompt(
         'Use category family_term_naturalness when literal family terms create awkward English in narration, while preserving emotional distance and perspective.',
         'Use category cultural_texture_drift when socially warm or communal texture is flattened into neutral wording.',
         'Do not file translation_stiffness when phrasing is intentionally stark, ambiguous, or emotionally restrained.',
+        'Flag missing glossary source terms, translated variants, and capitalization drift for glossary entries.',
       ],
     },
     null,

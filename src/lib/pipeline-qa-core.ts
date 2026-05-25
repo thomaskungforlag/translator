@@ -2,52 +2,96 @@ import type { GlossaryEntry, QAFinding } from '@/lib/domain';
 
 import { redTwinReference } from './reference-material';
 
+function normalizeComparableText(value: string): string {
+  return value
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9\s-]/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase();
+}
+
+function containsNormalized(haystack: string, needle: string): boolean {
+  const normalizedNeedle = normalizeComparableText(needle);
+
+  if (normalizedNeedle.length === 0) {
+    return false;
+  }
+
+  return normalizeComparableText(haystack).includes(normalizedNeedle);
+}
+
 function findMemoryExample(sourceText: string) {
   return redTwinReference.translationMemory.find((example) => example.sourceText === sourceText);
 }
 
-function buildLockedTermFinding(
+function buildGlossaryTermFinding(
+  entry: GlossaryEntry,
   sourceText: string,
   targetText: string,
   segmentIndex: number,
 ): QAFinding | null {
-  const lockedTerm = redTwinReference.lockedTerms.find((entry) =>
-    sourceText.includes(entry.sourceTerm),
-  );
-
-  if (!lockedTerm) {
+  if (!containsNormalized(sourceText, entry.sourceTerm)) {
     return null;
   }
 
-  const targetTerm = lockedTerm.targetTerm;
-  const targetTermRegex = new RegExp(`\\b${targetTerm.replaceAll(' ', '\\s+')}\\b`, 'i');
+  const targetExact = targetText.includes(entry.targetTerm);
+  const targetPresent = containsNormalized(targetText, entry.targetTerm);
+  const severity = entry.locked ? 'critical' : 'warning';
+  const prefix = entry.locked ? 'Locked glossary term' : 'Glossary term';
 
-  if (targetTermRegex.test(targetText)) {
-    if (targetText.includes(targetTerm)) {
-      return null;
-    }
+  if (targetExact) {
+    return null;
+  }
 
+  if (targetPresent) {
     return {
-      id: `qa-lock-${segmentIndex}-${lockedTerm.id}`,
+      id: `qa-glossary-case-${segmentIndex}-${entry.id}`,
       severity: 'warning',
       category: 'terminology',
-      sourceExcerpt: lockedTerm.sourceTerm,
-      targetExcerpt: targetTerm,
-      issue: `Locked term "${lockedTerm.sourceTerm}" should use the canonical capitalization "${targetTerm}".`,
-      suggestion: `Normalize to "${targetTerm}".`,
+      sourceExcerpt: entry.sourceTerm,
+      targetExcerpt: entry.targetTerm,
+      issue: `${prefix} "${entry.sourceTerm}" should use the canonical capitalization "${entry.targetTerm}".`,
+      suggestion: `Normalize to "${entry.targetTerm}".`,
       resolved: false,
     };
   }
 
   return {
-    id: `qa-lock-${segmentIndex}-${lockedTerm.id}`,
-    severity: 'critical',
+    id: `qa-glossary-${segmentIndex}-${entry.id}`,
+    severity,
     category: 'terminology',
-    sourceExcerpt: lockedTerm.sourceTerm,
-    issue: `Locked term "${lockedTerm.sourceTerm}" is missing from the English draft.`,
-    suggestion: `Use the canonical translation "${targetTerm}".`,
+    sourceExcerpt: entry.sourceTerm,
+    targetExcerpt: entry.targetTerm,
+    issue: `${prefix} "${entry.sourceTerm}" is missing from the English draft.`,
+    suggestion: `Use the canonical translation "${entry.targetTerm}".`,
     resolved: false,
   };
+}
+
+function buildGlossaryFindings(
+  sourceText: string,
+  targetText: string,
+  segmentIndex: number,
+  glossary: GlossaryEntry[],
+): QAFinding[] {
+  const combinedEntries = [...redTwinReference.lockedTerms, ...glossary];
+  const seenTerms = new Set<string>();
+
+  return combinedEntries.flatMap((entry) => {
+    const key = `${entry.sourceTerm}=>${entry.targetTerm}`;
+
+    if (seenTerms.has(key)) {
+      return [];
+    }
+
+    seenTerms.add(key);
+
+    const finding = buildGlossaryTermFinding(entry, sourceText, targetText, segmentIndex);
+
+    return finding ? [finding] : [];
+  });
 }
 
 function buildMemoryReviewFinding(
@@ -251,9 +295,10 @@ export function buildCoreSegmentQaFindings(
   sourceText: string,
   finalText: string,
   segmentIndex = 0,
+  glossary: GlossaryEntry[] = redTwinReference.lockedTerms,
 ): QAFinding[] {
   return [
-    buildLockedTermFinding(sourceText, finalText, segmentIndex),
+    ...buildGlossaryFindings(sourceText, finalText, segmentIndex, glossary),
     buildMemoryReviewFinding(sourceText, finalText, segmentIndex),
     buildFormattingFinding(sourceText, finalText, segmentIndex),
     buildTenseAspectDriftFinding(sourceText, finalText, segmentIndex),
@@ -266,5 +311,5 @@ export function buildCoreSegmentQaFindings(
 }
 
 export function findLockedTerms(sourceText: string, lockedTerms: GlossaryEntry[]): GlossaryEntry[] {
-  return lockedTerms.filter((entry) => sourceText.includes(entry.sourceTerm));
+  return lockedTerms.filter((entry) => containsNormalized(sourceText, entry.sourceTerm));
 }
