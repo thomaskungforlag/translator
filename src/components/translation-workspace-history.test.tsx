@@ -1,6 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
+import type { DocumentSegment } from '@/lib/domain';
 import { buildDefaultStyleProfile } from '@/lib/pipeline';
 import * as translationHistory from '@/lib/translation-history';
 import { getTargetLanguageConfig } from '@/lib/workspace-options';
@@ -161,5 +162,130 @@ describe('TranslationWorkspace history integration', () => {
     expect(mockedTranslationHistory.loadTranslationHistoryEntry).toHaveBeenCalledWith(
       'history-entry-1',
     );
+  });
+
+  it('asks for confirmation before rerunning after a completed result is loaded', async () => {
+    const user = userEvent.setup();
+    const fetchMock = jest.mocked(global.fetch);
+
+    const completedSegment: DocumentSegment = {
+      id: 'segment-1',
+      projectId: 'project-1',
+      index: 0,
+      sourceText: 'Hej världen.',
+      sourceAnalysis: 'A brief opening line.',
+      translationDraft: 'Hello world.',
+      voiceAdaptedDraft: 'Hello, world.',
+      literaryNaturalnessDraft: 'Hello, world.',
+      polishedDraft: 'Hello, world.',
+      professionalLiteraryCopyeditDraft: 'Hello, world.',
+      finalText: 'Hello, world.',
+      finalTextLocked: false,
+      qaFindings: [],
+      status: 'approved',
+    };
+
+    const completedProject = {
+      title: 'Completed translation',
+      contentType: 'novel_chapter' as const,
+      targetLanguage: getTargetLanguageConfig('en'),
+      styleProfile: buildDefaultStyleProfile(),
+      progress: 100,
+      segments: [completedSegment],
+      glossary: [],
+      qaFindings: [],
+      pipelineStages: [],
+    };
+
+    const mockedTranslationHistory = jest.mocked(translationHistory);
+
+    mockedTranslationHistory.loadTranslationHistoryEntries.mockReturnValue([
+      {
+        id: 'history-entry-2',
+        route: '/translate',
+        title: 'Completed translation',
+        createdAt: '2026-05-22T10:00:00.000Z',
+        updatedAt: '2026-05-22T10:00:00.000Z',
+        preview: 'Completed translation preview.',
+        sourceLanguageCode: 'sv',
+        segmentationStrategy: 'paragraph',
+        provider: 'openai',
+        model: 'gpt-5-mini',
+        mode: 'openai',
+        contentType: 'novel_chapter',
+        targetLanguageLabel: 'English',
+        warningCount: 0,
+      },
+    ]);
+    mockedTranslationHistory.loadTranslationHistoryEntry.mockReturnValue({
+      id: 'history-entry-2',
+      route: '/translate',
+      title: 'Completed translation',
+      createdAt: '2026-05-22T10:00:00.000Z',
+      updatedAt: '2026-05-22T10:00:00.000Z',
+      preview: 'Completed translation preview.',
+      sourceLanguageCode: 'sv',
+      sourceText: 'Hej världen.',
+      segmentationStrategy: 'paragraph',
+      project: completedProject,
+      provider: 'openai',
+      model: 'gpt-5-mini',
+      mode: 'openai',
+      message: 'Translation completed with OpenAI.',
+      warnings: [],
+    });
+    mockedTranslationHistory.restoreTranslationHistoryEntry.mockImplementation((entry) => ({
+      sourceLanguageCode: entry.sourceLanguageCode,
+      sourceText: entry.sourceText,
+      segmentationStrategy: entry.segmentationStrategy,
+      project: entry.project,
+      provider: entry.provider,
+      model: entry.model,
+      mode: entry.mode,
+      message: entry.message,
+      warnings: entry.warnings,
+    }));
+
+    render(
+      <TranslationWorkspace
+        providerAvailability={{ openai: true, poe: true }}
+        initialProvider="openai"
+        initialModel="gpt-5-mini"
+        initialSeed={{
+          projectId: 'project-1',
+          title: 'Current workspace',
+          contentType: 'novel_chapter',
+          sourceLanguageCode: 'sv',
+          targetLanguage: getTargetLanguageConfig('en'),
+          styleProfile: buildDefaultStyleProfile(),
+          sourceText: 'Current source text.',
+          glossary: [],
+          segmentationStrategy: 'paragraph',
+        }}
+      />,
+    );
+
+    const accordionButton = await screen.findByRole('button', {
+      name: /recent translations/i,
+    });
+
+    await user.click(accordionButton);
+    await user.click(screen.getByRole('button', { name: /^open$/i }));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText(/source text/i)).toHaveValue('Hej världen.');
+    });
+
+    const fetchCallsBeforeRun = fetchMock.mock.calls.length;
+
+    await user.click(screen.getAllByRole('button', { name: /run pipeline/i })[0]);
+
+    expect(await screen.findByRole('dialog', { name: /run pipeline again/i })).toBeVisible();
+    expect(fetchMock.mock.calls.length).toBe(fetchCallsBeforeRun);
+    expect(
+      fetchMock.mock.calls.some(
+        ([url]) => typeof url === 'string' && url.includes('/api/translate'),
+      ),
+    ).toBe(false);
   });
 });

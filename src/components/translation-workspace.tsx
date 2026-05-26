@@ -11,7 +11,15 @@ import {
 } from 'react';
 
 import type { AlertColor } from '@mui/material';
-import { Stack } from '@mui/material';
+import {
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Stack,
+  Typography,
+} from '@mui/material';
 
 import { StudioShell } from '@/components/studio-shell';
 import {
@@ -626,6 +634,7 @@ export function TranslationWorkspace({
   );
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
   const [isCanceling, setIsCanceling] = useState(false);
+  const [isRunConfirmationOpen, setIsRunConfirmationOpen] = useState(false);
   const [modelOptionsByProvider, setModelOptionsByProvider] = useState<
     Record<ModelProvider, ProviderModelOptions | null>
   >({
@@ -647,6 +656,7 @@ export function TranslationWorkspace({
         : (currentProviderOptions?.defaultModelId ?? getDefaultModelId(provider));
   const providerApiKeyConfigured = providerAvailability[provider];
   const activeRuntimeModelLabel = formatRuntimeModelLabel(provider, resolvedModel);
+  const hasExistingRunResult = buildFinalTranslationText(project).trim().length > 0;
 
   const endPipelineRun = (): void => {
     setIsRunning(false);
@@ -1007,6 +1017,29 @@ export function TranslationWorkspace({
     }
   };
 
+  const handleRunPipelineRequest = (): void => {
+    if (isRunning || isCanceling || isRunConfirmationOpen) {
+      return;
+    }
+
+    if (hasExistingRunResult) {
+      setIsRunConfirmationOpen(true);
+
+      return;
+    }
+
+    void handleRunPipeline();
+  };
+
+  const handleConfirmRunPipeline = (): void => {
+    setIsRunConfirmationOpen(false);
+    void handleRunPipeline();
+  };
+
+  const handleCancelRunConfirmation = (): void => {
+    setIsRunConfirmationOpen(false);
+  };
+
   const handleCancelRunPipeline = (): void => {
     if (!activeJobId || isCanceling) {
       return;
@@ -1112,8 +1145,10 @@ export function TranslationWorkspace({
   };
 
   const triggerRunPipeline = (): void => {
-    void handleRunPipeline();
+    handleRunPipelineRequest();
   };
+
+  const runConfirmationDialogOpen = isRunConfirmationOpen && hasExistingRunResult;
 
   const editableSegments = splitSourceText(sourceText, segmentationStrategy);
   const segmentPreviewCount = editableSegments.length;
@@ -1379,58 +1414,84 @@ export function TranslationWorkspace({
   };
 
   return (
-    <TranslationWorkspaceView
-      apiKeyConfigured={providerApiKeyConfigured}
-      activeRuntimeModelLabel={activeRuntimeModelLabel}
-      selectedProvider={provider}
-      selectedModel={resolvedModel}
-      providerOptions={modelOptionsByProvider}
-      sourceText={sourceText}
-      contentTypeOptions={contentTypeOptions}
-      targetLanguageOptions={targetLanguageOptions}
-      segmentationStrategy={segmentationStrategy}
-      segmentPreviewCount={segmentPreviewCount}
-      editableSegments={editableSegments}
-      project={project}
-      isRunning={isRunning}
-      runElapsedSeconds={runElapsedSeconds}
-      statusMessage={statusNotice?.message}
-      statusSeverity={statusNotice?.severity}
-      pipelineWarnings={pipelineWarnings}
-      historyEntries={historyEntries}
-      historyReady={historyReady}
-      selectedRecoverySegmentIndex={selectedRecoverySegmentIndex}
-      onSourceTextChange={handleSourceTextChange}
-      onContentTypeChange={handleContentTypeChange}
-      onTargetLanguageChange={handleTargetLanguageChange}
-      onSegmentationStrategyChange={handleSegmentationStrategyChange}
-      onProviderChange={handleProviderChange}
-      onModelChange={handleModelChange}
-      onEditableSegmentChange={handleEditableSegmentChange}
-      onEditableSegmentAdd={handleEditableSegmentAdd}
-      onEditableSegmentRemove={handleEditableSegmentRemove}
-      onSplitSourceByLineBreaks={handleSplitSourceByLineBreaks}
-      onImportText={handleImportText}
-      onRunPipeline={triggerRunPipeline}
-      onCancelRunPipeline={handleCancelRunPipeline}
-      onReviewSegment={(segmentIndex) => {
-        setSelectedRecoverySegmentIndex(segmentIndex);
-      }}
-      onOpenHistoryEntry={handleOpenHistoryEntry}
-      onExportMarkdown={handleExportMarkdown}
-      onExportQaReport={handleExportQaReport}
-      onExportProjectJson={handleExportProjectJson}
-      onCopyFinalText={handleCopyFinalText}
-      onCopyQaSummary={handleCopyQaSummary}
-      onStyleProfileUpdate={handleStyleProfileUpdate}
-      onQaFindingResolvedChange={handleQaFindingResolvedChange}
-      onSegmentFinalTextChange={handleSegmentFinalTextChange}
-      onSegmentFinalTextLockChange={handleSegmentFinalTextLockChange}
-      onGlossaryEntryAdd={handleGlossaryEntryAdd}
-      onGlossaryEntryUpdate={handleGlossaryEntryUpdate}
-      onGlossaryEntryRemove={handleGlossaryEntryRemove}
-      onGlossaryExport={handleGlossaryExport}
-      onGlossaryImport={handleGlossaryImport}
-    />
+    <>
+      <TranslationWorkspaceView
+        apiKeyConfigured={providerApiKeyConfigured}
+        activeRuntimeModelLabel={activeRuntimeModelLabel}
+        selectedProvider={provider}
+        selectedModel={resolvedModel}
+        providerOptions={modelOptionsByProvider}
+        sourceText={sourceText}
+        contentTypeOptions={contentTypeOptions}
+        targetLanguageOptions={targetLanguageOptions}
+        segmentationStrategy={segmentationStrategy}
+        segmentPreviewCount={segmentPreviewCount}
+        editableSegments={editableSegments}
+        project={project}
+        isRunning={isRunning}
+        runElapsedSeconds={runElapsedSeconds}
+        statusMessage={statusNotice?.message}
+        statusSeverity={statusNotice?.severity}
+        pipelineWarnings={pipelineWarnings}
+        historyEntries={historyEntries}
+        historyReady={historyReady}
+        selectedRecoverySegmentIndex={selectedRecoverySegmentIndex}
+        onSourceTextChange={handleSourceTextChange}
+        onContentTypeChange={handleContentTypeChange}
+        onTargetLanguageChange={handleTargetLanguageChange}
+        onSegmentationStrategyChange={handleSegmentationStrategyChange}
+        onProviderChange={handleProviderChange}
+        onModelChange={handleModelChange}
+        onEditableSegmentChange={handleEditableSegmentChange}
+        onEditableSegmentAdd={handleEditableSegmentAdd}
+        onEditableSegmentRemove={handleEditableSegmentRemove}
+        onSplitSourceByLineBreaks={handleSplitSourceByLineBreaks}
+        onImportText={handleImportText}
+        onRunPipeline={triggerRunPipeline}
+        onCancelRunPipeline={handleCancelRunPipeline}
+        onReviewSegment={(segmentIndex) => {
+          setSelectedRecoverySegmentIndex(segmentIndex);
+        }}
+        onOpenHistoryEntry={handleOpenHistoryEntry}
+        onExportMarkdown={handleExportMarkdown}
+        onExportQaReport={handleExportQaReport}
+        onExportProjectJson={handleExportProjectJson}
+        onCopyFinalText={handleCopyFinalText}
+        onCopyQaSummary={handleCopyQaSummary}
+        onStyleProfileUpdate={handleStyleProfileUpdate}
+        onQaFindingResolvedChange={handleQaFindingResolvedChange}
+        onSegmentFinalTextChange={handleSegmentFinalTextChange}
+        onSegmentFinalTextLockChange={handleSegmentFinalTextLockChange}
+        onGlossaryEntryAdd={handleGlossaryEntryAdd}
+        onGlossaryEntryUpdate={handleGlossaryEntryUpdate}
+        onGlossaryEntryRemove={handleGlossaryEntryRemove}
+        onGlossaryExport={handleGlossaryExport}
+        onGlossaryImport={handleGlossaryImport}
+      />
+      <Dialog
+        open={runConfirmationDialogOpen}
+        onClose={handleCancelRunConfirmation}
+        aria-labelledby="run-pipeline-confirmation-title"
+      >
+        <DialogTitle id="run-pipeline-confirmation-title">Run pipeline again?</DialogTitle>
+        <DialogContent dividers>
+          <Stack spacing={1.25} sx={{ maxWidth: 520 }}>
+            <Typography variant="body1">
+              This workspace already contains a translated result.
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Running the pipeline again will replace the current translated text and QA state. Copy
+              out the result first if you need to keep it.
+            </Typography>
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCancelRunConfirmation}>Cancel</Button>
+          <Button variant="contained" color="warning" onClick={handleConfirmRunPipeline}>
+            Run anyway
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </>
   );
 }
