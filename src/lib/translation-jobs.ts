@@ -79,7 +79,7 @@ function toPublicSnapshot(record: TranslationWorkspaceJobRecord): TranslationWor
   return snapshot;
 }
 
-async function writeTranslationJobRecord(record: TranslationWorkspaceJobRecord): Promise<void> {
+function writeTranslationJobRecord(record: TranslationWorkspaceJobRecord): Promise<void> | void {
   const serialized = JSON.stringify(record);
 
   if (!isBlobStorageConfigured()) {
@@ -88,20 +88,18 @@ async function writeTranslationJobRecord(record: TranslationWorkspaceJobRecord):
     return;
   }
 
-  const { put } = await import('@vercel/blob');
-
-  await put(getTranslationJobPath(record.jobId), serialized, {
-    access: 'private',
-    contentType: 'application/json',
-    token: env.BLOB_READ_WRITE_TOKEN,
-    allowOverwrite: true,
-    addRandomSuffix: false,
+  return import('@vercel/blob').then(async ({ put }) => {
+    await put(getTranslationJobPath(record.jobId), serialized, {
+      access: 'private',
+      contentType: 'application/json',
+      token: env.BLOB_READ_WRITE_TOKEN,
+      allowOverwrite: true,
+      addRandomSuffix: false,
+    });
   });
 }
 
-async function readTranslationJobRecord(
-  jobId: string,
-): Promise<TranslationWorkspaceJobRecord | null> {
+function readTranslationJobRecordSync(jobId: string): TranslationWorkspaceJobRecord | null {
   if (!isBlobStorageConfigured()) {
     const raw = getInMemoryTranslationJobStore().get(jobId);
 
@@ -110,6 +108,16 @@ async function readTranslationJobRecord(
     }
 
     return JSON.parse(raw) as TranslationWorkspaceJobRecord;
+  }
+
+  return null;
+}
+
+async function readTranslationJobRecord(
+  jobId: string,
+): Promise<TranslationWorkspaceJobRecord | null> {
+  if (!isBlobStorageConfigured()) {
+    return readTranslationJobRecordSync(jobId);
   }
 
   const { get } = await import('@vercel/blob');
@@ -137,13 +145,17 @@ export async function createTranslationWorkspaceJob(
   const jobId = createJobId();
   const now = toIsoTimestamp();
 
-  await writeTranslationJobRecord({
+  const writeResult = writeTranslationJobRecord({
     jobId,
     status: 'queued',
     createdAt: now,
     updatedAt: now,
     request,
   });
+
+  if (writeResult) {
+    await writeResult;
+  }
 
   return {
     jobId,
@@ -164,38 +176,106 @@ export async function getTranslationWorkspaceJobStatus(
   return toPublicSnapshot(record);
 }
 
+export async function cancelTranslationWorkspaceJob(
+  jobId: string,
+): Promise<TranslationWorkspaceJobSnapshot | null> {
+  const record = isBlobStorageConfigured()
+    ? await readTranslationJobRecord(jobId)
+    : readTranslationJobRecordSync(jobId);
+
+  if (!record) {
+    return null;
+  }
+
+  if (record.status === 'completed' || record.status === 'failed' || record.status === 'canceled') {
+    return toPublicSnapshot(record);
+  }
+
+  const canceledRecord: TranslationWorkspaceJobRecord = {
+    ...record,
+    status: 'canceled',
+    updatedAt: toIsoTimestamp(),
+    error: undefined,
+    result: undefined,
+  };
+
+  const writeResult = writeTranslationJobRecord(canceledRecord);
+
+  if (writeResult) {
+    await writeResult;
+  }
+
+  return toPublicSnapshot(canceledRecord);
+}
+
 export async function processTranslationWorkspaceJob(jobId: string): Promise<void> {
-  const record = await readTranslationJobRecord(jobId);
+  const record = isBlobStorageConfigured()
+    ? await readTranslationJobRecord(jobId)
+    : readTranslationJobRecordSync(jobId);
 
   if (!record) {
     return;
   }
 
-  await writeTranslationJobRecord({
-    ...record,
+  const latestRecord = isBlobStorageConfigured()
+    ? await readTranslationJobRecord(jobId)
+    : readTranslationJobRecordSync(jobId);
+
+  if (!latestRecord || latestRecord.status === 'canceled') {
+    return;
+  }
+
+  const runningWriteResult = writeTranslationJobRecord({
+    ...latestRecord,
     status: 'running',
     updatedAt: toIsoTimestamp(),
   });
 
+  if (runningWriteResult) {
+    await runningWriteResult;
+  }
+
   try {
     const { runTranslationWorkspace } = await import('./translation-provider');
-    const result = await runTranslationWorkspace(record.request);
+    const result = await runTranslationWorkspace(latestRecord.request);
+    const latestCompletedRecord = isBlobStorageConfigured()
+      ? await readTranslationJobRecord(jobId)
+      : readTranslationJobRecordSync(jobId);
 
-    await writeTranslationJobRecord({
-      ...record,
+    if (!latestCompletedRecord || latestCompletedRecord.status !== 'running') {
+      return;
+    }
+
+    const completedWriteResult = writeTranslationJobRecord({
+      ...latestCompletedRecord,
       status: 'completed',
       updatedAt: toIsoTimestamp(),
       result,
       error: undefined,
     });
+
+    if (completedWriteResult) {
+      await completedWriteResult;
+    }
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
+    const latestFailedRecord = isBlobStorageConfigured()
+      ? await readTranslationJobRecord(jobId)
+      : readTranslationJobRecordSync(jobId);
 
-    await writeTranslationJobRecord({
-      ...record,
+    if (!latestFailedRecord || latestFailedRecord.status !== 'running') {
+      return;
+    }
+
+    const failedWriteResult = writeTranslationJobRecord({
+      ...latestFailedRecord,
       status: 'failed',
       updatedAt: toIsoTimestamp(),
       error: message,
     });
+
+    if (failedWriteResult) {
+      await failedWriteResult;
+    }
   }
 }

@@ -59,6 +59,7 @@ describe('WorkspaceControls', () => {
         onSplitSourceByLineBreaks={jest.fn()}
         onImportText={jest.fn()}
         onRunPipeline={jest.fn()}
+        onCancelRunPipeline={jest.fn()}
         onCopyFinalText={onCopyFinalText}
         onReviewSegment={jest.fn()}
       />,
@@ -127,6 +128,7 @@ describe('WorkspaceControls', () => {
         onSplitSourceByLineBreaks={jest.fn()}
         onImportText={jest.fn()}
         onRunPipeline={jest.fn()}
+        onCancelRunPipeline={jest.fn()}
         onCopyFinalText={jest.fn()}
         onReviewSegment={jest.fn()}
       />,
@@ -192,6 +194,7 @@ describe('WorkspaceControls', () => {
         onSplitSourceByLineBreaks={jest.fn()}
         onImportText={jest.fn()}
         onRunPipeline={jest.fn()}
+        onCancelRunPipeline={jest.fn()}
         onCopyFinalText={jest.fn()}
         onReviewSegment={jest.fn()}
       />,
@@ -256,6 +259,7 @@ describe('WorkspaceControls', () => {
         onSplitSourceByLineBreaks={jest.fn()}
         onImportText={jest.fn()}
         onRunPipeline={jest.fn()}
+        onCancelRunPipeline={jest.fn()}
         onCopyFinalText={jest.fn()}
         onReviewSegment={onReviewSegment}
         onContentTypeChange={jest.fn()}
@@ -281,6 +285,7 @@ describe('WorkspaceControls', () => {
 
   it('locks mutating source controls while a run is in progress', async () => {
     const user = userEvent.setup();
+    const onCancelRunPipeline = jest.fn();
 
     render(
       <WorkspaceControls
@@ -323,6 +328,7 @@ describe('WorkspaceControls', () => {
         onSplitSourceByLineBreaks={jest.fn()}
         onImportText={jest.fn()}
         onRunPipeline={jest.fn()}
+        onCancelRunPipeline={onCancelRunPipeline}
         onCopyFinalText={jest.fn()}
         onReviewSegment={jest.fn()}
       />,
@@ -352,6 +358,8 @@ describe('WorkspaceControls', () => {
     expect(screen.getByRole('button', { name: /scene actions/i })).toBeDisabled();
     expect(screen.getByRole('button', { name: /import text\/markdown/i })).toBeDisabled();
     expect(screen.getByRole('button', { name: /running pipeline/i })).toBeDisabled();
+    await user.click(screen.getByRole('button', { name: /cancel job/i }));
+    expect(onCancelRunPipeline).toHaveBeenCalledTimes(1);
     expect(screen.getByTestId('workspace-running-status')).toBeVisible();
 
     expect(screen.getByRole('button', { name: /editable segments/i })).toHaveAttribute(

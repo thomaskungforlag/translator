@@ -57,6 +57,7 @@ type WorkspaceControlsProps = {
   onSplitSourceByLineBreaks: () => void;
   onImportText: (value: string, fileName: string) => void;
   onRunPipeline: () => void;
+  onCancelRunPipeline: () => void;
   onCopyFinalText?: () => void;
   onReviewSegment?: (segmentIndex: number) => void;
 };
@@ -169,6 +170,7 @@ export function WorkspaceControls({
   onSplitSourceByLineBreaks,
   onImportText,
   onRunPipeline,
+  onCancelRunPipeline,
   onCopyFinalText,
   onReviewSegment,
 }: WorkspaceControlsProps): ReactElement {
@@ -317,6 +319,9 @@ export function WorkspaceControls({
                 color="warning"
                 label={`${runElapsedSeconds}s`}
               />
+              <Button size="small" variant="outlined" color="warning" onClick={onCancelRunPipeline}>
+                Cancel job
+              </Button>
             </Stack>
             <Typography variant="caption" color="text.secondary">
               Editing is locked until this snapshot finishes.

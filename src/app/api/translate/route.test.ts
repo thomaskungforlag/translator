@@ -3,7 +3,7 @@
 import { demoWorkspaceSeed } from '@/lib/demo-workspace';
 import * as translationJobsModule from '@/lib/translation-jobs';
 
-import { GET, POST } from './route';
+import { DELETE, GET, POST } from './route';
 
 jest.mock('next/server', () => {
   const actual = jest.requireActual<typeof import('next/server')>('next/server');
@@ -23,6 +23,7 @@ jest.mock('@/lib/translation-jobs', (): typeof import('@/lib/translation-jobs') 
   return {
     ...actual,
     createTranslationWorkspaceJob: jest.fn(),
+    cancelTranslationWorkspaceJob: jest.fn(),
     getTranslationWorkspaceJobStatus: jest.fn(),
     processTranslationWorkspaceJob: jest.fn(),
   };
@@ -128,5 +129,33 @@ describe('api/translate route', () => {
       },
     });
     expect(mockedGetTranslationWorkspaceJobStatus).toHaveBeenCalledWith('job-123');
+  });
+
+  it('cancels a running translation job', async () => {
+    const mockedCancelTranslationWorkspaceJob = jest.mocked(
+      translationJobsModule.cancelTranslationWorkspaceJob,
+    );
+
+    mockedCancelTranslationWorkspaceJob.mockResolvedValue({
+      jobId: 'job-123',
+      status: 'canceled',
+      createdAt: '2026-05-26T10:00:00.000Z',
+      updatedAt: '2026-05-26T10:03:00.000Z',
+    });
+
+    const response = await DELETE(
+      new Request('http://localhost/api/translate?jobId=job-123', {
+        method: 'DELETE',
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({
+      jobId: 'job-123',
+      status: 'canceled',
+      createdAt: '2026-05-26T10:00:00.000Z',
+      updatedAt: '2026-05-26T10:03:00.000Z',
+    });
+    expect(mockedCancelTranslationWorkspaceJob).toHaveBeenCalledWith('job-123');
   });
 });

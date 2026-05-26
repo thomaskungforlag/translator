@@ -1,6 +1,6 @@
 import type { TranslationWorkspaceResponse } from './translation-provider-utils';
 
-export type TranslationJobStatus = 'queued' | 'running' | 'completed' | 'failed';
+export type TranslationJobStatus = 'queued' | 'running' | 'completed' | 'failed' | 'canceled';
 
 export type TranslationWorkspaceJobSnapshot = {
   jobId: string;
@@ -18,7 +18,13 @@ export type TranslationWorkspaceJobStartResponse = {
 };
 
 function isTranslationJobStatus(value: unknown): value is TranslationJobStatus {
-  return value === 'queued' || value === 'running' || value === 'completed' || value === 'failed';
+  return (
+    value === 'queued' ||
+    value === 'running' ||
+    value === 'completed' ||
+    value === 'failed' ||
+    value === 'canceled'
+  );
 }
 
 export function isTranslationWorkspaceResponse(

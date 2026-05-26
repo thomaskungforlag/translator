@@ -12,6 +12,17 @@ async function loadJobsModule() {
   return import('./translation-jobs');
 }
 
+function createDeferred<T>() {
+  let resolve!: (value: T | PromiseLike<T>) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+
+  return { promise, resolve, reject };
+}
+
 describe('translation-jobs', () => {
   beforeEach(() => {
     process.env = { ...ORIGINAL_ENV };
@@ -81,5 +92,60 @@ describe('translation-jobs', () => {
     expect(completedStatus?.createdAt).toMatch(/.+/);
     expect(completedStatus?.updatedAt).toMatch(/.+/);
     expect(completedStatus?.result).toEqual(result);
+  });
+
+  it('cancels a running job and preserves the canceled state after the worker finishes', async () => {
+    const result = {
+      project: {
+        title: demoWorkspaceSeed.title,
+        contentType: demoWorkspaceSeed.contentType,
+        targetLanguage: demoWorkspaceSeed.targetLanguage,
+        styleProfile: demoWorkspaceSeed.styleProfile,
+        progress: 100,
+        segments: [],
+        glossary: demoWorkspaceSeed.glossary,
+        qaFindings: [],
+        pipelineStages: [],
+      },
+      mode: 'openai' as const,
+      warnings: [],
+    };
+    const deferred = createDeferred<typeof result>();
+
+    jest.doMock('./translation-provider', (): TranslationProviderModule => {
+      const actual = jest.requireActual<TranslationProviderModule>('./translation-provider');
+
+      return {
+        ...actual,
+        runTranslationWorkspace: jest.fn().mockReturnValue(deferred.promise),
+      };
+    });
+
+    const {
+      cancelTranslationWorkspaceJob,
+      createTranslationWorkspaceJob,
+      getTranslationWorkspaceJobStatus,
+      processTranslationWorkspaceJob,
+    } = await loadJobsModule();
+
+    const job = await createTranslationWorkspaceJob({
+      ...demoWorkspaceSeed,
+      provider: 'openai',
+      model: 'gpt-5-mini',
+    });
+
+    const processingPromise = processTranslationWorkspaceJob(job.jobId);
+
+    const canceledSnapshot = await cancelTranslationWorkspaceJob(job.jobId);
+
+    expect(canceledSnapshot?.status).toBe('canceled');
+
+    deferred.resolve(result);
+    await processingPromise;
+
+    const canceledStatus = await getTranslationWorkspaceJobStatus(job.jobId);
+
+    expect(canceledStatus?.status).toBe('canceled');
+    expect(canceledStatus?.result).toBeUndefined();
   });
 });

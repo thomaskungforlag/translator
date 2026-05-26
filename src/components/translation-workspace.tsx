@@ -322,6 +322,7 @@ type TranslationWorkspaceViewProps = {
   onSplitSourceByLineBreaks: () => void;
   onImportText: (value: string, fileName: string) => void;
   onRunPipeline: () => void;
+  onCancelRunPipeline: () => void;
   onReviewSegment: (segmentIndex: number) => void;
   onOpenHistoryEntry: (entryId: string) => void;
   onExportMarkdown: () => void;
@@ -505,6 +506,7 @@ function TranslationWorkspaceView({
   onSplitSourceByLineBreaks,
   onImportText,
   onRunPipeline,
+  onCancelRunPipeline,
   onReviewSegment,
   onOpenHistoryEntry,
   onExportMarkdown,
@@ -553,6 +555,7 @@ function TranslationWorkspaceView({
         onSplitSourceByLineBreaks={onSplitSourceByLineBreaks}
         onImportText={onImportText}
         onRunPipeline={onRunPipeline}
+        onCancelRunPipeline={onCancelRunPipeline}
         onCopyFinalText={onCopyFinalText}
         onReviewSegment={onReviewSegment}
       />
@@ -622,6 +625,7 @@ export function TranslationWorkspace({
     null,
   );
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
+  const [isCanceling, setIsCanceling] = useState(false);
   const [modelOptionsByProvider, setModelOptionsByProvider] = useState<
     Record<ModelProvider, ProviderModelOptions | null>
   >({
@@ -819,6 +823,18 @@ export function TranslationWorkspace({
           throw new Error('Translation job status payload was invalid.');
         }
 
+        if (snapshot.status === 'canceled') {
+          setStatusNotice({
+            message: 'Translation job canceled.',
+            severity: 'info',
+          });
+
+          endPipelineRun();
+          window.clearInterval(intervalId);
+
+          return;
+        }
+
         if (snapshot.status === 'queued' || snapshot.status === 'running') {
           setStatusNotice({
             message: `Translation job ${snapshot.status}. Waiting for the background worker to finish...`,
@@ -989,6 +1005,44 @@ export function TranslationWorkspace({
         endPipelineRun();
       }
     }
+  };
+
+  const handleCancelRunPipeline = (): void => {
+    if (!activeJobId || isCanceling) {
+      return;
+    }
+
+    setIsCanceling(true);
+
+    void (async () => {
+      try {
+        const response = await fetch(`/api/translate?jobId=${encodeURIComponent(activeJobId)}`, {
+          method: 'DELETE',
+        });
+
+        if (!response.ok) {
+          setStatusNotice({
+            message: 'Unable to cancel the translation job right now.',
+            severity: 'warning',
+          });
+
+          return;
+        }
+
+        setStatusNotice({
+          message: 'Translation job canceled.',
+          severity: 'info',
+        });
+        endPipelineRun();
+      } catch {
+        setStatusNotice({
+          message: 'Unable to cancel the translation job right now.',
+          severity: 'warning',
+        });
+      } finally {
+        setIsCanceling(false);
+      }
+    })();
   };
 
   const handleSourceTextChange = (value: string): void => {
@@ -1358,6 +1412,7 @@ export function TranslationWorkspace({
       onSplitSourceByLineBreaks={handleSplitSourceByLineBreaks}
       onImportText={handleImportText}
       onRunPipeline={triggerRunPipeline}
+      onCancelRunPipeline={handleCancelRunPipeline}
       onReviewSegment={(segmentIndex) => {
         setSelectedRecoverySegmentIndex(segmentIndex);
       }}

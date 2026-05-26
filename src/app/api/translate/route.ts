@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { ZodError } from 'zod';
 
 import {
+  cancelTranslationWorkspaceJob,
   createTranslationWorkspaceJob,
   getTranslationWorkspaceJobStatus,
   processTranslationWorkspaceJob,
@@ -72,5 +73,42 @@ export async function GET(request: Request): Promise<Response> {
     });
 
     return NextResponse.json({ error: 'Translation status lookup failed.' }, { status: 500 });
+  }
+}
+
+// DELETE cancels a queued or running translation job and persists the canceled state.
+export async function DELETE(request: Request): Promise<Response> {
+  try {
+    const jobId = readJobIdFromRequest(request);
+
+    if (!jobId) {
+      return NextResponse.json({ error: 'Missing jobId query parameter.' }, { status: 400 });
+    }
+
+    const status = await cancelTranslationWorkspaceJob(jobId);
+
+    if (!status) {
+      return NextResponse.json({ error: 'Translation job not found.' }, { status: 404 });
+    }
+
+    if (status.status !== 'canceled') {
+      return NextResponse.json(
+        { error: 'Translation job is no longer cancelable.' },
+        { status: 409 },
+      );
+    }
+
+    return NextResponse.json(status, {
+      headers: {
+        'Cache-Control': 'no-store',
+      },
+    });
+  } catch (error) {
+    console.error('[api/translate] unexpected cancel route failure', {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
+
+    return NextResponse.json({ error: 'Translation cancel failed.' }, { status: 500 });
   }
 }
