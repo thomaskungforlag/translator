@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import type { GlossaryEntry } from '@/lib/domain';
@@ -66,5 +66,57 @@ describe('GlossaryPanel', () => {
     expect(screen.getByRole('switch', { name: /locked/i })).toBeDisabled();
     expect(screen.getByRole('button', { name: /remove glossary entry/i })).toBeDisabled();
     expect(screen.getByRole('button', { name: /add glossary term/i })).toBeDisabled();
+  });
+
+  it('exports and restores glossary backups', async () => {
+    const user = userEvent.setup();
+    const onExportGlossary = jest.fn();
+    const onImportGlossary = jest.fn();
+    const { container } = render(
+      <GlossaryPanel
+        entries={entries}
+        onExportGlossary={onExportGlossary}
+        onImportGlossary={onImportGlossary}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: /export glossary/i }));
+    expect(onExportGlossary).toHaveBeenCalledTimes(1);
+
+    const importInput = container.querySelector('input[type="file"]');
+
+    expect(importInput).not.toBeNull();
+
+    await user.upload(
+      importInput as HTMLInputElement,
+      new File(
+        [
+          JSON.stringify({
+            version: 1,
+            exportedAt: '2026-05-26T10:00:00.000Z',
+            glossary: [
+              {
+                id: 'gl-2',
+                sourceTerm: 'Södra kajen',
+                targetTerm: 'South Quay',
+                category: 'place',
+                locked: true,
+              },
+            ],
+          }),
+        ],
+        'glossary-backup.json',
+        {
+          type: 'application/json',
+        },
+      ),
+    );
+
+    await waitFor(() => {
+      expect(onImportGlossary).toHaveBeenCalledWith(
+        expect.stringContaining('Södra kajen'),
+        'glossary-backup.json',
+      );
+    });
   });
 });

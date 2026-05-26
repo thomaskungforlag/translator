@@ -19,5 +19,7 @@ export type StudioShellProps = {
   onGlossaryEntryAdd?: () => void;
   onGlossaryEntryUpdate?: (entryId: string, patch: Partial<GlossaryEntry>) => void;
   onGlossaryEntryRemove?: (entryId: string) => void;
+  onGlossaryExport?: () => void;
+  onGlossaryImport?: (value: string, fileName: string) => void;
   isRunning?: boolean;
 };

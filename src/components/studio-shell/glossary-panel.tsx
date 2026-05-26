@@ -1,7 +1,9 @@
-import type { ReactElement } from 'react';
+import { useRef, type ChangeEvent, type ReactElement } from 'react';
 
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded';
+import DownloadRoundedIcon from '@mui/icons-material/DownloadRounded';
+import UploadRoundedIcon from '@mui/icons-material/UploadRounded';
 import {
   Button,
   FormControlLabel,
@@ -22,7 +24,27 @@ type GlossaryPanelProps = {
   onAddEntry?: () => void;
   onUpdateEntry?: (entryId: string, patch: Partial<GlossaryEntry>) => void;
   onRemoveEntry?: (entryId: string) => void;
+  onExportGlossary?: () => void;
+  onImportGlossary?: (value: string, fileName: string) => void;
 };
+
+function readFileAsText(file: File): Promise<string> {
+  if (typeof file.text === 'function') {
+    return file.text();
+  }
+
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      resolve(typeof reader.result === 'string' ? reader.result : '');
+    };
+    reader.onerror = () => {
+      reject(reader.error ?? new Error('Unable to read the selected file.'));
+    };
+    reader.readAsText(file);
+  });
+}
 
 export function GlossaryPanel({
   entries,
@@ -30,12 +52,53 @@ export function GlossaryPanel({
   onAddEntry,
   onUpdateEntry,
   onRemoveEntry,
+  onExportGlossary,
+  onImportGlossary,
 }: GlossaryPanelProps): ReactElement {
+  const importInputRef = useRef<HTMLInputElement>(null);
+
+  const handleImportClick = (): void => {
+    importInputRef.current?.click();
+  };
+
+  const handleImportChange = async (event: ChangeEvent<HTMLInputElement>): Promise<void> => {
+    const input = event.currentTarget;
+    const file = input.files?.[0];
+
+    if (isRunning || !file) {
+      return;
+    }
+
+    const importedGlossary = await readFileAsText(file);
+    onImportGlossary?.(importedGlossary, file.name);
+    input.value = '';
+  };
+
   return (
     <Paper sx={{ p: 2.5 }}>
       <Typography variant="overline" color="text.secondary">
         Glossary
       </Typography>
+      <Stack direction="row" spacing={1} sx={{ mt: 1.25, flexWrap: 'wrap' }}>
+        <Button
+          variant="outlined"
+          size="small"
+          startIcon={<DownloadRoundedIcon />}
+          onClick={onExportGlossary}
+          disabled={isRunning}
+        >
+          Export glossary
+        </Button>
+        <Button
+          variant="outlined"
+          size="small"
+          startIcon={<UploadRoundedIcon />}
+          onClick={handleImportClick}
+          disabled={isRunning}
+        >
+          Import glossary
+        </Button>
+      </Stack>
       <Stack spacing={1.25} sx={{ mt: 1.25 }}>
         {entries.length === 0 ? (
           <Typography variant="body2" color="text.secondary">
@@ -135,6 +198,16 @@ export function GlossaryPanel({
           Add glossary term
         </Button>
       </Stack>
+      <input
+        ref={importInputRef}
+        hidden
+        disabled={isRunning}
+        type="file"
+        accept=".json,application/json"
+        onChange={(event) => {
+          void handleImportChange(event);
+        }}
+      />
     </Paper>
   );
 }

@@ -45,6 +45,7 @@ import { TranslationHistoryPanel } from './translation-history-panel';
 import { WorkspaceControls } from './workspace-controls';
 import {
   buildFinalTranslationText,
+  buildGlossaryBackupJson,
   buildQaSummaryText,
   buildTranslationWorkspaceRunRequest,
   deriveImportedTitle,
@@ -54,6 +55,7 @@ import {
   findLockedConflicts,
   hasUnresolvedQaFindings,
   mergeLockedSegments,
+  parseGlossaryBackupJson,
   updateProjectFromSegments,
   updateSegmentQa,
 } from './translation-workspace-utils';
@@ -302,6 +304,8 @@ type TranslationWorkspaceViewProps = {
   onGlossaryEntryAdd: () => void;
   onGlossaryEntryUpdate: (entryId: string, patch: Partial<GlossaryEntry>) => void;
   onGlossaryEntryRemove: (entryId: string) => void;
+  onGlossaryExport: () => void;
+  onGlossaryImport: (value: string, fileName: string) => void;
 };
 
 function buildImportedSeed(args: {
@@ -483,6 +487,8 @@ function TranslationWorkspaceView({
   onGlossaryEntryAdd,
   onGlossaryEntryUpdate,
   onGlossaryEntryRemove,
+  onGlossaryExport,
+  onGlossaryImport,
 }: TranslationWorkspaceViewProps): ReactElement {
   return (
     <Stack spacing={3}>
@@ -540,6 +546,8 @@ function TranslationWorkspaceView({
         onGlossaryEntryAdd={onGlossaryEntryAdd}
         onGlossaryEntryUpdate={onGlossaryEntryUpdate}
         onGlossaryEntryRemove={onGlossaryEntryRemove}
+        onGlossaryExport={onGlossaryExport}
+        onGlossaryImport={onGlossaryImport}
       />
     </Stack>
   );
@@ -1067,6 +1075,39 @@ export function TranslationWorkspace({
     }));
   };
 
+  const handleGlossaryExport = (): void => {
+    downloadTextFile(
+      buildGlossaryBackupJson(project.glossary),
+      `${sanitizeFileBaseName(project.title)}.glossary.json`,
+      'application/json',
+    );
+  };
+
+  const handleGlossaryImport = (importedGlossary: string, fileName: string): void => {
+    try {
+      const glossary = parseGlossaryBackupJson(importedGlossary);
+
+      setPipelineWarnings([]);
+      setSelectedRecoverySegmentIndex(null);
+      setProject((currentProject) => ({
+        ...currentProject,
+        glossary,
+      }));
+      setStatusNotice({
+        message: `Imported ${glossary.length} glossary term${glossary.length === 1 ? '' : 's'} from ${fileName}.`,
+        severity: 'info',
+      });
+    } catch (error) {
+      setStatusNotice({
+        message:
+          error instanceof Error
+            ? `Could not import glossary backup: ${error.message}`
+            : 'Could not import glossary backup.',
+        severity: 'warning',
+      });
+    }
+  };
+
   const handleOpenHistoryEntry = (entryId: string): void => {
     const entry = loadTranslationHistoryEntry(entryId);
 
@@ -1147,6 +1188,8 @@ export function TranslationWorkspace({
       onGlossaryEntryAdd={handleGlossaryEntryAdd}
       onGlossaryEntryUpdate={handleGlossaryEntryUpdate}
       onGlossaryEntryRemove={handleGlossaryEntryRemove}
+      onGlossaryExport={handleGlossaryExport}
+      onGlossaryImport={handleGlossaryImport}
     />
   );
 }

@@ -23,6 +23,8 @@ type WorkspacePanelsDrawerProps = {
     patch: Partial<StudioShellProject['glossary'][number]>,
   ) => void;
   onGlossaryEntryRemove?: (entryId: string) => void;
+  onGlossaryExport?: () => void;
+  onGlossaryImport?: (value: string, fileName: string) => void;
 };
 
 export function WorkspacePanelsDrawer({
@@ -35,6 +37,8 @@ export function WorkspacePanelsDrawer({
   onGlossaryEntryAdd,
   onGlossaryEntryUpdate,
   onGlossaryEntryRemove,
+  onGlossaryExport,
+  onGlossaryImport,
 }: WorkspacePanelsDrawerProps): ReactElement {
   const panelContent = (
     <Box
@@ -81,6 +85,8 @@ export function WorkspacePanelsDrawer({
             onAddEntry={onGlossaryEntryAdd}
             onUpdateEntry={onGlossaryEntryUpdate}
             onRemoveEntry={onGlossaryEntryRemove}
+            onExportGlossary={onGlossaryExport}
+            onImportGlossary={onGlossaryImport}
           />
         </WorkspaceAccordion>
       </Stack>

@@ -29,6 +29,8 @@ export function StudioShell({
   onGlossaryEntryAdd,
   onGlossaryEntryUpdate,
   onGlossaryEntryRemove,
+  onGlossaryExport,
+  onGlossaryImport,
   isRunning = false,
 }: StudioShellProps): ReactElement {
   const shellRef = useRef<HTMLDivElement>(null);
@@ -74,6 +76,8 @@ export function StudioShell({
             onGlossaryEntryAdd={onGlossaryEntryAdd}
             onGlossaryEntryUpdate={onGlossaryEntryUpdate}
             onGlossaryEntryRemove={onGlossaryEntryRemove}
+            onGlossaryExport={onGlossaryExport}
+            onGlossaryImport={onGlossaryImport}
           />
         ) : null}
 
@@ -142,6 +146,8 @@ export function StudioShell({
           onGlossaryEntryAdd={onGlossaryEntryAdd}
           onGlossaryEntryUpdate={onGlossaryEntryUpdate}
           onGlossaryEntryRemove={onGlossaryEntryRemove}
+          onGlossaryExport={onGlossaryExport}
+          onGlossaryImport={onGlossaryImport}
         />
       ) : null}
     </Box>

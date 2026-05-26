@@ -25,6 +25,12 @@ export type TranslationWorkspaceRunRequest = TranslationWorkspaceSeed & {
   model: string;
 };
 
+type GlossaryBackupPayload = {
+  version: 1;
+  exportedAt: string;
+  glossary: GlossaryEntry[];
+};
+
 const workspaceStorageKey = 'translator.workspace.v1';
 
 export function buildFinalTranslationText(project: StudioShellProject): string {
@@ -86,6 +92,97 @@ function normalizeGlossaryEntry(entry: GlossaryEntry): GlossaryEntry | null {
     sourceTerm,
     targetTerm,
   };
+}
+
+function isGlossaryCategory(value: unknown): value is GlossaryEntry['category'] {
+  return (
+    value === 'character' ||
+    value === 'place' ||
+    value === 'technology' ||
+    value === 'worldbuilding' ||
+    value === 'phrase' ||
+    value === 'other'
+  );
+}
+
+function normalizeImportedGlossaryEntry(record: unknown): GlossaryEntry | null {
+  if (!record || typeof record !== 'object') {
+    return null;
+  }
+
+  const entry = record as Partial<GlossaryEntry>;
+
+  if (
+    typeof entry.id !== 'string' ||
+    typeof entry.sourceTerm !== 'string' ||
+    typeof entry.targetTerm !== 'string' ||
+    !isGlossaryCategory(entry.category) ||
+    typeof entry.locked !== 'boolean'
+  ) {
+    return null;
+  }
+
+  return normalizeGlossaryEntry({
+    id: entry.id,
+    sourceTerm: entry.sourceTerm,
+    targetTerm: entry.targetTerm,
+    category: entry.category,
+    locked: entry.locked,
+    notes:
+      typeof entry.notes === 'string' && entry.notes.trim().length > 0 ? entry.notes : undefined,
+  });
+}
+
+export function buildGlossaryBackupJson(
+  entries: GlossaryEntry[],
+  exportedAt = new Date().toISOString(),
+): string {
+  const payload: GlossaryBackupPayload = {
+    version: 1,
+    exportedAt,
+    glossary: entries
+      .map((entry) => normalizeGlossaryEntry(entry))
+      .filter((entry): entry is GlossaryEntry => entry !== null),
+  };
+
+  return JSON.stringify(payload, null, 2);
+}
+
+export function parseGlossaryBackupJson(rawText: string): GlossaryEntry[] {
+  const parsed = JSON.parse(rawText) as unknown;
+
+  if (Array.isArray(parsed)) {
+    const entries = parsed
+      .map((record) => normalizeImportedGlossaryEntry(record))
+      .filter((entry): entry is GlossaryEntry => entry !== null);
+
+    if (parsed.length > 0 && entries.length === 0) {
+      throw new Error('Glossary backup file does not contain any valid entries.');
+    }
+
+    return entries;
+  }
+
+  if (!parsed || typeof parsed !== 'object') {
+    throw new Error('Glossary backup file is not valid JSON.');
+  }
+
+  const record = parsed as Record<string, unknown>;
+  const glossary = record.glossary;
+
+  if (!Array.isArray(glossary)) {
+    throw new Error('Glossary backup file is missing a glossary array.');
+  }
+
+  const entries = glossary
+    .map((entry) => normalizeImportedGlossaryEntry(entry))
+    .filter((entry): entry is GlossaryEntry => entry !== null);
+
+  if (glossary.length > 0 && entries.length === 0) {
+    throw new Error('Glossary backup file does not contain any valid entries.');
+  }
+
+  return entries;
 }
 
 export function buildTranslationWorkspaceRunRequest(args: {
