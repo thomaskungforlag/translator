@@ -20,6 +20,7 @@
 - Keep presentation code in components.
 - Keep shared domain types and validation in `src/lib`.
 - Keep data access, mutation, and future OpenAI integration out of leaf components.
+- Keep long-running translation work out of request handlers that serve the browser directly; hand off the work to a job record and poll for status instead.
 - Keep WordPress admin and Polylang glue in `packages/wordpress-plugin/`; do not duplicate prompt or QA logic there.
 - Keep the WordPress plugin configured against a service base URL; the route path stays fixed in the service layer.
 - Prefer small coordinator components that compose focused children.
@@ -35,5 +36,7 @@
 - [src/components/studio-shell/segment-review-panel.tsx](../src/components/studio-shell/segment-review-panel.tsx) shows the segment review workflow.
 - [src/lib/domain.ts](../src/lib/domain.ts) defines the project, segment, glossary, and QA types.
 - [src/app/api/wordpress/translate-page/route.ts](../src/app/api/wordpress/translate-page/route.ts) is the authenticated WordPress-facing translation route.
+- [src/app/api/translate/route.ts](../src/app/api/translate/route.ts) starts queued translation jobs and serves job status for the browser polling loop.
+- [src/lib/translation-jobs.ts](../src/lib/translation-jobs.ts) stores queued/running/completed job records and runs the background worker.
 - [packages/wordpress-plugin/thomas-kung-polylang-translator.php](../packages/wordpress-plugin/thomas-kung-polylang-translator.php) registers the WordPress plugin entry point.
 - [packages/wordpress-plugin/README.md](../packages/wordpress-plugin/README.md) documents WordPress settings, the fixed route path, and the editor workflow.

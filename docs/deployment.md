@@ -5,9 +5,10 @@ This project is set up to deploy on Vercel as a standard Next.js application.
 ## Why This Setup
 
 - Next.js is auto-detected by Vercel, so no custom build pipeline is needed.
-- The translation API routes can run longer than a trivial page request, so [vercel.json](../vercel.json) sets `maxDuration` to `60` seconds for:
+- The translation API routes can run longer than a trivial page request, so [vercel.json](../vercel.json) sets `maxDuration` to `300` seconds for:
   - `/api/translate`
   - `/api/wordpress/translate-page`
+- The browser-facing translation flow is asynchronous: `POST /api/translate` returns a queued job immediately, the worker finishes the translation after the response, and the UI polls `GET /api/translate?jobId=...` for progress and completion.
 - Node is pinned in [package.json](../package.json) to `22.x` for predictable builds instead of floating to whatever the latest Vercel default is.
 
 ## Required Environment Variables
@@ -32,6 +33,8 @@ Set these in Vercel Project Settings for the environments you use:
   - optional runtime URL for the English draft/reference PDF
 - `WORDPRESS_TRANSLATION_API_KEY`
   - required if the WordPress plugin will call this deployment
+- `BLOB_READ_WRITE_TOKEN`
+  - required for durable translation job storage on Vercel Blob
 
 You can use different values for Preview and Production. In practice:
 
@@ -90,3 +93,6 @@ Example:
 - The app already has the required `build` and `start` scripts for Node.js deployment.
 - Vercel auto-detects install/build commands for npm projects with a `package-lock.json`.
 - `.vercelignore` excludes local artifacts, env files, and plugin test files from CLI uploads.
+- The translation route now returns a queued job response immediately and persists job state in Vercel Blob while the background worker finishes the long-running translation.
+- If `BLOB_READ_WRITE_TOKEN` is missing, local development falls back to an in-memory job store, which is fine for a single dev process but not durable across restarts or multiple instances.
+- The browser no longer waits on one long-lived request. It gets a job id, polls for status, and commits the final translation only when the job reaches a terminal state.

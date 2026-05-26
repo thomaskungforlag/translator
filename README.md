@@ -81,7 +81,8 @@ If you are deploying on Vercel:
 - [src/components/studio-shell/](src/components/studio-shell) holds the small dashboard panels and review widgets.
 - [src/lib/domain.ts](src/lib/domain.ts) defines the domain types and Zod schemas.
 - [src/lib/translation.ts](src/lib/translation.ts) orchestrates provider responses into the app's project shape.
-- [src/app/api/translate/route.ts](src/app/api/translate/route.ts) exposes the translation pipeline endpoint.
+- [src/app/api/translate/route.ts](src/app/api/translate/route.ts) exposes the translation pipeline endpoint as an async job starter plus status endpoint.
+- [src/lib/translation-jobs.ts](src/lib/translation-jobs.ts) stores job state, launches the background worker, and reads status for polling clients.
 - [src/app/api/wordpress/translate-page/route.ts](src/app/api/wordpress/translate-page/route.ts) exposes the shared WordPress translation endpoint with service-key auth.
 - [src/lib/wordpress-translation.ts](src/lib/wordpress-translation.ts) maps WordPress content units into the existing multi-pass translation pipeline.
 - [src/lib/reference-material-runtime.ts](src/lib/reference-material-runtime.ts) optionally fetches remote PDF references at runtime and injects relevant excerpts into the prompt context.
@@ -92,6 +93,7 @@ If you are deploying on Vercel:
 - [jest.config.ts](jest.config.ts) configures unit tests.
 - [playwright.config.ts](playwright.config.ts) configures browser tests.
 - [vercel.json](vercel.json) configures Vercel function durations for the translation routes.
+- [docs/deployment.md](docs/deployment.md) explains the async translation job flow, required Vercel env vars, and Blob-backed job storage.
 
 ## Standards
 

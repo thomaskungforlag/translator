@@ -1,7 +1,14 @@
 /* eslint-disable max-lines, max-lines-per-function -- this workspace orchestrator intentionally keeps the route-level persistence, history, and translation controls together */
 'use client';
 
-import { useEffect, useRef, useState, type ReactElement } from 'react';
+import {
+  useEffect,
+  useRef,
+  useState,
+  type Dispatch,
+  type ReactElement,
+  type SetStateAction,
+} from 'react';
 
 import type { AlertColor } from '@mui/material';
 import { Stack } from '@mui/material';
@@ -40,6 +47,8 @@ import {
   type TranslationHistoryMode,
   type TranslationHistorySummary,
 } from '@/lib/translation-history';
+import type { TranslationWorkspaceJobStartResponse } from '@/lib/translation-job-shared';
+import { parseTranslationWorkspaceJobSnapshot } from '@/lib/translation-job-shared';
 
 import { TranslationHistoryPanel } from './translation-history-panel';
 import { WorkspaceControls } from './workspace-controls';
@@ -255,6 +264,29 @@ function buildFallbackPipelineCompletionState(args: {
       warnings: [],
     }),
   };
+}
+
+function commitPipelineCompletionState(args: {
+  completionState: TranslationPipelineCompletionState;
+  setProject: Dispatch<SetStateAction<StudioShellProject>>;
+  setStatusNotice: Dispatch<SetStateAction<StatusNotice | undefined>>;
+  setPipelineWarnings: Dispatch<SetStateAction<string[]>>;
+  setHistoryEntries: Dispatch<SetStateAction<TranslationHistorySummary[]>>;
+}): void {
+  const { completionState, setProject, setStatusNotice, setPipelineWarnings, setHistoryEntries } =
+    args;
+
+  setProject(completionState.nextProject);
+  setStatusNotice(completionState.statusNotice);
+  setPipelineWarnings(completionState.warnings);
+
+  try {
+    const savedHistoryEntries = saveTranslationHistoryEntry(completionState.historyInput);
+
+    setHistoryEntries(savedHistoryEntries);
+  } catch {
+    // Ignore history write failures so translation completion still succeeds.
+  }
 }
 
 type TranslationWorkspaceViewProps = {
@@ -589,6 +621,7 @@ export function TranslationWorkspace({
   const [selectedRecoverySegmentIndex, setSelectedRecoverySegmentIndex] = useState<number | null>(
     null,
   );
+  const [activeJobId, setActiveJobId] = useState<string | null>(null);
   const [modelOptionsByProvider, setModelOptionsByProvider] = useState<
     Record<ModelProvider, ProviderModelOptions | null>
   >({
@@ -610,6 +643,12 @@ export function TranslationWorkspace({
         : (currentProviderOptions?.defaultModelId ?? getDefaultModelId(provider));
   const providerApiKeyConfigured = providerAvailability[provider];
   const activeRuntimeModelLabel = formatRuntimeModelLabel(provider, resolvedModel);
+
+  const endPipelineRun = (): void => {
+    setIsRunning(false);
+    setRunStartedAt(null);
+    setActiveJobId(null);
+  };
 
   useEffect(() => {
     const restoreTimeoutId = window.setTimeout(() => {
@@ -724,6 +763,169 @@ export function TranslationWorkspace({
     };
   }, [runStartedAt]);
 
+  useEffect(() => {
+    if (activeJobId === null) {
+      return undefined;
+    }
+
+    const controller = new AbortController();
+    let isPolling = false;
+
+    const pollTranslationJobStatus = async (): Promise<void> => {
+      if (isPolling) {
+        return;
+      }
+
+      isPolling = true;
+
+      try {
+        const response = await fetch(`/api/translate?jobId=${encodeURIComponent(activeJobId)}`, {
+          signal: controller.signal,
+        });
+
+        if (!response.ok) {
+          if (response.status === 404) {
+            const completionState = buildFallbackPipelineCompletionState({
+              initialSeed,
+              currentProject: project,
+              sourceText,
+              segmentationStrategy,
+              provider,
+              resolvedModel,
+              error: new Error('Translation job not found.'),
+            });
+
+            commitPipelineCompletionState({
+              completionState,
+              setProject,
+              setStatusNotice,
+              setPipelineWarnings,
+              setHistoryEntries,
+            });
+
+            endPipelineRun();
+
+            window.clearInterval(intervalId);
+
+            return;
+          }
+
+          throw new Error(`Translation job status request failed with status ${response.status}.`);
+        }
+
+        const snapshot = parseTranslationWorkspaceJobSnapshot((await response.json()) as unknown);
+
+        if (!snapshot) {
+          throw new Error('Translation job status payload was invalid.');
+        }
+
+        if (snapshot.status === 'queued' || snapshot.status === 'running') {
+          setStatusNotice({
+            message: `Translation job ${snapshot.status}. Waiting for the background worker to finish...`,
+            severity: 'info',
+          });
+
+          return;
+        }
+
+        if (snapshot.status === 'completed' && snapshot.result) {
+          const completionState = buildSuccessfulPipelineCompletionState({
+            initialSeed,
+            currentProject: project,
+            sourceText,
+            segmentationStrategy,
+            provider,
+            resolvedModel,
+            result: snapshot.result,
+          });
+
+          commitPipelineCompletionState({
+            completionState,
+            setProject,
+            setStatusNotice,
+            setPipelineWarnings,
+            setHistoryEntries,
+          });
+
+          endPipelineRun();
+
+          window.clearInterval(intervalId);
+
+          return;
+        }
+
+        const completionState = buildFallbackPipelineCompletionState({
+          initialSeed,
+          currentProject: project,
+          sourceText,
+          segmentationStrategy,
+          provider,
+          resolvedModel,
+          error: new Error(snapshot.error ?? 'Translation job failed.'),
+        });
+
+        commitPipelineCompletionState({
+          completionState,
+          setProject,
+          setStatusNotice,
+          setPipelineWarnings,
+          setHistoryEntries,
+        });
+
+        endPipelineRun();
+
+        window.clearInterval(intervalId);
+      } catch (error) {
+        if (error instanceof DOMException && error.name === 'AbortError') {
+          return;
+        }
+
+        const completionState = buildFallbackPipelineCompletionState({
+          initialSeed,
+          currentProject: project,
+          sourceText,
+          segmentationStrategy,
+          provider,
+          resolvedModel,
+          error,
+        });
+
+        commitPipelineCompletionState({
+          completionState,
+          setProject,
+          setStatusNotice,
+          setPipelineWarnings,
+          setHistoryEntries,
+        });
+
+        endPipelineRun();
+
+        window.clearInterval(intervalId);
+      } finally {
+        isPolling = false;
+      }
+    };
+
+    const intervalId = window.setInterval(() => {
+      void pollTranslationJobStatus();
+    }, 2500);
+
+    void pollTranslationJobStatus();
+
+    return () => {
+      controller.abort();
+      window.clearInterval(intervalId);
+    };
+  }, [
+    activeJobId,
+    initialSeed,
+    project,
+    provider,
+    resolvedModel,
+    segmentationStrategy,
+    sourceText,
+  ]);
+
   const runElapsedSeconds = runStartedAt === null ? 0 : Math.floor((now - runStartedAt) / 1000);
 
   const handleRunPipeline = async (): Promise<void> => {
@@ -732,6 +934,7 @@ export function TranslationWorkspace({
     setStatusNotice(undefined);
     setPipelineWarnings([]);
     setSelectedRecoverySegmentIndex(null);
+    let jobQueued = false;
 
     try {
       const response = await fetch('/api/translate', {
@@ -751,32 +954,18 @@ export function TranslationWorkspace({
         ),
       });
 
-      if (!response.ok) {
+      if (response.status !== 202) {
         throw new Error(`Pipeline request failed with status ${response.status}.`);
       }
 
-      const result = (await response.json()) as TranslationWorkspaceResponse;
-      const completionState = buildSuccessfulPipelineCompletionState({
-        initialSeed,
-        currentProject: project,
-        sourceText,
-        segmentationStrategy,
-        provider,
-        resolvedModel,
-        result,
+      const job = (await response.json()) as TranslationWorkspaceJobStartResponse;
+
+      jobQueued = true;
+      setActiveJobId(job.jobId);
+      setStatusNotice({
+        message: 'Translation job queued. Waiting for the background worker to finish...',
+        severity: 'info',
       });
-
-      setProject(completionState.nextProject);
-      setStatusNotice(completionState.statusNotice);
-      setPipelineWarnings(completionState.warnings);
-
-      try {
-        const savedHistoryEntries = saveTranslationHistoryEntry(completionState.historyInput);
-
-        setHistoryEntries(savedHistoryEntries);
-      } catch {
-        // Ignore history write failures so translation completion still succeeds.
-      }
     } catch (error) {
       const completionState = buildFallbackPipelineCompletionState({
         initialSeed,
@@ -788,20 +977,17 @@ export function TranslationWorkspace({
         error,
       });
 
-      setProject(completionState.nextProject);
-      setStatusNotice(completionState.statusNotice);
-      setPipelineWarnings(completionState.warnings);
-
-      try {
-        const savedHistoryEntries = saveTranslationHistoryEntry(completionState.historyInput);
-
-        setHistoryEntries(savedHistoryEntries);
-      } catch {
-        // Ignore history write failures so translation fallback still completes.
-      }
+      commitPipelineCompletionState({
+        completionState,
+        setProject,
+        setStatusNotice,
+        setPipelineWarnings,
+        setHistoryEntries,
+      });
     } finally {
-      setIsRunning(false);
-      setRunStartedAt(null);
+      if (!jobQueued) {
+        endPipelineRun();
+      }
     }
   };
 
